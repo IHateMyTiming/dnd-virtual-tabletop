@@ -9,6 +9,7 @@ const gridSize = 30;
 const cellSize = 24;
 export class MapScene extends Phaser.Scene {
   private map: Tile[][] = [];
+  private graphics!: Phaser.GameObjects.Graphics;
   constructor() {
     super("MapScene");
   }
@@ -24,16 +25,16 @@ export class MapScene extends Phaser.Scene {
       }
     }
 
-    const graphics = this.add.graphics();
+    this.graphics = this.add.graphics();
 
-    graphics.lineStyle(1, 0x555555);
+    this.graphics.lineStyle(1, 0x555555);
 
     for (let row = 0; row < gridSize; row++) {
       for (let column = 0; column < gridSize; column++) {
         const x = column * cellSize;
         const y = row * cellSize;
 
-        graphics.strokeRect(x, y, cellSize, cellSize);
+        this.graphics.strokeRect(x, y, cellSize, cellSize);
       }
     }
     this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
@@ -43,8 +44,30 @@ export class MapScene extends Phaser.Scene {
       if (row >= 0 && row < gridSize && column >= 0 && column < gridSize) {
         this.map[row][column].terrain = "floor";
 
+        this.drawTile(this.graphics, row, column);
+
         console.log(`Changed tile ${column}, ${row} to floor`);
       }
     });
+  }
+  private drawTile(
+    graphics: Phaser.GameObjects.Graphics,
+    row: number,
+    column: number,
+  ) {
+    const tile = this.map[row][column];
+
+    const x = column * cellSize;
+    const y = row * cellSize;
+
+    if (tile.terrain === "floor") {
+      graphics.fillStyle(0xaaaaaa);
+      graphics.fillRect(x, y, cellSize, cellSize);
+    }
+
+    if (tile.terrain === "wall") {
+      graphics.fillStyle(0x555555);
+      graphics.fillRect(x, y, cellSize, cellSize);
+    }
   }
 }
