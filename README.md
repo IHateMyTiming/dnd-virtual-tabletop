@@ -76,6 +76,6 @@ Currently under development.
 - Dice animations
 - Combat mechanics
 
-## 📄 License
+## License
 
 MIT License
