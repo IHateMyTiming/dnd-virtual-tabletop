@@ -6,6 +6,7 @@ const config: Phaser.Types.Core.GameConfig = {
   width: 960,
   height: 960,
   backgroundColor: "#1e1e1e",
+  parent: "game",
   scene: MapScene,
 };
 

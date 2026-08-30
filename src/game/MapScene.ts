@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-type Terrain = "empty" | "floor" | "wall" | "water";
+type Terrain = "empty" | "floor" | "wall" | "water" | "grass" | "mud";
 
 interface Tile {
   terrain: Terrain;
@@ -10,6 +10,8 @@ const cellSize = 24;
 export class MapScene extends Phaser.Scene {
   private map: Tile[][] = [];
   private graphics!: Phaser.GameObjects.Graphics;
+  private selectedTerrain: Terrain = "floor";
+
   constructor() {
     super("MapScene");
   }
@@ -42,12 +44,24 @@ export class MapScene extends Phaser.Scene {
       const row = Math.floor(pointer.y / cellSize);
 
       if (row >= 0 && row < gridSize && column >= 0 && column < gridSize) {
-        this.map[row][column].terrain = "floor";
+        this.map[row][column].terrain = this.selectedTerrain;
 
         this.drawTile(this.graphics, row, column);
 
         console.log(`Changed tile ${column}, ${row} to floor`);
       }
+    });
+    const buttons =
+      document.querySelectorAll<HTMLButtonElement>("#toolbar button");
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const terrain = button.dataset.terrain as Terrain;
+
+        this.selectedTerrain = terrain;
+
+        console.log(`Selected terrain: ${terrain}`);
+      });
     });
   }
   private drawTile(
@@ -60,6 +74,10 @@ export class MapScene extends Phaser.Scene {
     const x = column * cellSize;
     const y = row * cellSize;
 
+    // Clear the tile
+    graphics.fillStyle(0x1e1e1e);
+    graphics.fillRect(x, y, cellSize, cellSize);
+
     if (tile.terrain === "floor") {
       graphics.fillStyle(0xaaaaaa);
       graphics.fillRect(x, y, cellSize, cellSize);
@@ -69,5 +87,24 @@ export class MapScene extends Phaser.Scene {
       graphics.fillStyle(0x555555);
       graphics.fillRect(x, y, cellSize, cellSize);
     }
+
+    if (tile.terrain === "water") {
+      graphics.fillStyle(0x3366aa);
+      graphics.fillRect(x, y, cellSize, cellSize);
+    }
+
+    if (tile.terrain === "grass") {
+      graphics.fillStyle(0x7cfc00);
+      graphics.fillRect(x, y, cellSize, cellSize);
+    }
+
+    if (tile.terrain === "mud") {
+      graphics.fillStyle(0x6b4423);
+      graphics.fillRect(x, y, cellSize, cellSize);
+    }
+
+    // Draw the grid line again
+    graphics.lineStyle(1, 0x555555);
+    graphics.strokeRect(x, y, cellSize, cellSize);
   }
 }
