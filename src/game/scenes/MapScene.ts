@@ -1,4 +1,6 @@
 import Phaser from "phaser";
+import { CharacterManager } from "../characters/CharacterManager";
+
 type Terrain =
   | "empty"
   | "floor"
@@ -9,7 +11,7 @@ type Terrain =
   | "lava"
   | "sand";
 
-type Tool = "brush" | "rectangle" | "fill";
+type Tool = "brush" | "rectangle" | "fill" | "character";
 
 interface Tile {
   terrain: Terrain;
@@ -50,6 +52,8 @@ export class MapScene extends Phaser.Scene {
   private redoStack: MapAction[] = [];
 
   private currentAction: MapAction | null = null;
+
+  private characterManager!: CharacterManager;
 
   constructor() {
     super("MapScene");
@@ -513,6 +517,8 @@ export class MapScene extends Phaser.Scene {
     this.bringCurrentLayerToFront();
     this.updateLayerCounter();
 
+    this.characterManager.updateAllCharacterPositions();
+
     console.log(`Selected layer: ${this.currentLayer + 1}`);
   }
 
@@ -542,11 +548,12 @@ export class MapScene extends Phaser.Scene {
     const graphics = this.add.graphics();
     this.layerGraphics.push(graphics);
 
-    this.redrawLayer(this.layers.length - 1);
-    this.updateLayerPositions();
-    this.bringCurrentLayerToFront();
-    this.updateLayerCounter();
-    this.currentLayer = this.layers.length - 1;
+    const newLayerIndex = this.layers.length - 1;
+
+    this.redrawLayer(newLayerIndex);
+
+    // New layer becomes the current layer
+    this.currentLayer = newLayerIndex;
 
     this.updateLayerPositions();
     this.bringCurrentLayerToFront();
@@ -584,24 +591,42 @@ export class MapScene extends Phaser.Scene {
   }
 
   create() {
+    // Create the first layer
     this.addLayer();
 
+    // Create character manager
+    this.characterManager = new CharacterManager(
+      this,
+      (layer) => this.layerGraphics[layer],
+    );
+    // Preview graphics
     this.previewGraphics = this.add.graphics();
     this.previewGraphics.setDepth(100);
 
-    for (let layer = 0; layer < this.layers.length; layer++) {
-      const graphics = this.add.graphics();
-
-      this.layerGraphics[layer] = graphics;
-
-      this.redrawLayer(layer);
-    }
-
     this.updateLayerPositions();
+
     this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
       const { row, column } = this.getPointerTile(pointer, this.currentLayer);
 
       if (row < 0 || row >= gridSize || column < 0 || column >= gridSize) {
+        return;
+      }
+
+      // Character
+      // Character
+      if (this.selectedTool === "character") {
+        const character = this.characterManager.getCharacterAt(
+          row,
+          column,
+          this.currentLayer,
+        );
+
+        if (character) {
+          this.characterManager.startDragging(character);
+        } else {
+          this.characterManager.addCharacter(row, column, this.currentLayer);
+        }
+
         return;
       }
 
@@ -639,6 +664,23 @@ export class MapScene extends Phaser.Scene {
     });
 
     this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
+      if (
+        this.selectedTool === "character" &&
+        this.characterManager.isDragging()
+      ) {
+        if (!pointer.isDown) {
+          return;
+        }
+
+        const { row, column } = this.getPointerTile(pointer, this.currentLayer);
+
+        if (row >= 0 && row < gridSize && column >= 0 && column < gridSize) {
+          this.characterManager.updateDraggingPosition(row, column);
+        }
+
+        return;
+      }
+
       if (!this.isPainting || !pointer.isDown) {
         return;
       }
@@ -664,7 +706,11 @@ export class MapScene extends Phaser.Scene {
     });
 
     this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
-      if (!this.isPainting) {
+      if (
+        this.selectedTool === "character" &&
+        this.characterManager.isDragging()
+      ) {
+        this.characterManager.stopDragging();
         return;
       }
 
@@ -749,8 +795,9 @@ export class MapScene extends Phaser.Scene {
       this.redrawLayer(this.currentLayer);
     });
 
-    const toolButtons =
-      document.querySelectorAll<HTMLButtonElement>("#tools button");
+    const toolButtons = document.querySelectorAll<HTMLButtonElement>(
+      "#tools button, #character-bar button",
+    );
 
     toolButtons.forEach((button) => {
       button.addEventListener("click", () => {

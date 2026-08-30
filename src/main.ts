@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 
-import { MapScene } from "./game/MapScene";
+import { MapScene } from "./game/scenes/MapScene";
 
 import { setupTranslations } from "./i18n";
 
