@@ -15,6 +15,9 @@ const translations = {
     sand: "Sand",
     erase: "Erase",
     eraseAll: "Erase All",
+    addCharacter: "Add / Move Character",
+    eraseCharacter: "Erase Character",
+    eraseAllCharacters: "Erase All Characters",
   },
 
   pt: {
@@ -31,6 +34,9 @@ const translations = {
     sand: "Areia",
     erase: "Apagar",
     eraseAll: "Apagar Tudo",
+    addCharacter: "Adiciona / Mova Personagem",
+    eraseCharacter: "Apagar Personagem",
+    eraseAllCharacters: "Apagar todos os Personagens",
   },
 };
 

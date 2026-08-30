@@ -11,7 +11,7 @@ type Terrain =
   | "lava"
   | "sand";
 
-type Tool = "brush" | "rectangle" | "fill" | "character";
+type Tool = "brush" | "rectangle" | "fill" | "character" | "character-erase";
 
 interface Tile {
   terrain: Terrain;
@@ -613,7 +613,6 @@ export class MapScene extends Phaser.Scene {
       }
 
       // Character
-      // Character
       if (this.selectedTool === "character") {
         const character = this.characterManager.getCharacterAt(
           row,
@@ -625,6 +624,20 @@ export class MapScene extends Phaser.Scene {
           this.characterManager.startDragging(character);
         } else {
           this.characterManager.addCharacter(row, column, this.currentLayer);
+        }
+
+        return;
+      }
+
+      if (this.selectedTool === "character-erase") {
+        const character = this.characterManager.getCharacterAt(
+          row,
+          column,
+          this.currentLayer,
+        );
+
+        if (character) {
+          this.characterManager.removeCharacter(character);
         }
 
         return;
@@ -796,8 +809,16 @@ export class MapScene extends Phaser.Scene {
     });
 
     const toolButtons = document.querySelectorAll<HTMLButtonElement>(
-      "#tools button, #character-bar button",
+      "#tools button[data-tool], #character-bar button[data-tool]",
     );
+
+    const eraseAllCharactersButton = document.querySelector<HTMLButtonElement>(
+      "#erase-all-characters",
+    );
+
+    eraseAllCharactersButton?.addEventListener("click", () => {
+      this.characterManager.removeAllCharacters();
+    });
 
     toolButtons.forEach((button) => {
       button.addEventListener("click", () => {
@@ -810,15 +831,35 @@ export class MapScene extends Phaser.Scene {
     });
 
     this.input.keyboard?.on("keydown-Z", (event: KeyboardEvent) => {
-      if (event.ctrlKey) {
-        this.undo();
+      if (!event.ctrlKey) {
+        return;
       }
+
+      if (
+        this.selectedTool === "character" ||
+        this.selectedTool === "character-erase"
+      ) {
+        this.characterManager.undo();
+        return;
+      }
+
+      this.undo();
     });
 
     this.input.keyboard?.on("keydown-Y", (event: KeyboardEvent) => {
-      if (event.ctrlKey) {
-        this.redo();
+      if (!event.ctrlKey) {
+        return;
       }
+
+      if (
+        this.selectedTool === "character" ||
+        this.selectedTool === "character-erase"
+      ) {
+        this.characterManager.redo();
+        return;
+      }
+
+      this.redo();
     });
 
     const previousLayerButton =

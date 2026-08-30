@@ -1,6 +1,15 @@
 import Phaser from "phaser";
 import type { Character } from "./Character";
 
+interface CharacterAction {
+  type: "add" | "move" | "remove" | "remove-all";
+  character: Character;
+  previousRow?: number;
+  previousColumn?: number;
+  newRow?: number;
+  newColumn?: number;
+}
+
 const cellSize = 24;
 
 export class CharacterManager {
@@ -15,6 +24,12 @@ export class CharacterManager {
   private selectedCharacter: Character | null = null;
 
   private draggingCharacter: Character | null = null;
+
+  private undoStack: CharacterAction[] = [];
+  private redoStack: CharacterAction[] = [];
+
+  private dragStartRow: number | null = null;
+  private dragStartColumn: number | null = null;
 
   constructor(
     scene: Phaser.Scene,
@@ -37,7 +52,71 @@ export class CharacterManager {
 
     this.drawCharacter(character);
 
+    this.undoStack.push({
+      type: "add",
+      character,
+    });
+
+    this.redoStack = [];
+
     return character;
+  }
+
+  removeCharacter(character: Character) {
+    const index = this.characters.findIndex(
+      (currentCharacter) => currentCharacter.id === character.id,
+    );
+
+    if (index === -1) {
+      return;
+    }
+
+    this.characters.splice(index, 1);
+
+    const graphics = this.characterGraphics.get(character.id);
+
+    if (graphics) {
+      graphics.destroy();
+      this.characterGraphics.delete(character.id);
+    }
+
+    if (this.selectedCharacter?.id === character.id) {
+      this.selectedCharacter = null;
+    }
+
+    this.undoStack.push({
+      type: "remove",
+      character,
+    });
+
+    this.redoStack = [];
+  }
+
+  removeAllCharacters() {
+    if (this.characters.length === 0) {
+      return;
+    }
+
+    const charactersToRemove = [...this.characters];
+
+    for (const character of charactersToRemove) {
+      const graphics = this.characterGraphics.get(character.id);
+
+      if (graphics) {
+        graphics.destroy();
+        this.characterGraphics.delete(character.id);
+      }
+    }
+
+    this.characters = [];
+    this.selectedCharacter = null;
+
+    this.undoStack.push({
+      type: "remove-all",
+      characters: charactersToRemove,
+    });
+
+    this.redoStack = [];
   }
 
   private drawCharacter(character: Character) {
@@ -52,27 +131,16 @@ export class CharacterManager {
     graphics.setDepth(100);
   }
 
-  private drawCharacterGraphic(
-    graphics: Phaser.GameObjects.Graphics,
-    character: Character,
-  ) {
+  private drawCharacterGraphic(graphics: Phaser.GameObjects.Graphics) {
     graphics.clear();
 
     graphics.fillStyle(0xff0000, 1);
 
-    graphics.fillCircle(
-      character.column * cellSize + cellSize / 2,
-      character.row * cellSize + cellSize / 2,
-      cellSize * 0.4,
-    );
+    graphics.fillCircle(0, 0, cellSize * 0.4);
 
     graphics.lineStyle(2, 0xffffff, 1);
 
-    graphics.strokeCircle(
-      character.column * cellSize + cellSize / 2,
-      character.row * cellSize + cellSize / 2,
-      cellSize * 0.4,
-    );
+    graphics.strokeCircle(0, 0, cellSize * 0.4);
   }
 
   updateCharacterPosition(character: Character) {
@@ -84,9 +152,20 @@ export class CharacterManager {
 
     const layerGraphics = this.getLayerGraphics(character.layer);
 
-    graphics.setPosition(layerGraphics.x, layerGraphics.y);
+    const scale = layerGraphics.scaleX;
 
-    graphics.setScale(layerGraphics.scaleX, layerGraphics.scaleY);
+    const x =
+      layerGraphics.x +
+      character.column * cellSize * scale +
+      (cellSize / 2) * scale;
+
+    const y =
+      layerGraphics.y +
+      character.row * cellSize * scale +
+      (cellSize / 2) * scale;
+
+    graphics.setPosition(x, y);
+    graphics.setScale(scale);
   }
 
   updateAllCharacterPositions() {
@@ -110,11 +189,49 @@ export class CharacterManager {
     );
   }
 
-  startDragging(character: Character) {
-    this.draggingCharacter = character;
+  selectCharacter(character: Character) {
     this.selectedCharacter = character;
 
-    console.log(`Dragging ${character.name}`);
+    console.log(`Selected character: ${character.name}`);
+  }
+
+  startDragging(character: Character) {
+    this.draggingCharacter = character;
+
+    this.dragStartRow = character.row;
+    this.dragStartColumn = character.column;
+
+    this.selectCharacter(character);
+  }
+
+  stopDragging() {
+    if (!this.draggingCharacter) {
+      return;
+    }
+
+    const character = this.draggingCharacter;
+
+    if (
+      this.dragStartRow !== null &&
+      this.dragStartColumn !== null &&
+      (this.dragStartRow !== character.row ||
+        this.dragStartColumn !== character.column)
+    ) {
+      this.undoStack.push({
+        type: "move",
+        character,
+        previousRow: this.dragStartRow,
+        previousColumn: this.dragStartColumn,
+        newRow: character.row,
+        newColumn: character.column,
+      });
+
+      this.redoStack = [];
+    }
+
+    this.draggingCharacter = null;
+    this.dragStartRow = null;
+    this.dragStartColumn = null;
   }
 
   isDragging() {
@@ -126,34 +243,128 @@ export class CharacterManager {
       return;
     }
 
-    const character = this.draggingCharacter;
+    this.draggingCharacter.row = row;
+    this.draggingCharacter.column = column;
 
-    character.row = row;
-    character.column = column;
-
-    const graphics = this.characterGraphics.get(character.id);
-
-    if (!graphics) {
-      return;
-    }
-
-    this.drawCharacterGraphic(graphics, character);
-
-    // Keep the character attached to its layer
-    this.updateCharacterPosition(character);
-  }
-
-  stopDragging() {
-    if (this.draggingCharacter) {
-      console.log(
-        `Dropped ${this.draggingCharacter.name} at row ${this.draggingCharacter.row}, column ${this.draggingCharacter.column}`,
-      );
-    }
-
-    this.draggingCharacter = null;
+    this.updateCharacterPosition(this.draggingCharacter);
   }
 
   getSelectedCharacter() {
     return this.selectedCharacter;
+  }
+
+  undo() {
+    const action = this.undoStack.pop();
+
+    if (!action) {
+      return;
+    }
+
+    if (action.type === "add") {
+      const index = this.characters.findIndex(
+        (character) => character.id === action.character.id,
+      );
+
+      if (index !== -1) {
+        this.characters.splice(index, 1);
+      }
+
+      const graphics = this.characterGraphics.get(action.character.id);
+
+      if (graphics) {
+        graphics.destroy();
+        this.characterGraphics.delete(action.character.id);
+      }
+    }
+
+    if (action.type === "remove") {
+      const index = this.characters.findIndex(
+        (character) => character.id === action.character.id,
+      );
+
+      if (index === -1) {
+        this.characters.push(action.character);
+      }
+
+      this.drawCharacter(action.character);
+    }
+
+    if (action.type === "remove-all") {
+      for (const character of action.characters!) {
+        this.characters.push(character);
+        this.drawCharacter(character);
+      }
+    }
+
+    if (action.type === "move") {
+      action.character.row = action.previousRow!;
+      action.character.column = action.previousColumn!;
+
+      this.updateCharacterPosition(action.character);
+    }
+
+    this.redoStack.push(action);
+  }
+
+  redo() {
+    const action = this.redoStack.pop();
+
+    if (!action) {
+      return;
+    }
+
+    if (action.type === "add") {
+      this.characters.push(action.character);
+
+      this.drawCharacter(action.character);
+    }
+
+    if (action.type === "remove") {
+      const index = this.characters.findIndex(
+        (character) => character.id === action.character.id,
+      );
+
+      if (index !== -1) {
+        this.characters.splice(index, 1);
+      }
+
+      const graphics = this.characterGraphics.get(action.character.id);
+
+      if (graphics) {
+        graphics.destroy();
+        this.characterGraphics.delete(action.character.id);
+      }
+
+      if (this.selectedCharacter?.id === action.character.id) {
+        this.selectedCharacter = null;
+      }
+    }
+
+    if (action.type === "remove-all") {
+      for (const character of action.characters!) {
+        const graphics = this.characterGraphics.get(character.id);
+
+        if (graphics) {
+          graphics.destroy();
+          this.characterGraphics.delete(character.id);
+        }
+      }
+
+      this.characters = this.characters.filter(
+        (character) =>
+          !action.characters!.some((removed) => removed.id === character.id),
+      );
+
+      this.selectedCharacter = null;
+    }
+
+    if (action.type === "move") {
+      action.character.row = action.newRow!;
+      action.character.column = action.newColumn!;
+
+      this.updateCharacterPosition(action.character);
+    }
+
+    this.undoStack.push(action);
   }
 }
