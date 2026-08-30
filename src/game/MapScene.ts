@@ -29,8 +29,10 @@ interface MapAction {
 const gridSize = 30;
 const cellSize = 24;
 export class MapScene extends Phaser.Scene {
-  private map: Tile[][] = [];
-  private graphics!: Phaser.GameObjects.Graphics;
+  private layers: Tile[][][] = [];
+  private currentLayer = 0;
+
+  private layerGraphics: Phaser.GameObjects.Graphics[] = [];
   private previewGraphics!: Phaser.GameObjects.Graphics;
 
   private selectedTerrain: Terrain = "floor";
@@ -53,6 +55,140 @@ export class MapScene extends Phaser.Scene {
     super("MapScene");
   }
 
+  private drawTile(
+    graphics: Phaser.GameObjects.Graphics,
+    layer: number,
+    row: number,
+    column: number,
+  ) {
+    const tile = this.layers[layer][row][column];
+
+    const x = column * cellSize;
+    const y = row * cellSize;
+
+    graphics.fillStyle(0x1e1e1e);
+    graphics.fillRect(x, y, cellSize, cellSize);
+
+    if (tile.terrain === "floor") {
+      graphics.fillStyle(0xaaaaaa);
+      graphics.fillRect(x, y, cellSize, cellSize);
+    }
+
+    if (tile.terrain === "wall") {
+      graphics.fillStyle(0x555555);
+      graphics.fillRect(x, y, cellSize, cellSize);
+    }
+
+    if (tile.terrain === "water") {
+      graphics.fillStyle(0x3366aa);
+      graphics.fillRect(x, y, cellSize, cellSize);
+    }
+
+    if (tile.terrain === "grass") {
+      graphics.fillStyle(0x7cfc00);
+      graphics.fillRect(x, y, cellSize, cellSize);
+    }
+
+    if (tile.terrain === "mud") {
+      graphics.fillStyle(0x6b4423);
+      graphics.fillRect(x, y, cellSize, cellSize);
+    }
+
+    if (tile.terrain === "lava") {
+      graphics.fillStyle(0xa83232);
+      graphics.fillRect(x, y, cellSize, cellSize);
+    }
+
+    if (tile.terrain === "sand") {
+      graphics.fillStyle(0xd6b83d);
+      graphics.fillRect(x, y, cellSize, cellSize);
+    }
+
+    graphics.lineStyle(1, 0x555555);
+    graphics.strokeRect(x, y, cellSize, cellSize);
+  }
+
+  private paintTile(pointer: Phaser.Input.Pointer) {
+    const { row, column } = this.getPointerTile(pointer, this.currentLayer);
+
+    if (row < 0 || row >= gridSize || column < 0 || column >= gridSize) {
+      return;
+    }
+
+    // First tile
+    if (this.lastPaintedRow === null || this.lastPaintedColumn === null) {
+      const previousTerrain =
+        this.layers[this.currentLayer][row][column].terrain;
+
+      if (previousTerrain !== this.selectedTerrain) {
+        this.currentAction?.changes.push({
+          row,
+          column,
+          previousTerrain,
+          newTerrain: this.selectedTerrain,
+        });
+
+        this.layers[this.currentLayer][row][column].terrain =
+          this.selectedTerrain;
+
+        this.drawTile(
+          this.layerGraphics[this.currentLayer],
+          this.currentLayer,
+          row,
+          column,
+        );
+      }
+
+      this.lastPaintedRow = row;
+      this.lastPaintedColumn = column;
+
+      return;
+    }
+
+    const startRow = this.lastPaintedRow;
+    const startColumn = this.lastPaintedColumn;
+
+    const distance = Math.max(
+      Math.abs(row - startRow),
+      Math.abs(column - startColumn),
+    );
+
+    for (let i = 1; i <= distance; i++) {
+      const currentRow = Math.round(
+        startRow + ((row - startRow) * i) / distance,
+      );
+
+      const currentColumn = Math.round(
+        startColumn + ((column - startColumn) * i) / distance,
+      );
+
+      const previousTerrain =
+        this.layers[this.currentLayer][currentRow][currentColumn].terrain;
+
+      if (previousTerrain !== this.selectedTerrain) {
+        this.currentAction?.changes.push({
+          row: currentRow,
+          column: currentColumn,
+          previousTerrain,
+          newTerrain: this.selectedTerrain,
+        });
+
+        this.layers[this.currentLayer][currentRow][currentColumn].terrain =
+          this.selectedTerrain;
+
+        this.drawTile(
+          this.layerGraphics[this.currentLayer],
+          this.currentLayer,
+          currentRow,
+          currentColumn,
+        );
+      }
+    }
+
+    this.lastPaintedRow = row;
+    this.lastPaintedColumn = column;
+  }
+
   private fillRectangle(
     startRow: number,
     startColumn: number,
@@ -68,7 +204,8 @@ export class MapScene extends Phaser.Scene {
 
     for (let row = minRow; row <= maxRow; row++) {
       for (let column = minColumn; column <= maxColumn; column++) {
-        const previousTerrain = this.map[row][column].terrain;
+        const previousTerrain =
+          this.layers[this.currentLayer][row][column].terrain;
 
         if (previousTerrain !== this.selectedTerrain) {
           this.currentAction?.changes.push({
@@ -78,9 +215,15 @@ export class MapScene extends Phaser.Scene {
             newTerrain: this.selectedTerrain,
           });
 
-          this.map[row][column].terrain = this.selectedTerrain;
+          this.layers[this.currentLayer][row][column].terrain =
+            this.selectedTerrain;
 
-          this.drawTile(this.graphics, row, column);
+          this.drawTile(
+            this.layerGraphics[this.currentLayer],
+            this.currentLayer,
+            row,
+            column,
+          );
         }
       }
     }
@@ -100,11 +243,13 @@ export class MapScene extends Phaser.Scene {
     const minColumn = Math.max(0, Math.min(startColumn, endColumn));
     const maxColumn = Math.min(gridSize - 1, Math.max(startColumn, endColumn));
 
-    const x = minColumn * cellSize;
-    const y = minRow * cellSize;
+    const { offsetX, offsetY, scale } = this.getLayerOffset(this.currentLayer);
 
-    const width = (maxColumn - minColumn + 1) * cellSize;
-    const height = (maxRow - minRow + 1) * cellSize;
+    const x = offsetX + minColumn * cellSize * scale;
+    const y = offsetY + minRow * cellSize * scale;
+
+    const width = (maxColumn - minColumn + 1) * cellSize * scale;
+    const height = (maxRow - minRow + 1) * cellSize * scale;
 
     this.previewGraphics.fillStyle(0xffffff, 0.2);
     this.previewGraphics.fillRect(x, y, width, height);
@@ -114,7 +259,9 @@ export class MapScene extends Phaser.Scene {
   }
 
   private fillTile(startRow: number, startColumn: number) {
-    const originalTerrain = this.map[startRow][startColumn].terrain;
+    const originalTerrain =
+      this.layers[this.currentLayer][startRow][startColumn].terrain;
+
     const newTerrain = this.selectedTerrain;
 
     if (originalTerrain === newTerrain) {
@@ -135,7 +282,9 @@ export class MapScene extends Phaser.Scene {
         continue;
       }
 
-      if (this.map[row][column].terrain !== originalTerrain) {
+      if (
+        this.layers[this.currentLayer][row][column].terrain !== originalTerrain
+      ) {
         continue;
       }
 
@@ -146,10 +295,14 @@ export class MapScene extends Phaser.Scene {
         newTerrain,
       });
 
-      this.map[row][column].terrain = newTerrain;
+      this.layers[this.currentLayer][row][column].terrain = newTerrain;
 
-      this.drawTile(this.graphics, row, column);
-
+      this.drawTile(
+        this.layerGraphics[this.currentLayer],
+        this.currentLayer,
+        row,
+        column,
+      );
       queue.push([row - 1, column]);
       queue.push([row + 1, column]);
       queue.push([row, column - 1]);
@@ -170,9 +323,15 @@ export class MapScene extends Phaser.Scene {
     }
 
     for (const change of action.changes) {
-      this.map[change.row][change.column].terrain = change.previousTerrain;
+      this.layers[this.currentLayer][change.row][change.column].terrain =
+        change.previousTerrain;
 
-      this.drawTile(this.graphics, change.row, change.column);
+      this.drawTile(
+        this.layerGraphics[this.currentLayer],
+        this.currentLayer,
+        change.row,
+        change.column,
+      );
     }
 
     this.redoStack.push(action);
@@ -186,41 +345,255 @@ export class MapScene extends Phaser.Scene {
     }
 
     for (const change of action.changes) {
-      this.map[change.row][change.column].terrain = change.newTerrain;
+      this.layers[this.currentLayer][change.row][change.column].terrain =
+        change.newTerrain;
 
-      this.drawTile(this.graphics, change.row, change.column);
+      this.drawTile(
+        this.layerGraphics[this.currentLayer],
+        this.currentLayer,
+        change.row,
+        change.column,
+      );
     }
 
     this.undoStack.push(action);
   }
 
-  create() {
+  private redrawCurrentLayer() {
+    this.updateLayerPositions();
+
+    this.redrawLayer(this.currentLayer);
+
+    this.bringCurrentLayerToFront();
+  }
+
+  private getLayerGraphics(layer: number) {
+    return this.layerGraphics[layer];
+  }
+
+  private getLayerOffset(layer: number) {
+    const difference = layer - this.currentLayer;
+
+    // Current floor
+    if (difference === 0) {
+      return {
+        offsetX: 120,
+        offsetY: 0,
+        scale: 1,
+      };
+    }
+
+    // Previous floor
+    if (difference === -1) {
+      return {
+        offsetX: 0,
+        offsetY: 270,
+        scale: 0.25,
+      };
+    }
+
+    // Next floor
+    if (difference === 1) {
+      return {
+        offsetX: 780,
+        offsetY: 270,
+        scale: 0.25,
+      };
+    }
+
+    // Everything else is hidden
+    return {
+      offsetX: -10000,
+      offsetY: 0,
+      scale: 1,
+    };
+  }
+
+  private updateLayerPositions() {
+    for (let layer = 0; layer < this.layerGraphics.length; layer++) {
+      const { offsetX, offsetY, scale } = this.getLayerOffset(layer);
+      this.layerGraphics[layer].setPosition(offsetX, offsetY);
+      this.layerGraphics[layer].setScale(scale);
+    }
+  }
+
+  private redrawLayer(layer: number) {
+    const graphics = this.layerGraphics[layer];
+
+    graphics.clear();
+
+    graphics.lineStyle(1, 0x555555);
+
     for (let row = 0; row < gridSize; row++) {
-      this.map[row] = [];
+      for (let column = 0; column < gridSize; column++) {
+        const tile = this.layers[layer][row][column];
+
+        const x = column * cellSize;
+        const y = row * cellSize;
+
+        graphics.fillStyle(0x1e1e1e);
+        graphics.fillRect(x, y, cellSize, cellSize);
+
+        if (tile.terrain === "floor") {
+          graphics.fillStyle(0xaaaaaa);
+          graphics.fillRect(x, y, cellSize, cellSize);
+        }
+
+        if (tile.terrain === "wall") {
+          graphics.fillStyle(0x555555);
+          graphics.fillRect(x, y, cellSize, cellSize);
+        }
+
+        if (tile.terrain === "water") {
+          graphics.fillStyle(0x3366aa);
+          graphics.fillRect(x, y, cellSize, cellSize);
+        }
+
+        if (tile.terrain === "grass") {
+          graphics.fillStyle(0x7cfc00);
+          graphics.fillRect(x, y, cellSize, cellSize);
+        }
+
+        if (tile.terrain === "mud") {
+          graphics.fillStyle(0x6b4423);
+          graphics.fillRect(x, y, cellSize, cellSize);
+        }
+
+        if (tile.terrain === "lava") {
+          graphics.fillStyle(0xa83232);
+          graphics.fillRect(x, y, cellSize, cellSize);
+        }
+
+        if (tile.terrain === "sand") {
+          graphics.fillStyle(0xd6b83d);
+          graphics.fillRect(x, y, cellSize, cellSize);
+        }
+
+        graphics.lineStyle(1, 0x555555);
+        graphics.strokeRect(x, y, cellSize, cellSize);
+      }
+    }
+  }
+
+  private bringCurrentLayerToFront() {
+    for (let layer = 0; layer < this.layerGraphics.length; layer++) {
+      this.layerGraphics[layer].setDepth(layer);
+    }
+
+    this.layerGraphics[this.currentLayer].setDepth(
+      this.layerGraphics.length + 1,
+    );
+  }
+
+  private updateLayerCounter() {
+    const currentLayerElement =
+      document.querySelector<HTMLSpanElement>("#current-layer");
+
+    if (currentLayerElement) {
+      currentLayerElement.textContent = String(this.currentLayer + 1);
+    }
+  }
+
+  private getPointerTile(pointer: Phaser.Input.Pointer, layer: number) {
+    const graphics = this.layerGraphics[layer];
+    const scale = graphics.scaleX;
+    const column = Math.floor((pointer.x - graphics.x) / (cellSize * scale));
+    const row = Math.floor((pointer.y - graphics.y) / (cellSize * scale));
+    return { row, column };
+  }
+
+  private changeLayer(layer: number) {
+    if (layer < 0 || layer >= this.layers.length) {
+      return;
+    }
+
+    this.currentLayer = layer;
+
+    this.updateLayerPositions();
+    this.bringCurrentLayerToFront();
+    this.updateLayerCounter();
+
+    console.log(`Selected layer: ${this.currentLayer + 1}`);
+  }
+
+  private previousLayer() {
+    this.changeLayer(this.currentLayer - 1);
+  }
+
+  private nextLayer() {
+    this.changeLayer(this.currentLayer + 1);
+  }
+
+  private addLayer() {
+    const newLayer: Tile[][] = [];
+
+    for (let row = 0; row < gridSize; row++) {
+      newLayer[row] = [];
 
       for (let column = 0; column < gridSize; column++) {
-        this.map[row][column] = {
+        newLayer[row][column] = {
           terrain: "empty",
         };
       }
     }
 
-    this.graphics = this.add.graphics();
-    this.previewGraphics = this.add.graphics();
+    this.layers.push(newLayer);
 
-    this.graphics.lineStyle(1, 0x555555);
+    const graphics = this.add.graphics();
+    this.layerGraphics.push(graphics);
 
-    for (let row = 0; row < gridSize; row++) {
-      for (let column = 0; column < gridSize; column++) {
-        const x = column * cellSize;
-        const y = row * cellSize;
+    this.redrawLayer(this.layers.length - 1);
+    this.updateLayerPositions();
+    this.bringCurrentLayerToFront();
+    this.updateLayerCounter();
+    this.currentLayer = this.layers.length - 1;
 
-        this.graphics.strokeRect(x, y, cellSize, cellSize);
-      }
+    this.updateLayerPositions();
+    this.bringCurrentLayerToFront();
+    this.updateLayerCounter();
+  }
+
+  private removeLayer() {
+    // Don't allow deleting the last layer
+    if (this.layers.length <= 1) {
+      return;
     }
+
+    const graphics = this.layerGraphics.pop();
+
+    if (graphics) {
+      graphics.destroy();
+    }
+
+    this.layers.pop();
+
+    // If the current layer was the last layer, move to the previous one
+    if (this.currentLayer >= this.layers.length) {
+      this.currentLayer = this.layers.length - 1;
+    }
+
+    this.updateLayerPositions();
+    this.bringCurrentLayerToFront();
+    this.updateLayerCounter();
+  }
+
+  create() {
+    this.addLayer();
+
+    this.previewGraphics = this.add.graphics();
+    this.previewGraphics.setDepth(100);
+
+    for (let layer = 0; layer < this.layers.length; layer++) {
+      const graphics = this.add.graphics();
+
+      this.layerGraphics[layer] = graphics;
+
+      this.redrawLayer(layer);
+    }
+
+    this.updateLayerPositions();
     this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-      const column = Math.floor(pointer.x / cellSize);
-      const row = Math.floor(pointer.y / cellSize);
+      const { row, column } = this.getPointerTile(pointer, this.currentLayer);
 
       if (row < 0 || row >= gridSize || column < 0 || column >= gridSize) {
         return;
@@ -273,8 +646,7 @@ export class MapScene extends Phaser.Scene {
         this.startPaintedRow !== null &&
         this.startPaintedColumn !== null
       ) {
-        const column = Math.floor(pointer.x / cellSize);
-        const row = Math.floor(pointer.y / cellSize);
+        const { row, column } = this.getPointerTile(pointer, this.currentLayer);
 
         this.drawRectanglePreview(
           this.startPaintedRow,
@@ -295,8 +667,7 @@ export class MapScene extends Phaser.Scene {
         this.startPaintedRow !== null &&
         this.startPaintedColumn !== null
       ) {
-        const column = Math.floor(pointer.x / cellSize);
-        const row = Math.floor(pointer.y / cellSize);
+        const { row, column } = this.getPointerTile(pointer, this.currentLayer);
 
         this.fillRectangle(
           this.startPaintedRow,
@@ -324,6 +695,7 @@ export class MapScene extends Phaser.Scene {
       this.startPaintedRow = null;
       this.startPaintedColumn = null;
     });
+
     const buttons =
       document.querySelectorAll<HTMLButtonElement>("#toolbar button");
 
@@ -347,7 +719,8 @@ export class MapScene extends Phaser.Scene {
 
       for (let row = 0; row < gridSize; row++) {
         for (let column = 0; column < gridSize; column++) {
-          const previousTerrain = this.map[row][column].terrain;
+          const previousTerrain =
+            this.layers[this.currentLayer][row][column].terrain;
 
           if (previousTerrain !== "empty") {
             action.changes.push({
@@ -357,7 +730,7 @@ export class MapScene extends Phaser.Scene {
               newTerrain: "empty",
             });
 
-            this.map[row][column].terrain = "empty";
+            this.layers[this.currentLayer][row][column].terrain = "empty";
           }
         }
       }
@@ -367,18 +740,7 @@ export class MapScene extends Phaser.Scene {
         this.redoStack = [];
       }
 
-      this.graphics.clear();
-
-      this.graphics.lineStyle(1, 0x555555);
-
-      for (let row = 0; row < gridSize; row++) {
-        for (let column = 0; column < gridSize; column++) {
-          const x = column * cellSize;
-          const y = row * cellSize;
-
-          this.graphics.strokeRect(x, y, cellSize, cellSize);
-        }
-      }
+      this.redrawLayer(this.currentLayer);
     });
 
     const toolButtons =
@@ -405,126 +767,35 @@ export class MapScene extends Phaser.Scene {
         this.redo();
       }
     });
-  }
-  private drawTile(
-    graphics: Phaser.GameObjects.Graphics,
-    row: number,
-    column: number,
-  ) {
-    const tile = this.map[row][column];
 
-    const x = column * cellSize;
-    const y = row * cellSize;
+    const previousLayerButton =
+      document.querySelector<HTMLButtonElement>("#previous-layer");
 
-    // Clear the tile
-    graphics.fillStyle(0x1e1e1e);
-    graphics.fillRect(x, y, cellSize, cellSize);
+    const nextLayerButton =
+      document.querySelector<HTMLButtonElement>("#next-layer");
 
-    if (tile.terrain === "floor") {
-      graphics.fillStyle(0xaaaaaa);
-      graphics.fillRect(x, y, cellSize, cellSize);
-    }
+    const addLayerButton =
+      document.querySelector<HTMLButtonElement>("#add-layer");
 
-    if (tile.terrain === "wall") {
-      graphics.fillStyle(0x555555);
-      graphics.fillRect(x, y, cellSize, cellSize);
-    }
+    const removeLayerButton =
+      document.querySelector<HTMLButtonElement>("#remove-layer");
 
-    if (tile.terrain === "water") {
-      graphics.fillStyle(0x3366aa);
-      graphics.fillRect(x, y, cellSize, cellSize);
-    }
+    addLayerButton?.addEventListener("click", () => {
+      this.addLayer();
+    });
 
-    if (tile.terrain === "grass") {
-      graphics.fillStyle(0x7cfc00);
-      graphics.fillRect(x, y, cellSize, cellSize);
-    }
+    removeLayerButton?.addEventListener("click", () => {
+      this.removeLayer();
+    });
 
-    if (tile.terrain === "mud") {
-      graphics.fillStyle(0x6b4423);
-      graphics.fillRect(x, y, cellSize, cellSize);
-    }
+    previousLayerButton?.addEventListener("click", () => {
+      this.previousLayer();
+    });
 
-    if (tile.terrain === "lava") {
-      graphics.fillStyle(0xa83232);
-      graphics.fillRect(x, y, cellSize, cellSize);
-    }
+    nextLayerButton?.addEventListener("click", () => {
+      this.nextLayer();
+    });
 
-    if (tile.terrain === "sand") {
-      graphics.fillStyle(0xd6b83d);
-      graphics.fillRect(x, y, cellSize, cellSize);
-    }
-
-    // Draw the grid line again
-    graphics.lineStyle(1, 0x555555);
-    graphics.strokeRect(x, y, cellSize, cellSize);
-  }
-
-  private paintTile(pointer: Phaser.Input.Pointer) {
-    const column = Math.floor(pointer.x / cellSize);
-    const row = Math.floor(pointer.y / cellSize);
-
-    if (row < 0 || row >= gridSize || column < 0 || column >= gridSize) {
-      return;
-    }
-
-    // First tile
-    if (this.lastPaintedRow === null || this.lastPaintedColumn === null) {
-      const previousTerrain = this.map[row][column].terrain;
-
-      if (previousTerrain !== this.selectedTerrain) {
-        this.currentAction?.changes.push({
-          row,
-          column,
-          previousTerrain,
-          newTerrain: this.selectedTerrain,
-        });
-
-        this.map[row][column].terrain = this.selectedTerrain;
-
-        this.drawTile(this.graphics, row, column);
-      }
-
-      this.lastPaintedRow = row;
-      this.lastPaintedColumn = column;
-
-      return;
-    }
-
-    const startRow = this.lastPaintedRow;
-    const startColumn = this.lastPaintedColumn;
-
-    const distance = Math.max(
-      Math.abs(row - startRow),
-      Math.abs(column - startColumn),
-    );
-
-    for (let i = 1; i <= distance; i++) {
-      const currentRow = Math.round(
-        startRow + ((row - startRow) * i) / distance,
-      );
-
-      const currentColumn = Math.round(
-        startColumn + ((column - startColumn) * i) / distance,
-      );
-
-      const previousTerrain = this.map[currentRow][currentColumn].terrain;
-
-      if (previousTerrain !== this.selectedTerrain) {
-        this.currentAction?.changes.push({
-          row: currentRow,
-          column: currentColumn,
-          previousTerrain,
-          newTerrain: this.selectedTerrain,
-        });
-
-        this.map[currentRow][currentColumn].terrain = this.selectedTerrain;
-
-        this.drawTile(this.graphics, currentRow, currentColumn);
-      }
-    }
-
-    this.lastPaintedRow = row;
-    this.lastPaintedColumn = column;
+    this.bringCurrentLayerToFront();
   }
 }
