@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { CharacterManager } from "../characters/CharacterManager";
+import { ObjectManager } from "./ObjectManager";
 
 type Terrain =
   | "empty"
@@ -11,7 +12,13 @@ type Terrain =
   | "lava"
   | "sand";
 
-type Tool = "brush" | "rectangle" | "fill" | "character" | "character-erase";
+type Tool =
+  | "brush"
+  | "rectangle"
+  | "fill"
+  | "character"
+  | "character-erase"
+  | "object";
 
 interface Tile {
   terrain: Terrain;
@@ -54,6 +61,8 @@ export class MapScene extends Phaser.Scene {
   private currentAction: MapAction | null = null;
 
   private characterManager!: CharacterManager;
+
+  private objectManager!: ObjectManager;
 
   constructor() {
     super("MapScene");
@@ -518,6 +527,7 @@ export class MapScene extends Phaser.Scene {
     this.updateLayerCounter();
 
     this.characterManager.updateAllCharacterPositions();
+    this.objectManager.updateAllObjectPositions();
 
     console.log(`Selected layer: ${this.currentLayer + 1}`);
   }
@@ -599,6 +609,13 @@ export class MapScene extends Phaser.Scene {
       this,
       (layer) => this.layerGraphics[layer],
     );
+
+    //Create Object
+    this.objectManager = new ObjectManager(
+      this,
+      (layer) => this.layerGraphics[layer],
+    );
+
     // Preview graphics
     this.previewGraphics = this.add.graphics();
     this.previewGraphics.setDepth(100);
@@ -624,6 +641,28 @@ export class MapScene extends Phaser.Scene {
           this.characterManager.startDragging(character);
         } else {
           this.characterManager.addCharacter(row, column, this.currentLayer);
+        }
+
+        return;
+      }
+
+      // Object
+      if (this.selectedTool === "object") {
+        const object = this.objectManager.getObjectAt(
+          row,
+          column,
+          this.currentLayer,
+        );
+
+        if (object) {
+          this.objectManager.startDragging(object);
+        } else {
+          this.objectManager.addObject(
+            row,
+            column,
+            this.currentLayer,
+            "boulder",
+          );
         }
 
         return;
@@ -694,6 +733,20 @@ export class MapScene extends Phaser.Scene {
         return;
       }
 
+      if (this.selectedTool === "object" && this.objectManager.isDragging()) {
+        if (!pointer.isDown) {
+          return;
+        }
+
+        const { row, column } = this.getPointerTile(pointer, this.currentLayer);
+
+        if (row >= 0 && row < gridSize && column >= 0 && column < gridSize) {
+          this.objectManager.updateDraggingPosition(row, column);
+        }
+
+        return;
+      }
+
       if (!this.isPainting || !pointer.isDown) {
         return;
       }
@@ -724,6 +777,11 @@ export class MapScene extends Phaser.Scene {
         this.characterManager.isDragging()
       ) {
         this.characterManager.stopDragging();
+        return;
+      }
+
+      if (this.selectedTool === "object" && this.objectManager.isDragging()) {
+        this.objectManager.stopDragging();
         return;
       }
 
@@ -809,7 +867,7 @@ export class MapScene extends Phaser.Scene {
     });
 
     const toolButtons = document.querySelectorAll<HTMLButtonElement>(
-      "#tools button[data-tool], #character-bar button[data-tool]",
+      "#tools button, #character-bar button, #object-bar button",
     );
 
     const eraseAllCharactersButton = document.querySelector<HTMLButtonElement>(

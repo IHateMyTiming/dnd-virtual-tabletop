@@ -14,9 +14,9 @@ The project is currently focused on building the core virtual tabletop and map e
 
 - [x] 30×30 editable grid
 - [x] Terrain painting and editing
-- [ ] Multi-level terrain / elevation
+- [x] Multi-level terrain / elevation
 - [ ] Stairs, climbing, jumping, and flying
-- [ ] Player and enemy tokens
+- [] Player and enemy tokens
 - [ ] Character movement and movement rules
 - [ ] Save and load maps
 - [ ] Multiplayer rooms
