@@ -2,6 +2,10 @@ import Phaser from "phaser";
 
 import { MapScene } from "./game/MapScene";
 
+import { setupTranslations } from "./i18n";
+
+setupTranslations();
+
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
 

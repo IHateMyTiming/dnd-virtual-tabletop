@@ -1,5 +1,4 @@
 <!doctype html>
-
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -9,9 +8,14 @@
   </head>
 
   <body>
+    <select id="language">
+      <option value="en">English</option>
+      <option value="pt">Português</option>
+    </select>
+
     <button id="remove-layer">−</button>
 
-    <span>Layer</span>
+    <span data-i18n="layer">Layer</span>
 
     <button id="add-layer">+</button>
 
@@ -23,20 +27,20 @@
 
     <div id="toolbar">
       <div id="tools">
-        <button data-tool="brush">Brush</button>
-        <button data-tool="rectangle">Rectangle</button>
-        <button data-tool="fill">Fill</button>
+        <button data-tool="brush" data-i18n="brush">Brush</button>
+        <button data-tool="rectangle" data-i18n="rectangle">Rectangle</button>
+        <button data-tool="fill" data-i18n="fill">Fill</button>
       </div>
 
-      <button data-terrain="floor">Floor</button>
-      <button data-terrain="wall">Wall</button>
-      <button data-terrain="water">Water</button>
-      <button data-terrain="grass">Grass</button>
-      <button data-terrain="mud">Mud</button>
-      <button data-terrain="lava">Fire</button>
-      <button data-terrain="sand">Sand</button>
-      <button data-terrain="empty">Erase</button>
-      <button id="empty-all">Erase All</button>
+      <button data-terrain="floor" data-i18n="floor">Floor</button>
+      <button data-terrain="wall" data-i18n="wall">Wall</button>
+      <button data-terrain="water" data-i18n="water">Water</button>
+      <button data-terrain="grass" data-i18n="grass">Grass</button>
+      <button data-terrain="mud" data-i18n="mud">Mud</button>
+      <button data-terrain="lava" data-i18n="fire">Fire</button>
+      <button data-terrain="sand" data-i18n="sand">Sand</button>
+      <button data-terrain="empty" data-i18n="erase">Erase</button>
+      <button id="empty-all" data-i18n="eraseAll">Erase All</button>
     </div>
 
     <div id="game"></div>
