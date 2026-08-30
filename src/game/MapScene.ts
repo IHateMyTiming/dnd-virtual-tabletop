@@ -559,15 +559,17 @@ export class MapScene extends Phaser.Scene {
       return;
     }
 
-    const graphics = this.layerGraphics.pop();
+    // Remove the CURRENT layer
+    const graphics = this.layerGraphics.splice(this.currentLayer, 1)[0];
 
     if (graphics) {
       graphics.destroy();
     }
 
-    this.layers.pop();
+    this.layers.splice(this.currentLayer, 1);
 
-    // If the current layer was the last layer, move to the previous one
+    // If we deleted the last layer,
+    // move to the new last layer
     if (this.currentLayer >= this.layers.length) {
       this.currentLayer = this.layers.length - 1;
     }
@@ -575,6 +577,10 @@ export class MapScene extends Phaser.Scene {
     this.updateLayerPositions();
     this.bringCurrentLayerToFront();
     this.updateLayerCounter();
+
+    // Clear undo/redo because the layer structure changed
+    this.undoStack = [];
+    this.redoStack = [];
   }
 
   create() {
