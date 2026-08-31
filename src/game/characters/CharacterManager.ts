@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import type { Character } from "./Character";
 
 interface CharacterAction {
-  type: "add" | "move" | "remove" | "remove-all";
+  type: "add" | "remove" | "move";
   character: Character;
   previousRow?: number;
   previousColumn?: number;
@@ -21,15 +21,13 @@ export class CharacterManager {
 
   private characterGraphics = new Map<string, Phaser.GameObjects.Graphics>();
 
-  private selectedCharacter: Character | null = null;
-
   private draggingCharacter: Character | null = null;
-
-  private undoStack: CharacterAction[] = [];
-  private redoStack: CharacterAction[] = [];
 
   private dragStartRow: number | null = null;
   private dragStartColumn: number | null = null;
+
+  private undoStack: CharacterAction[] = [];
+  private redoStack: CharacterAction[] = [];
 
   constructor(
     scene: Phaser.Scene,
@@ -40,6 +38,11 @@ export class CharacterManager {
   }
 
   addCharacter(row: number, column: number, layer: number, name = "Character") {
+    // Don't allow two characters on the same tile
+    if (this.getCharacterAt(row, column, layer)) {
+      return null;
+    }
+
     const character: Character = {
       id: crypto.randomUUID(),
       name,
@@ -62,67 +65,10 @@ export class CharacterManager {
     return character;
   }
 
-  removeCharacter(character: Character) {
-    const index = this.characters.findIndex(
-      (currentCharacter) => currentCharacter.id === character.id,
-    );
-
-    if (index === -1) {
-      return;
-    }
-
-    this.characters.splice(index, 1);
-
-    const graphics = this.characterGraphics.get(character.id);
-
-    if (graphics) {
-      graphics.destroy();
-      this.characterGraphics.delete(character.id);
-    }
-
-    if (this.selectedCharacter?.id === character.id) {
-      this.selectedCharacter = null;
-    }
-
-    this.undoStack.push({
-      type: "remove",
-      character,
-    });
-
-    this.redoStack = [];
-  }
-
-  removeAllCharacters() {
-    if (this.characters.length === 0) {
-      return;
-    }
-
-    const charactersToRemove = [...this.characters];
-
-    for (const character of charactersToRemove) {
-      const graphics = this.characterGraphics.get(character.id);
-
-      if (graphics) {
-        graphics.destroy();
-        this.characterGraphics.delete(character.id);
-      }
-    }
-
-    this.characters = [];
-    this.selectedCharacter = null;
-
-    this.undoStack.push({
-      type: "remove-all",
-      characters: charactersToRemove,
-    });
-
-    this.redoStack = [];
-  }
-
   private drawCharacter(character: Character) {
     const graphics = this.scene.add.graphics();
 
-    this.drawCharacterGraphic(graphics, character);
+    this.drawCharacterGraphic(graphics);
 
     this.characterGraphics.set(character.id, graphics);
 
@@ -174,6 +120,16 @@ export class CharacterManager {
     }
   }
 
+  eraseAt(row: number, column: number, layer: number) {
+    const character = this.getCharacterAt(row, column, layer);
+
+    if (!character) {
+      return;
+    }
+
+    this.removeCharacter(character);
+  }
+
   getCharacters() {
     return this.characters;
   }
@@ -189,19 +145,40 @@ export class CharacterManager {
     );
   }
 
-  selectCharacter(character: Character) {
-    this.selectedCharacter = character;
-
-    console.log(`Selected character: ${character.name}`);
-  }
-
   startDragging(character: Character) {
     this.draggingCharacter = character;
 
     this.dragStartRow = character.row;
     this.dragStartColumn = character.column;
+  }
 
-    this.selectCharacter(character);
+  isDragging() {
+    return this.draggingCharacter !== null;
+  }
+
+  updateDraggingPosition(row: number, column: number) {
+    if (!this.draggingCharacter) {
+      return;
+    }
+
+    // Don't allow two characters on the same tile
+    const existingCharacter = this.getCharacterAt(
+      row,
+      column,
+      this.draggingCharacter.layer,
+    );
+
+    if (
+      existingCharacter &&
+      existingCharacter.id !== this.draggingCharacter.id
+    ) {
+      return;
+    }
+
+    this.draggingCharacter.row = row;
+    this.draggingCharacter.column = column;
+
+    this.updateCharacterPosition(this.draggingCharacter);
   }
 
   stopDragging() {
@@ -234,23 +211,38 @@ export class CharacterManager {
     this.dragStartColumn = null;
   }
 
-  isDragging() {
-    return this.draggingCharacter !== null;
-  }
+  removeCharacter(character: Character) {
+    const index = this.characters.findIndex(
+      (currentCharacter) => currentCharacter.id === character.id,
+    );
 
-  updateDraggingPosition(row: number, column: number) {
-    if (!this.draggingCharacter) {
+    if (index === -1) {
       return;
     }
 
-    this.draggingCharacter.row = row;
-    this.draggingCharacter.column = column;
+    this.characters.splice(index, 1);
 
-    this.updateCharacterPosition(this.draggingCharacter);
+    const graphics = this.characterGraphics.get(character.id);
+
+    if (graphics) {
+      graphics.destroy();
+      this.characterGraphics.delete(character.id);
+    }
+
+    this.undoStack.push({
+      type: "remove",
+      character,
+    });
+
+    this.redoStack = [];
   }
 
-  getSelectedCharacter() {
-    return this.selectedCharacter;
+  removeAllCharacters() {
+    const characters = [...this.characters];
+
+    for (const character of characters) {
+      this.removeCharacter(character);
+    }
   }
 
   undo() {
@@ -260,6 +252,7 @@ export class CharacterManager {
       return;
     }
 
+    // Undo ADD
     if (action.type === "add") {
       const index = this.characters.findIndex(
         (character) => character.id === action.character.id,
@@ -273,29 +266,25 @@ export class CharacterManager {
 
       if (graphics) {
         graphics.destroy();
+
         this.characterGraphics.delete(action.character.id);
       }
     }
 
+    // Undo REMOVE
     if (action.type === "remove") {
-      const index = this.characters.findIndex(
+      const exists = this.characters.some(
         (character) => character.id === action.character.id,
       );
 
-      if (index === -1) {
+      if (!exists) {
         this.characters.push(action.character);
       }
 
       this.drawCharacter(action.character);
     }
 
-    if (action.type === "remove-all") {
-      for (const character of action.characters!) {
-        this.characters.push(character);
-        this.drawCharacter(character);
-      }
-    }
-
+    // Undo MOVE
     if (action.type === "move") {
       action.character.row = action.previousRow!;
       action.character.column = action.previousColumn!;
@@ -313,12 +302,20 @@ export class CharacterManager {
       return;
     }
 
+    // Redo ADD
     if (action.type === "add") {
-      this.characters.push(action.character);
+      const exists = this.characters.some(
+        (character) => character.id === action.character.id,
+      );
+
+      if (!exists) {
+        this.characters.push(action.character);
+      }
 
       this.drawCharacter(action.character);
     }
 
+    // Redo REMOVE
     if (action.type === "remove") {
       const index = this.characters.findIndex(
         (character) => character.id === action.character.id,
@@ -332,32 +329,12 @@ export class CharacterManager {
 
       if (graphics) {
         graphics.destroy();
+
         this.characterGraphics.delete(action.character.id);
       }
-
-      if (this.selectedCharacter?.id === action.character.id) {
-        this.selectedCharacter = null;
-      }
     }
 
-    if (action.type === "remove-all") {
-      for (const character of action.characters!) {
-        const graphics = this.characterGraphics.get(character.id);
-
-        if (graphics) {
-          graphics.destroy();
-          this.characterGraphics.delete(character.id);
-        }
-      }
-
-      this.characters = this.characters.filter(
-        (character) =>
-          !action.characters!.some((removed) => removed.id === character.id),
-      );
-
-      this.selectedCharacter = null;
-    }
-
+    // Redo MOVE
     if (action.type === "move") {
       action.character.row = action.newRow!;
       action.character.column = action.newColumn!;

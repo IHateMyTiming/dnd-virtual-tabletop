@@ -43,6 +43,7 @@
       <button id="empty-all" data-i18n="eraseAll">Erase All</button>
     </div>
 
+    //REMINDER TO TAKE THE BR OF THE CODE LATER
     <div id="character-bar">
       <button data-tool="character" data-i18n="addCharacter">
         Add / Move Character
@@ -56,7 +57,20 @@
     </div>
 
     <div id="object-bar">
-      <button data-tool="object">🪨 Boulder</button>
+      <span>Objects</span>
+      <br />
+
+      <button data-object-tool="object-brush" data-i18n="brush">Brush</button>
+      <button data-object-tool="object-rectangle" data-i18n="rectangle">
+        Rectangle
+      </button>
+      <button data-object-tool="object-fill" data-i18n="fill">Fill</button>
+      <button data-object-tool="object-erase" data-i18n="erase">Erase</button>
+      <button id="erase-all-objects" data-i18n="eraseAll">Erase All</button>
+
+      <br />
+      <button data-object-type="boulder">Boulder</button>
+      <button data-object-type="tree">Tree</button>
     </div>
 
     <div id="game"></div>

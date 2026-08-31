@@ -18,6 +18,7 @@ const translations = {
     addCharacter: "Add / Move Character",
     eraseCharacter: "Erase Character",
     eraseAllCharacters: "Erase All Characters",
+    boulder: "Boulder",
   },
 
   pt: {
@@ -37,6 +38,7 @@ const translations = {
     addCharacter: "Adiciona / Mova Personagem",
     eraseCharacter: "Apagar Personagem",
     eraseAllCharacters: "Apagar todos os Personagens",
+    boulder: "Pedra",
   },
 };
 
