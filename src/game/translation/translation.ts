@@ -2,6 +2,8 @@ export type Language = "en" | "pt";
 
 export const translations = {
   en: {
+    //GRID
+    map: "Map size",
     //Terrain
     layer: "Layer",
     brush: "Brush",
@@ -43,6 +45,8 @@ export const translations = {
   },
 
   pt: {
+    //MAPA
+    map: "Tamanho do Mapa",
     //Terreno
     layer: "Pisos",
     brush: "Pincel",

@@ -4,7 +4,7 @@ import { ObjectManager } from "./ObjectManager";
 import type { MapObjectType } from "./MapObjects";
 import { InteractionManager } from "../input/InteractionManager";
 import { translations, getCurrentLanguage } from "../translation/translation";
-import { gridSize, setGridSize } from "./Grid";
+import { gridWidth, gridHeight, setGridSize } from "./Grid";
 
 type Terrain =
   | "empty"
@@ -146,7 +146,7 @@ export class MapScene extends Phaser.Scene {
   private paintTile(pointer: Phaser.Input.Pointer) {
     const { row, column } = this.getPointerTile(pointer, this.currentLayer);
 
-    if (row < 0 || row >= gridSize || column < 0 || column >= gridSize) {
+    if (row < 0 || row >= gridHeight || column < 0 || column >= gridWidth) {
       return;
     }
 
@@ -215,11 +215,11 @@ export class MapScene extends Phaser.Scene {
   ) {
     const minRow = Math.max(0, Math.min(startRow, endRow));
 
-    const maxRow = Math.min(gridSize - 1, Math.max(startRow, endRow));
+    const maxRow = Math.min(gridHeight - 1, Math.max(startRow, endRow));
 
     const minColumn = Math.max(0, Math.min(startColumn, endColumn));
 
-    const maxColumn = Math.min(gridSize - 1, Math.max(startColumn, endColumn));
+    const maxColumn = Math.min(gridWidth - 1, Math.max(startColumn, endColumn));
 
     for (let row = minRow; row <= maxRow; row++) {
       for (let column = minColumn; column <= maxColumn; column++) {
@@ -238,11 +238,11 @@ export class MapScene extends Phaser.Scene {
 
     const minRow = Math.max(0, Math.min(startRow, endRow));
 
-    const maxRow = Math.min(gridSize - 1, Math.max(startRow, endRow));
+    const maxRow = Math.min(gridHeight - 1, Math.max(startRow, endRow));
 
     const minColumn = Math.max(0, Math.min(startColumn, endColumn));
 
-    const maxColumn = Math.min(gridSize - 1, Math.max(startColumn, endColumn));
+    const maxColumn = Math.min(gridWidth - 1, Math.max(startColumn, endColumn));
 
     const { offsetX, offsetY, scale } = this.getLayerOffset(this.currentLayer);
 
@@ -282,7 +282,7 @@ export class MapScene extends Phaser.Scene {
     while (queue.length > 0) {
       const [row, column] = queue.shift()!;
 
-      if (row < 0 || row >= gridSize || column < 0 || column >= gridSize) {
+      if (row < 0 || row >= gridHeight || column < 0 || column >= gridWidth) {
         continue;
       }
 
@@ -366,6 +366,7 @@ export class MapScene extends Phaser.Scene {
 
     this.undoStack.push(action);
   }
+
   private getLayerOffset(layer: number) {
     const difference = layer - this.currentLayer;
 
@@ -415,8 +416,8 @@ export class MapScene extends Phaser.Scene {
 
     graphics.clear();
 
-    for (let row = 0; row < gridSize; row++) {
-      for (let column = 0; column < gridSize; column++) {
+    for (let row = 0; row < gridHeight; row++) {
+      for (let column = 0; column < gridWidth; column++) {
         this.drawTile(graphics, layer, row, column);
       }
     }
@@ -482,10 +483,10 @@ export class MapScene extends Phaser.Scene {
   private addLayer() {
     const newLayer: Tile[][] = [];
 
-    for (let row = 0; row < gridSize; row++) {
+    for (let row = 0; row < gridHeight; row++) {
       newLayer[row] = [];
 
-      for (let column = 0; column < gridSize; column++) {
+      for (let column = 0; column < gridWidth; column++) {
         newLayer[row][column] = {
           terrain: "empty",
         };
@@ -535,7 +536,7 @@ export class MapScene extends Phaser.Scene {
   private handlePointerDown(pointer: Phaser.Input.Pointer) {
     const { row, column } = this.getPointerTile(pointer, this.currentLayer);
 
-    if (row < 0 || row >= gridSize || column < 0 || column >= gridSize) {
+    if (row < 0 || row >= gridHeight || column < 0 || column >= gridWidth) {
       return;
     }
 
@@ -662,9 +663,9 @@ export class MapScene extends Phaser.Scene {
 
       const valid =
         row >= 0 &&
-        row < gridSize &&
+        row < gridHeight &&
         column >= 0 &&
-        column < gridSize &&
+        column < gridWidth &&
         this.objectManager.canPlaceObject(
           row,
           column,
@@ -698,7 +699,7 @@ export class MapScene extends Phaser.Scene {
 
       const { row, column } = this.getPointerTile(pointer, this.currentLayer);
 
-      if (row >= 0 && row < gridSize && column >= 0 && column < gridSize) {
+      if (row >= 0 && row < gridHeight && column >= 0 && column < gridWidth) {
         this.characterManager.updateDraggingPosition(row, column);
       }
 
@@ -708,7 +709,7 @@ export class MapScene extends Phaser.Scene {
     if (this.selectedTool === "object-erase" && this.objectIsPainting) {
       const { row, column } = this.getPointerTile(pointer, this.currentLayer);
 
-      if (row >= 0 && row < gridSize && column >= 0 && column < gridSize) {
+      if (row >= 0 && row < gridHeight && column >= 0 && column < gridWidth) {
         this.objectManager.eraseAt(row, column, this.currentLayer);
       }
 
@@ -762,7 +763,7 @@ export class MapScene extends Phaser.Scene {
     if (this.selectedTool === "object-brush") {
       const { row, column } = this.getPointerTile(pointer, this.currentLayer);
 
-      if (row >= 0 && row < gridSize && column >= 0 && column < gridSize) {
+      if (row >= 0 && row < gridHeight && column >= 0 && column < gridWidth) {
         this.objectManager.addObject(
           row,
           column,
@@ -878,10 +879,6 @@ export class MapScene extends Phaser.Scene {
 
     // Create a new empty layer using the new grid size
     this.addLayer();
-
-    this.updateLayerPositions();
-    this.bringCurrentLayerToFront();
-    this.updateLayerCounter();
   }
 
   preload() {
@@ -959,8 +956,8 @@ export class MapScene extends Phaser.Scene {
         changes: [],
       };
 
-      for (let row = 0; row < gridSize; row++) {
-        for (let column = 0; column < gridSize; column++) {
+      for (let row = 0; row < gridHeight; row++) {
+        for (let column = 0; column < gridWidth; column++) {
           const previousTerrain =
             this.layers[this.currentLayer][row][column].terrain;
 
@@ -1204,14 +1201,19 @@ export class MapScene extends Phaser.Scene {
 
     //MAP GRID TOOL
 
+    // MAP GRID TOOL
+
     const mapSizeButton =
       document.querySelector<HTMLButtonElement>("#map-size");
 
     const mapSizePanel =
       document.querySelector<HTMLDivElement>("#map-size-panel");
 
-    const mapSizeInput =
-      document.querySelector<HTMLInputElement>("#map-size-input");
+    const mapWidthInput =
+      document.querySelector<HTMLInputElement>("#map-width-input");
+
+    const mapHeightInput =
+      document.querySelector<HTMLInputElement>("#map-height-input");
 
     const mapSizeApplyButton =
       document.querySelector<HTMLButtonElement>("#map-size-apply");
@@ -1223,11 +1225,12 @@ export class MapScene extends Phaser.Scene {
       document.querySelector<HTMLDivElement>("#map-size-error");
 
     mapSizeButton?.addEventListener("click", () => {
-      if (!mapSizePanel || !mapSizeInput) {
+      if (!mapSizePanel || !mapWidthInput || !mapHeightInput) {
         return;
       }
 
-      mapSizeInput.value = String(gridSize);
+      mapWidthInput.value = String(gridWidth);
+      mapHeightInput.value = String(gridHeight);
 
       if (mapSizeError) {
         mapSizeError.textContent = "";
@@ -1238,11 +1241,12 @@ export class MapScene extends Phaser.Scene {
     });
 
     mapSizeCancelButton?.addEventListener("click", () => {
-      if (!mapSizePanel || !mapSizeInput) {
+      if (!mapSizePanel || !mapWidthInput || !mapHeightInput) {
         return;
       }
 
-      mapSizeInput.value = String(gridSize);
+      mapWidthInput.value = String(gridWidth);
+      mapHeightInput.value = String(gridHeight);
 
       if (mapSizeError) {
         mapSizeError.textContent = "";
@@ -1253,16 +1257,20 @@ export class MapScene extends Phaser.Scene {
     });
 
     mapSizeApplyButton?.addEventListener("click", () => {
-      if (!mapSizePanel || !mapSizeInput) {
+      if (!mapSizePanel || !mapWidthInput || !mapHeightInput) {
         return;
       }
 
-      const newSize = Number(mapSizeInput.value);
+      const newWidth = Number(mapWidthInput.value);
+      const newHeight = Number(mapHeightInput.value);
 
-      if (!Number.isInteger(newSize) || newSize < 5 || newSize % 5 !== 0) {
+      const isValidDimension = (value: number) =>
+        Number.isInteger(value) && value >= 5 && value % 5 === 0;
+
+      if (!isValidDimension(newWidth) || !isValidDimension(newHeight)) {
         if (mapSizeError) {
           mapSizeError.textContent =
-            "Map size must be a whole number of at least 5 and must end in 0 or 5.";
+            "Map width and height must be whole numbers of at least 5 and must end in 0 or 5.";
 
           mapSizeError.style.display = "block";
         }
@@ -1270,7 +1278,7 @@ export class MapScene extends Phaser.Scene {
         return;
       }
 
-      if (newSize === gridSize) {
+      if (newWidth === gridWidth && newHeight === gridHeight) {
         mapSizePanel.style.display = "none";
         return;
       }
@@ -1283,7 +1291,7 @@ export class MapScene extends Phaser.Scene {
         return;
       }
 
-      setGridSize(newSize);
+      setGridSize(newWidth, newHeight);
 
       mapSizePanel.style.display = "none";
 
