@@ -32,7 +32,9 @@ export const translations = {
     //Error Handling
     invalidObjectSize:
       "Object overlaps another object or extends outside the map.",
-    invalidDimensions: "Width and height must be at least 1.",
+    invalidDimensions: "Width and height must be between 1 and 100.",
+    maxObjectSize: "Maximum size is 100.",
+    minObjectSize: "Minimum object size is 1.",
   },
 
   pt: {
@@ -66,7 +68,9 @@ export const translations = {
     //Mensagem de Erro
     invalidObjectSize:
       "O objeto sobrepõe outro objeto ou ultrapassa os limites do mapa.",
-    invalidDimensions: "Largura e altura devem ser no mínimo 1.",
+    invalidDimensions: "Largura e altura devem estar entre 1 e 100.",
+    maxObjectSize: "O tamanho máximo é 100.",
+    minObjectSize: "O tamanho mínimo do objeto é 1.",
   },
 };
 

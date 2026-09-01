@@ -998,6 +998,54 @@ export class MapScene extends Phaser.Scene {
         return;
       }
 
+      widthInput.addEventListener("input", () => {
+        const width = Number(widthInput.value);
+
+        if (width > 100) {
+          widthInput.value = "100";
+
+          if (objectSettingsError) {
+            objectSettingsError.textContent =
+              translations[getCurrentLanguage()].maxObjectSize;
+
+            objectSettingsError.style.display = "block";
+          }
+        } else if (width < 1) {
+          widthInput.value = "1";
+
+          if (objectSettingsError) {
+            objectSettingsError.textContent =
+              translations[getCurrentLanguage()].minObjectSize;
+
+            objectSettingsError.style.display = "block";
+          }
+        }
+      });
+
+      heightInput.addEventListener("input", () => {
+        const height = Number(heightInput.value);
+
+        if (height > 100) {
+          heightInput.value = "100";
+
+          if (objectSettingsError) {
+            objectSettingsError.textContent =
+              translations[getCurrentLanguage()].maxObjectSize;
+
+            objectSettingsError.style.display = "block";
+          }
+        } else if (height < 1) {
+          heightInput.value = "1";
+
+          if (objectSettingsError) {
+            objectSettingsError.textContent =
+              translations[getCurrentLanguage()].minObjectSize;
+
+            objectSettingsError.style.display = "block";
+          }
+        }
+      });
+
       if (panel.style.display === "block") {
         panel.style.display = "none";
         return;
@@ -1031,7 +1079,7 @@ export class MapScene extends Phaser.Scene {
       }
 
       // Invalid dimensions
-      if (width < 1 || height < 1) {
+      if (width < 1 || height < 1 || width > 100 || height > 100) {
         if (objectSettingsError) {
           objectSettingsError.textContent =
             translations[getCurrentLanguage()].invalidDimensions;
