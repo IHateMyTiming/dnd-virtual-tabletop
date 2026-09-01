@@ -4,6 +4,7 @@ import { ObjectManager } from "./ObjectManager";
 import type { MapObjectType } from "./MapObjects";
 import { InteractionManager } from "../input/InteractionManager";
 import { translations, getCurrentLanguage } from "../translation/translation";
+import { gridSize, setGridSize } from "./Grid";
 
 type Terrain =
   | "empty"
@@ -42,7 +43,6 @@ interface MapAction {
   changes: TileChange[];
 }
 
-const gridSize = 30;
 const cellSize = 24;
 
 export class MapScene extends Phaser.Scene {
@@ -844,6 +844,46 @@ export class MapScene extends Phaser.Scene {
     this.objectStartColumn = null;
   }
 
+  private resetMap() {
+    // Destroy existing layer graphics
+    for (const graphics of this.layerGraphics) {
+      graphics.destroy();
+    }
+
+    this.layerGraphics = [];
+    this.layers = [];
+
+    // Clear characters and objects
+    this.characterManager.removeAllCharacters();
+    this.objectManager.clearAllObjects();
+    // Reset map state
+    this.currentLayer = 0;
+
+    this.undoStack = [];
+    this.redoStack = [];
+
+    this.currentAction = null;
+
+    this.isPainting = false;
+    this.objectIsPainting = false;
+
+    this.lastPaintedRow = null;
+    this.lastPaintedColumn = null;
+
+    this.startPaintedRow = null;
+    this.startPaintedColumn = null;
+
+    this.objectStartRow = null;
+    this.objectStartColumn = null;
+
+    // Create a new empty layer using the new grid size
+    this.addLayer();
+
+    this.updateLayerPositions();
+    this.bringCurrentLayerToFront();
+    this.updateLayerCounter();
+  }
+
   preload() {
     this.load.image("boulder", "assets/objects/boulder.webp");
   }
@@ -1160,6 +1200,95 @@ export class MapScene extends Phaser.Scene {
       }
 
       this.undoTerrain();
+    });
+
+    //MAP GRID TOOL
+
+    const mapSizeButton =
+      document.querySelector<HTMLButtonElement>("#map-size");
+
+    const mapSizePanel =
+      document.querySelector<HTMLDivElement>("#map-size-panel");
+
+    const mapSizeInput =
+      document.querySelector<HTMLInputElement>("#map-size-input");
+
+    const mapSizeApplyButton =
+      document.querySelector<HTMLButtonElement>("#map-size-apply");
+
+    const mapSizeCancelButton =
+      document.querySelector<HTMLButtonElement>("#map-size-cancel");
+
+    const mapSizeError =
+      document.querySelector<HTMLDivElement>("#map-size-error");
+
+    mapSizeButton?.addEventListener("click", () => {
+      if (!mapSizePanel || !mapSizeInput) {
+        return;
+      }
+
+      mapSizeInput.value = String(gridSize);
+
+      if (mapSizeError) {
+        mapSizeError.textContent = "";
+        mapSizeError.style.display = "none";
+      }
+
+      mapSizePanel.style.display = "block";
+    });
+
+    mapSizeCancelButton?.addEventListener("click", () => {
+      if (!mapSizePanel || !mapSizeInput) {
+        return;
+      }
+
+      mapSizeInput.value = String(gridSize);
+
+      if (mapSizeError) {
+        mapSizeError.textContent = "";
+        mapSizeError.style.display = "none";
+      }
+
+      mapSizePanel.style.display = "none";
+    });
+
+    mapSizeApplyButton?.addEventListener("click", () => {
+      if (!mapSizePanel || !mapSizeInput) {
+        return;
+      }
+
+      const newSize = Number(mapSizeInput.value);
+
+      if (!Number.isInteger(newSize) || newSize < 5 || newSize % 5 !== 0) {
+        if (mapSizeError) {
+          mapSizeError.textContent =
+            "Map size must be a whole number of at least 5 and must end in 0 or 5.";
+
+          mapSizeError.style.display = "block";
+        }
+
+        return;
+      }
+
+      if (newSize === gridSize) {
+        mapSizePanel.style.display = "none";
+        return;
+      }
+
+      const confirmed = window.confirm(
+        "Changing the grid size will clear the current map. Any unsaved changes will be lost. Do you want to continue?",
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      setGridSize(newSize);
+
+      mapSizePanel.style.display = "none";
+
+      // Rebuild the map with the new grid size.
+      this.resetMap();
     });
 
     this.input.keyboard?.on("keydown-Y", (event: KeyboardEvent) => {

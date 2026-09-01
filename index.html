@@ -25,6 +25,19 @@
       <button id="next-layer">&gt;</button>
     </div>
 
+    <button id="map-size">Map Size</button>
+
+    <div id="map-size-panel" style="display: none">
+      <label for="map-size-input">Map Size</label>
+
+      <input id="map-size-input" type="number" min="5" step="5" value="30" />
+
+      <div id="map-size-error" style="display: none"></div>
+
+      <button id="map-size-apply">Apply</button>
+      <button id="map-size-cancel">Cancel</button>
+    </div>
+
     <div id="toolbar">
       <div id="tools">
         <button data-tool="brush" data-i18n="brush"></button>

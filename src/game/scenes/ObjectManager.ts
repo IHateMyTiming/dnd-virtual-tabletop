@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import type { MapObject } from "./MapObjects";
 import type { MapObjectType } from "./MapObjects";
+import { gridWidth, gridHeight } from "./Grid";
 
 interface ObjectAction {
   type: "add" | "remove";
@@ -154,13 +155,12 @@ export class ObjectManager {
     for (let r = row; r < row + height; r++) {
       for (let c = column; c < column + width; c++) {
         if (
-          r < 0 ||
-          r >= 30 ||
-          c < 0 ||
-          c >= 30 ||
-          this.getObjectAt(r, c, layer)
+          row < 0 ||
+          column < 0 ||
+          row + height > gridHeight ||
+          column + width > gridWidth
         ) {
-          return null;
+          return;
         }
       }
     }
@@ -405,7 +405,6 @@ export class ObjectManager {
     type: MapObject["type"] = "boulder",
     width = 1,
     height = 1,
-    gridSize = 30,
   ) {
     const actionObjects: MapObject[] = [];
 
@@ -417,7 +416,7 @@ export class ObjectManager {
     while (queue.length > 0) {
       const [row, column] = queue.shift()!;
 
-      if (row < 0 || row >= gridSize || column < 0 || column >= gridSize) {
+      if (row < 0 || row >= gridHeight || column < 0 || column >= gridWidth) {
         continue;
       }
 
@@ -453,8 +452,8 @@ export class ObjectManager {
     while (placedSomething) {
       placedSomething = false;
 
-      for (let row = 0; row < gridSize; row++) {
-        for (let column = 0; column < gridSize; column++) {
+      for (let row = 0; row < gridHeight; row++) {
+        for (let column = 0; column < gridWidth; column++) {
           // The top-left tile must be part of the fill area.
           if (!fillable.has(`${row},${column}`)) {
             continue;
@@ -470,8 +469,8 @@ export class ObjectManager {
               objectColumn++
             ) {
               if (
-                objectRow >= gridSize ||
-                objectColumn >= gridSize ||
+                objectRow >= gridHeight ||
+                objectColumn >= gridWidth ||
                 !fillable.has(`${objectRow},${objectColumn}`) ||
                 this.getObjectAt(objectRow, objectColumn, layer)
               ) {
@@ -543,15 +542,14 @@ export class ObjectManager {
     type: MapObject["type"] = "boulder",
     width = 1,
     height = 1,
-    gridSize = 30,
   ) {
     const minRow = Math.max(0, Math.min(startRow, endRow));
 
-    const maxRow = Math.min(gridSize - 1, Math.max(startRow, endRow));
+    const maxRow = Math.min(gridHeight - 1, Math.max(startRow, endRow));
 
     const minColumn = Math.max(0, Math.min(startColumn, endColumn));
 
-    const maxColumn = Math.min(gridSize - 1, Math.max(startColumn, endColumn));
+    const maxColumn = Math.min(gridWidth - 1, Math.max(startColumn, endColumn));
 
     const actionObjects: MapObject[] = [];
 
@@ -604,11 +602,10 @@ export class ObjectManager {
     graphics.clear();
 
     const minRow = Math.max(0, Math.min(startRow, endRow));
-    const maxRow = Math.min(29, Math.max(startRow, endRow));
+    const maxRow = Math.min(gridHeight - 1, Math.max(startRow, endRow));
 
     const minColumn = Math.max(0, Math.min(startColumn, endColumn));
-    const maxColumn = Math.min(29, Math.max(startColumn, endColumn));
-
+    const maxColumn = Math.min(gridWidth - 1, Math.max(startColumn, endColumn));
     const layerGraphics = this.getLayerGraphics(layer);
 
     const scale = layerGraphics.scaleX;
@@ -734,8 +731,8 @@ export class ObjectManager {
     maskGraphics.fillRect(
       layerGraphics.x,
       layerGraphics.y,
-      30 * cellSize * layerGraphics.scaleX,
-      30 * cellSize * layerGraphics.scaleY,
+      gridWidth * cellSize * layerGraphics.scaleX,
+      gridHeight * cellSize * layerGraphics.scaleY,
     );
 
     maskGraphics.setVisible(false);
@@ -766,9 +763,9 @@ export class ObjectManager {
       ) {
         if (
           objectRow < 0 ||
-          objectRow >= 30 ||
+          objectRow >= gridHeight ||
           objectColumn < 0 ||
-          objectColumn >= 30
+          objectColumn >= gridWidth
         ) {
           return false;
         }
@@ -802,5 +799,29 @@ export class ObjectManager {
 
   getMaxSize(type: MapObjectType): number {
     return OBJECT_RULES[type].maxSize;
+  }
+
+  clearAllObjects() {
+    for (const object of this.objects) {
+      const graphics = this.objectGraphics.get(object.id);
+
+      if (graphics) {
+        graphics.destroy();
+      }
+    }
+
+    this.objects = [];
+    this.objectGraphics.clear();
+
+    this.selectedObject = null;
+
+    for (const mask of this.layerMasks.values()) {
+      mask.destroy();
+    }
+
+    this.layerMasks.clear();
+
+    this.undoStack = [];
+    this.redoStack = [];
   }
 }
