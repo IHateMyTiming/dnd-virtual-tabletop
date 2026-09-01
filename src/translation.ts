@@ -22,6 +22,10 @@ const translations = {
     tree: "Tree",
     settings: "Settings",
     select: "Select",
+    width: "Width",
+    height: "Height",
+    apply: "Apply",
+    cancel: "Cancel",
   },
 
   pt: {
@@ -45,6 +49,10 @@ const translations = {
     tree: "Árvore",
     settings: "Configurações",
     select: "Selecionar",
+    width: "Largura",
+    height: "Altura",
+    apply: "Aplicar",
+    cancel: "Cancelar",
   },
 };
 

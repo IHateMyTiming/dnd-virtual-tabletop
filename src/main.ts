@@ -2,7 +2,7 @@ import Phaser from "phaser";
 
 import { MapScene } from "./game/scenes/MapScene";
 
-import { setupTranslations } from "./i18n";
+import { setupTranslations } from "./translation";
 
 setupTranslations();
 
