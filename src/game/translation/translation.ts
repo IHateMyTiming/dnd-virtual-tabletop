@@ -42,6 +42,11 @@ export const translations = {
       "The {objectName} cannot be larger than {maxSize} tiles in either dimension.",
     invalidObjectProportions:
       "The {objectName} cannot have these proportions. Its width and height can only differ by up to {maxDifference} tiles.",
+    //Map Size
+    invalidMapDimensions:
+      "Map width and height must be whole numbers of at least 5 and must end in 0 or 5.",
+    confirmMapResize:
+      "Changing the grid size will clear the current map. Any unsaved changes will be lost. Do you want to continue?",
   },
 
   pt: {
@@ -85,6 +90,11 @@ export const translations = {
       "O {objectName} não pode ser maior que {maxSize} quadrados em nenhuma das dimensões.",
     invalidObjectProportions:
       "O {objectName} não pode ter essas proporções. A largura e a altura só podem diferir em até {maxDifference} quadrados.",
+    //Tamanho do Mapa
+    invalidMapDimensions:
+      "A largura e a altura do mapa devem ser números inteiros de no mínimo 5 e devem terminar em 0 ou 5.",
+    confirmMapResize:
+      "Alterar o tamanho do mapa apagará o mapa atual. Quaisquer alterações não salvas serão perdidas. Deseja continuar?",
   },
 };
 

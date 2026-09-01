@@ -1270,7 +1270,7 @@ export class MapScene extends Phaser.Scene {
       if (!isValidDimension(newWidth) || !isValidDimension(newHeight)) {
         if (mapSizeError) {
           mapSizeError.textContent =
-            "Map width and height must be whole numbers of at least 5 and must end in 0 or 5.";
+            translations[getCurrentLanguage()].invalidMapDimensions;
 
           mapSizeError.style.display = "block";
         }
@@ -1284,9 +1284,8 @@ export class MapScene extends Phaser.Scene {
       }
 
       const confirmed = window.confirm(
-        "Changing the grid size will clear the current map. Any unsaved changes will be lost. Do you want to continue?",
+        translations[getCurrentLanguage()].confirmMapResize,
       );
-
       if (!confirmed) {
         return;
       }
