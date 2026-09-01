@@ -14,8 +14,6 @@ const OBJECT_DEFINITIONS = {
   boulder: {
     imageKey: "boulder",
     blocksMovement: true,
-    width: 20,
-    height: 20,
   },
 
   tree: {
@@ -68,8 +66,12 @@ export class ObjectManager {
 
   private objectGraphics = new Map<string, ObjectGameObject>();
 
+  private selectedObject: MapObject | null = null;
+
   private undoStack: ObjectAction[] = [];
   private redoStack: ObjectAction[] = [];
+
+  private layerMasks = new Map<number, Phaser.Display.Masks.GeometryMask>();
 
   constructor(
     scene: Phaser.Scene,
@@ -84,10 +86,22 @@ export class ObjectManager {
     column: number,
     layer: number,
     type: MapObject["type"] = "boulder",
+    width = 1,
+    height = 1,
   ) {
-    // Don't allow two objects on the same tile
-    if (this.getObjectAt(row, column, layer)) {
-      return null;
+    // Check the entire footprint before placing
+    for (let r = row; r < row + height; r++) {
+      for (let c = column; c < column + width; c++) {
+        if (
+          r < 0 ||
+          r >= 30 ||
+          c < 0 ||
+          c >= 30 ||
+          this.getObjectAt(r, c, layer)
+        ) {
+          return null;
+        }
+      }
     }
 
     const object: MapObject = {
@@ -96,6 +110,8 @@ export class ObjectManager {
       row,
       column,
       layer,
+      width,
+      height,
 
       imageKey: OBJECT_DEFINITIONS[type].imageKey,
       blocksMovement: OBJECT_DEFINITIONS[type].blocksMovement,
@@ -114,7 +130,6 @@ export class ObjectManager {
 
     return object;
   }
-
   private drawObject(object: MapObject) {
     if (object.imageKey && this.scene.textures.exists(object.imageKey)) {
       const image = this.scene.add.image(0, 0, object.imageKey);
@@ -122,6 +137,8 @@ export class ObjectManager {
       this.objectGraphics.set(object.id, image);
 
       this.updateObjectPosition(object);
+
+      image.setMask(this.getLayerMask(object.layer));
 
       image.setDepth(90);
 
@@ -136,6 +153,8 @@ export class ObjectManager {
     this.objectGraphics.set(object.id, graphics);
 
     this.updateObjectPosition(object);
+
+    graphics.setMask(this.getLayerMask(object.layer));
 
     graphics.setDepth(90);
   }
@@ -187,20 +206,22 @@ export class ObjectManager {
 
     const scale = layerGraphics.scaleX;
 
+    // Position the object at the CENTER of its entire footprint
     const x =
-      layerGraphics.x +
-      object.column * cellSize * scale +
-      (cellSize / 2) * scale;
+      layerGraphics.x + (object.column + object.width / 2) * cellSize * scale;
 
     const y =
-      layerGraphics.y + object.row * cellSize * scale + (cellSize / 2) * scale;
+      layerGraphics.y + (object.row + object.height / 2) * cellSize * scale;
 
     graphics.setPosition(x, y);
 
     if (graphics instanceof Phaser.GameObjects.Image) {
-      graphics.setDisplaySize(cellSize * scale, cellSize * scale);
+      graphics.setDisplaySize(
+        object.width * cellSize * scale,
+        object.height * cellSize * scale,
+      );
     } else {
-      graphics.setScale(scale);
+      graphics.setScale(scale * object.width, scale * object.height);
     }
   }
 
@@ -218,11 +239,29 @@ export class ObjectManager {
     return (
       this.objects.find(
         (object) =>
-          object.row === row &&
-          object.column === column &&
-          object.layer === layer,
+          object.layer === layer &&
+          row >= object.row &&
+          row < object.row + object.height &&
+          column >= object.column &&
+          column < object.column + object.width,
       ) ?? null
     );
+  }
+
+  getSelectedObject(): MapObject | null {
+    return this.selectedObject;
+  }
+
+  selectObject(object: MapObject | null) {
+    this.selectedObject = object;
+  }
+
+  selectObjectAt(row: number, column: number, layer: number) {
+    const object = this.getObjectAt(row, column, layer);
+
+    this.selectObject(object);
+
+    console.log("Selected object:", object);
   }
 
   eraseAt(row: number, column: number, layer: number) {
@@ -303,15 +342,16 @@ export class ObjectManager {
     startColumn: number,
     layer: number,
     type: MapObject["type"] = "boulder",
+    width = 1,
+    height = 1,
     gridSize = 30,
   ) {
     const actionObjects: MapObject[] = [];
 
-    const queue: Array<[number, number]> = [];
-
+    // Find the connected empty area first.
+    const queue: Array<[number, number]> = [[startRow, startColumn]];
     const visited = new Set<string>();
-
-    queue.push([startRow, startColumn]);
+    const fillable = new Set<string>();
 
     while (queue.length > 0) {
       const [row, column] = queue.shift()!;
@@ -328,35 +368,99 @@ export class ObjectManager {
 
       visited.add(key);
 
-      // Stop at existing objects
+      // Existing objects are boundaries.
       if (this.getObjectAt(row, column, layer)) {
         continue;
       }
 
-      const object: MapObject = {
-        id: crypto.randomUUID(),
-        type,
-        row,
-        column,
-        layer,
-
-        imageKey: OBJECT_DEFINITIONS[type].imageKey,
-        blocksMovement: OBJECT_DEFINITIONS[type].blocksMovement,
-      };
-
-      this.objects.push(object);
-
-      this.drawObject(object);
-
-      actionObjects.push(object);
+      fillable.add(key);
 
       queue.push([row - 1, column]);
-
       queue.push([row + 1, column]);
-
       queue.push([row, column - 1]);
-
       queue.push([row, column + 1]);
+    }
+
+    /*
+     * Keep trying to place objects until no more can fit.
+     *
+     * We scan the entire connected area instead of jumping
+     * by width/height. This prevents gaps in the fill.
+     */
+    let placedSomething = true;
+
+    while (placedSomething) {
+      placedSomething = false;
+
+      for (let row = 0; row < gridSize; row++) {
+        for (let column = 0; column < gridSize; column++) {
+          // The top-left tile must be part of the fill area.
+          if (!fillable.has(`${row},${column}`)) {
+            continue;
+          }
+
+          // Check the complete footprint.
+          let canPlace = true;
+
+          for (let objectRow = row; objectRow < row + height; objectRow++) {
+            for (
+              let objectColumn = column;
+              objectColumn < column + width;
+              objectColumn++
+            ) {
+              if (
+                objectRow >= gridSize ||
+                objectColumn >= gridSize ||
+                !fillable.has(`${objectRow},${objectColumn}`) ||
+                this.getObjectAt(objectRow, objectColumn, layer)
+              ) {
+                canPlace = false;
+                break;
+              }
+            }
+
+            if (!canPlace) {
+              break;
+            }
+          }
+
+          if (!canPlace) {
+            continue;
+          }
+
+          const object: MapObject = {
+            id: crypto.randomUUID(),
+            type,
+            row,
+            column,
+            layer,
+            width,
+            height,
+
+            imageKey: OBJECT_DEFINITIONS[type].imageKey,
+            blocksMovement: OBJECT_DEFINITIONS[type].blocksMovement,
+          };
+
+          this.objects.push(object);
+
+          this.drawObject(object);
+
+          actionObjects.push(object);
+
+          // The footprint is now occupied.
+          for (let objectRow = row; objectRow < row + height; objectRow++) {
+            for (
+              let objectColumn = column;
+              objectColumn < column + width;
+              objectColumn++
+            ) {
+              fillable.delete(`${objectRow},${objectColumn}`);
+            }
+          }
+
+          placedSomething = true;
+        }
+      }
     }
 
     if (actionObjects.length > 0) {
@@ -376,6 +480,8 @@ export class ObjectManager {
     endColumn: number,
     layer: number,
     type: MapObject["type"] = "boulder",
+    width = 1,
+    height = 1,
     gridSize = 30,
   ) {
     const minRow = Math.max(0, Math.min(startRow, endRow));
@@ -401,6 +507,8 @@ export class ObjectManager {
           row,
           column,
           layer,
+          width,
+          height,
 
           imageKey: OBJECT_DEFINITIONS[type].imageKey,
           blocksMovement: OBJECT_DEFINITIONS[type].blocksMovement,
@@ -547,5 +655,62 @@ export class ObjectManager {
     }
 
     this.undoStack.push(action);
+  }
+
+  private getLayerMask(layer: number) {
+    const existingMask = this.layerMasks.get(layer);
+
+    if (existingMask) {
+      return existingMask;
+    }
+
+    const layerGraphics = this.getLayerGraphics(layer);
+
+    const maskGraphics = this.scene.add.graphics();
+
+    maskGraphics.fillStyle(0xffffff, 1);
+
+    maskGraphics.fillRect(
+      layerGraphics.x,
+      layerGraphics.y,
+      30 * cellSize * layerGraphics.scaleX,
+      30 * cellSize * layerGraphics.scaleY,
+    );
+
+    maskGraphics.setVisible(false);
+
+    const mask = new Phaser.Display.Masks.GeometryMask(
+      this.scene,
+      maskGraphics,
+    );
+
+    this.layerMasks.set(layer, mask);
+
+    return mask;
+  }
+
+  canPlaceObject(
+    row: number,
+    column: number,
+    layer: number,
+    width: number,
+    height: number,
+    ignoredObject?: MapObject,
+  ): boolean {
+    for (let objectRow = row; objectRow < row + height; objectRow++) {
+      for (
+        let objectColumn = column;
+        objectColumn < column + width;
+        objectColumn++
+      ) {
+        const existingObject = this.getObjectAt(objectRow, objectColumn, layer);
+
+        if (existingObject && existingObject.id !== ignoredObject?.id) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 }

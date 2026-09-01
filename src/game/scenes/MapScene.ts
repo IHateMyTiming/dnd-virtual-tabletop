@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { CharacterManager } from "../characters/CharacterManager";
 import { ObjectManager } from "./ObjectManager";
 import type { MapObjectType } from "./MapObjects";
+import { InteractionManager } from "../input/InteractionManager";
 
 type Terrain =
   | "empty"
@@ -22,7 +23,8 @@ type Tool =
   | "object-brush"
   | "object-rectangle"
   | "object-fill"
-  | "object-erase";
+  | "object-erase"
+  | "object-select";
 
 interface Tile {
   terrain: Terrain;
@@ -71,10 +73,16 @@ export class MapScene extends Phaser.Scene {
   private objectManager!: ObjectManager;
 
   private selectedObjectType: MapObjectType = "boulder";
+
+  private selectedObjectWidth = 1;
+  private selectedObjectHeight = 1;
+
   private objectIsPainting = false;
 
   private objectStartRow: number | null = null;
   private objectStartColumn: number | null = null;
+
+  private interactionManager!: InteractionManager;
 
   constructor() {
     super("MapScene");
@@ -553,6 +561,12 @@ export class MapScene extends Phaser.Scene {
       return;
     }
 
+    if (this.selectedTool === "object-select") {
+      this.objectManager.selectObjectAt(row, column, this.currentLayer);
+
+      return;
+    }
+
     if (this.selectedTool === "object-brush") {
       this.objectIsPainting = true;
 
@@ -561,6 +575,8 @@ export class MapScene extends Phaser.Scene {
         column,
         this.currentLayer,
         this.selectedObjectType,
+        this.selectedObjectWidth,
+        this.selectedObjectHeight,
       );
 
       return;
@@ -612,6 +628,8 @@ export class MapScene extends Phaser.Scene {
         column,
         this.currentLayer,
         this.selectedObjectType,
+        this.selectedObjectWidth,
+        this.selectedObjectHeight,
       );
 
       return;
@@ -634,6 +652,40 @@ export class MapScene extends Phaser.Scene {
   }
 
   private handlePointerMove(pointer: Phaser.Input.Pointer) {
+    if (this.selectedTool === "object-brush" && !this.objectIsPainting) {
+      const { row, column } = this.getPointerTile(pointer, this.currentLayer);
+
+      const { offsetX, offsetY, scale } = this.getLayerOffset(
+        this.currentLayer,
+      );
+
+      const valid =
+        row >= 0 &&
+        row < gridSize &&
+        column >= 0 &&
+        column < gridSize &&
+        this.objectManager.canPlaceObject(
+          row,
+          column,
+          this.currentLayer,
+          this.selectedObjectWidth,
+          this.selectedObjectHeight,
+        );
+
+      this.interactionManager.showObjectPlacementPreview(
+        row,
+        column,
+        this.selectedObjectWidth,
+        this.selectedObjectHeight,
+        cellSize,
+        offsetX,
+        offsetY,
+        scale,
+        valid,
+      );
+
+      return;
+    }
     // CHARACTER DRAGGING
     if (
       this.selectedTool === "character" &&
@@ -715,6 +767,8 @@ export class MapScene extends Phaser.Scene {
           column,
           this.currentLayer,
           this.selectedObjectType,
+          this.selectedObjectWidth,
+          this.selectedObjectHeight,
         );
       }
     }
@@ -744,6 +798,8 @@ export class MapScene extends Phaser.Scene {
         column,
         this.currentLayer,
         this.selectedObjectType,
+        this.selectedObjectWidth,
+        this.selectedObjectHeight,
       );
     }
 
@@ -764,6 +820,7 @@ export class MapScene extends Phaser.Scene {
 
     this.previewGraphics.clear();
     this.objectPreviewGraphics.clear();
+    this.interactionManager.clear();
 
     if (this.currentAction !== null && this.currentAction.changes.length > 0) {
       this.undoStack.push(this.currentAction);
@@ -803,6 +860,8 @@ export class MapScene extends Phaser.Scene {
       (layer) => this.layerGraphics[layer],
     );
 
+    this.interactionManager = new InteractionManager(this);
+
     this.previewGraphics = this.add.graphics();
 
     this.previewGraphics.setDepth(100);
@@ -821,6 +880,7 @@ export class MapScene extends Phaser.Scene {
 
     this.input.on("pointerup", this.handlePointerUp.bind(this));
 
+    //TERRAIN TOOL BUTTONS
     const buttons =
       document.querySelectorAll<HTMLButtonElement>("#toolbar button");
 
@@ -833,62 +893,21 @@ export class MapScene extends Phaser.Scene {
     });
 
     const toolButtons = document.querySelectorAll<HTMLButtonElement>(
-      "#tools button, #character-bar button",
+      "#tools button, #character-bar button, #object-bar button[data-object-tool]",
     );
 
     toolButtons.forEach((button) => {
       button.addEventListener("click", () => {
-        const tool = button.dataset.tool as Tool;
+        const tool = (button.dataset.tool ?? button.dataset.objectTool) as Tool;
 
         this.selectedTool = tool;
+
+        if (tool !== "object-brush") {
+          this.interactionManager.clear();
+        }
 
         console.log(`Selected tool: ${tool}`);
       });
-    });
-
-    // OBJECT TOOL BUTTONS
-    const objectToolButtons = document.querySelectorAll<HTMLButtonElement>(
-      "#object-bar button[data-object-tool]",
-    );
-
-    objectToolButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        const tool = button.dataset.objectTool as Tool;
-
-        this.selectedTool = tool;
-
-        console.log(`Selected object tool: ${tool}`);
-      });
-    });
-
-    // OBJECT TYPE BUTTONS
-    const objectTypeButtons = document.querySelectorAll<HTMLButtonElement>(
-      "#object-bar button[data-object-type]",
-    );
-
-    objectTypeButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        const objectType = button.dataset.objectType as "boulder";
-
-        this.selectedObjectType = objectType;
-
-        console.log(`Selected object type: ${objectType}`);
-      });
-    });
-
-    const eraseAllCharactersButton = document.querySelector<HTMLButtonElement>(
-      "#erase-all-characters",
-    );
-
-    eraseAllCharactersButton?.addEventListener("click", () => {
-      this.characterManager.removeAllCharacters();
-    });
-
-    const eraseAllObjectsButton =
-      document.querySelector<HTMLButtonElement>("#erase-all-objects");
-
-    eraseAllObjectsButton?.addEventListener("click", () => {
-      this.objectManager.removeAllObjects(this.currentLayer);
     });
 
     const eraseAllButton =
@@ -926,6 +945,114 @@ export class MapScene extends Phaser.Scene {
       this.redrawLayer(this.currentLayer);
     });
 
+    // OBJECT TOOL BUTTONS
+
+    const objectTypeButtons = document.querySelectorAll<HTMLButtonElement>(
+      "#object-bar button[data-object-type]",
+    );
+
+    objectTypeButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const objectType = button.dataset.objectType as "boulder";
+
+        this.selectedObjectType = objectType;
+
+        console.log(`Selected object type: ${objectType}`);
+      });
+    });
+
+    const eraseAllObjectsButton =
+      document.querySelector<HTMLButtonElement>("#erase-all-objects");
+
+    eraseAllObjectsButton?.addEventListener("click", () => {
+      this.objectManager.removeAllObjects(this.currentLayer);
+    });
+
+    const objectSettingsButton =
+      document.querySelector<HTMLButtonElement>("#object-settings");
+
+    const objectSettingsApplyButton = document.querySelector<HTMLButtonElement>(
+      "#object-settings-apply",
+    );
+
+    const objectSettingsCancelButton =
+      document.querySelector<HTMLButtonElement>("#object-settings-cancel");
+
+    const panel = document.querySelector<HTMLDivElement>(
+      "#object-settings-panel",
+    );
+
+    const widthInput =
+      document.querySelector<HTMLInputElement>("#object-width");
+
+    const heightInput =
+      document.querySelector<HTMLInputElement>("#object-height");
+
+    objectSettingsButton?.addEventListener("click", () => {
+      if (!panel || !widthInput || !heightInput) {
+        return;
+      }
+
+      if (panel.style.display === "block") {
+        panel.style.display = "none";
+        return;
+      }
+
+      const selectedObject = this.objectManager.getSelectedObject();
+
+      if (selectedObject) {
+        widthInput.value = String(selectedObject.width);
+        heightInput.value = String(selectedObject.height);
+      } else {
+        widthInput.value = String(this.selectedObjectWidth);
+        heightInput.value = String(this.selectedObjectHeight);
+      }
+
+      panel.style.display = "block";
+    });
+
+    objectSettingsApplyButton?.addEventListener("click", () => {
+      if (!panel || !widthInput || !heightInput) {
+        return;
+      }
+
+      const width = Number(widthInput.value);
+      const height = Number(heightInput.value);
+
+      if (width < 1 || height < 1) {
+        return;
+      }
+
+      const selectedObject = this.objectManager.getSelectedObject();
+
+      if (selectedObject) {
+        selectedObject.width = width;
+        selectedObject.height = height;
+
+        this.objectManager.updateObjectPosition(selectedObject);
+      }
+
+      this.selectedObjectWidth = width;
+      this.selectedObjectHeight = height;
+
+      panel.style.display = "none";
+    });
+
+    objectSettingsCancelButton?.addEventListener("click", () => {
+      if (panel) {
+        panel.style.display = "none";
+      }
+    });
+
+    //CHARACTER TOOL BUTTONS
+    const eraseAllCharactersButton = document.querySelector<HTMLButtonElement>(
+      "#erase-all-characters",
+    );
+
+    eraseAllCharactersButton?.addEventListener("click", () => {
+      this.characterManager.removeAllCharacters();
+    });
+
     this.input.keyboard?.on("keydown-Z", (event: KeyboardEvent) => {
       if (!event.ctrlKey) {
         return;
@@ -951,6 +1078,7 @@ export class MapScene extends Phaser.Scene {
 
       this.undoTerrain();
     });
+
     this.input.keyboard?.on("keydown-Y", (event: KeyboardEvent) => {
       if (!event.ctrlKey) {
         return;

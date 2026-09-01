@@ -15,6 +15,8 @@ export interface MapObject {
   row: number;
   column: number;
   layer: number;
+  width: number;
+  height: number;
 
   // Visual representation
   imageKey?: string;

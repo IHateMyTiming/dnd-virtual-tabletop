@@ -19,6 +19,9 @@ const translations = {
     eraseCharacter: "Erase Character",
     eraseAllCharacters: "Erase All Characters",
     boulder: "Boulder",
+    tree: "Tree",
+    settings: "Settings",
+    select: "Select",
   },
 
   pt: {
@@ -39,6 +42,9 @@ const translations = {
     eraseCharacter: "Apagar Personagem",
     eraseAllCharacters: "Apagar todos os Personagens",
     boulder: "Pedra",
+    tree: "Árvore",
+    settings: "Configurações",
+    select: "Selecionar",
   },
 };
 

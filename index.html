@@ -69,8 +69,27 @@
       <button id="erase-all-objects" data-i18n="eraseAll">Erase All</button>
 
       <br />
-      <button data-object-type="boulder">Boulder</button>
-      <button data-object-type="tree">Tree</button>
+      <button data-object-type="boulder" data-i18n="boulder">Boulder</button>
+      <button data-object-type="tree" data-i18n="tree">Tree</button>
+      <br />
+      <button id="object-settings" data-i18n="settings">Settings</button>
+      <div id="object-settings-panel" style="display: none">
+        <label>
+          Width
+          <input id="object-width" type="number" min="1" />
+        </label>
+
+        <label>
+          Height
+          <input id="object-height" type="number" min="1" />
+        </label>
+
+        <button id="object-settings-apply">Apply</button>
+        <button id="object-settings-cancel">Cancel</button>
+      </div>
+      <button data-object-tool="object-select" data-i18n="select">
+        Select
+      </button>
     </div>
 
     <div id="game"></div>
