@@ -35,6 +35,11 @@ export const translations = {
     invalidDimensions: "Width and height must be between 1 and 100.",
     maxObjectSize: "Maximum size is 100.",
     minObjectSize: "Minimum object size is 1.",
+    invalidObjectShape: "This object cannot have these proportions.",
+    invalidObjectDimensions:
+      "The {objectName} cannot be larger than {maxSize} tiles in either dimension.",
+    invalidObjectProportions:
+      "The {objectName} cannot have these proportions. Its width and height can only differ by up to {maxDifference} tiles.",
   },
 
   pt: {
@@ -71,6 +76,11 @@ export const translations = {
     invalidDimensions: "Largura e altura devem estar entre 1 e 100.",
     maxObjectSize: "O tamanho máximo é 100.",
     minObjectSize: "O tamanho mínimo do objeto é 1.",
+    invalidObjectShape: "Este objeto não pode ter essas proporções.",
+    invalidObjectDimensions:
+      "O {objectName} não pode ser maior que {maxSize} quadrados em nenhuma das dimensões.",
+    invalidObjectProportions:
+      "O {objectName} não pode ter essas proporções. A largura e a altura só podem diferir em até {maxDifference} quadrados.",
   },
 };
 

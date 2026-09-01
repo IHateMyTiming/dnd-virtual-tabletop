@@ -954,8 +954,7 @@ export class MapScene extends Phaser.Scene {
 
     objectTypeButtons.forEach((button) => {
       button.addEventListener("click", () => {
-        const objectType = button.dataset.objectType as "boulder";
-
+        const objectType = button.dataset.objectType as MapObjectType;
         this.selectedObjectType = objectType;
 
         console.log(`Selected object type: ${objectType}`);
@@ -983,6 +982,22 @@ export class MapScene extends Phaser.Scene {
       "#object-settings-panel",
     );
 
+    objectSettingsCancelButton?.addEventListener("click", () => {
+      if (!panel || !widthInput || !heightInput) {
+        return;
+      }
+
+      widthInput.value = "1";
+      heightInput.value = "1";
+
+      if (objectSettingsError) {
+        objectSettingsError.textContent = "";
+        objectSettingsError.style.display = "none";
+      }
+
+      panel.style.display = "none";
+    });
+
     const widthInput =
       document.querySelector<HTMLInputElement>("#object-width");
 
@@ -998,59 +1013,6 @@ export class MapScene extends Phaser.Scene {
         return;
       }
 
-      widthInput.addEventListener("input", () => {
-        const width = Number(widthInput.value);
-
-        if (width > 100) {
-          widthInput.value = "100";
-
-          if (objectSettingsError) {
-            objectSettingsError.textContent =
-              translations[getCurrentLanguage()].maxObjectSize;
-
-            objectSettingsError.style.display = "block";
-          }
-        } else if (width < 1) {
-          widthInput.value = "1";
-
-          if (objectSettingsError) {
-            objectSettingsError.textContent =
-              translations[getCurrentLanguage()].minObjectSize;
-
-            objectSettingsError.style.display = "block";
-          }
-        }
-      });
-
-      heightInput.addEventListener("input", () => {
-        const height = Number(heightInput.value);
-
-        if (height > 100) {
-          heightInput.value = "100";
-
-          if (objectSettingsError) {
-            objectSettingsError.textContent =
-              translations[getCurrentLanguage()].maxObjectSize;
-
-            objectSettingsError.style.display = "block";
-          }
-        } else if (height < 1) {
-          heightInput.value = "1";
-
-          if (objectSettingsError) {
-            objectSettingsError.textContent =
-              translations[getCurrentLanguage()].minObjectSize;
-
-            objectSettingsError.style.display = "block";
-          }
-        }
-      });
-
-      if (panel.style.display === "block") {
-        panel.style.display = "none";
-        return;
-      }
-
       const selectedObject = this.objectManager.getSelectedObject();
 
       if (selectedObject) {
@@ -1059,6 +1021,11 @@ export class MapScene extends Phaser.Scene {
       } else {
         widthInput.value = String(this.selectedObjectWidth);
         heightInput.value = String(this.selectedObjectHeight);
+      }
+
+      if (objectSettingsError) {
+        objectSettingsError.textContent = "";
+        objectSettingsError.style.display = "none";
       }
 
       panel.style.display = "block";
@@ -1078,11 +1045,24 @@ export class MapScene extends Phaser.Scene {
         objectSettingsError.textContent = "";
       }
 
+      const selectedObject = this.objectManager.getSelectedObject();
+
+      const objectType = selectedObject
+        ? selectedObject.type
+        : this.selectedObjectType;
+
+      const maxSize = this.objectManager.getMaxSize(objectType);
+
       // Invalid dimensions
-      if (width < 1 || height < 1 || width > 100 || height > 100) {
+      if (width < 1 || height < 1 || width > maxSize || height > maxSize) {
         if (objectSettingsError) {
-          objectSettingsError.textContent =
-            translations[getCurrentLanguage()].invalidDimensions;
+          const objectName = this.objectManager.getObjectName(objectType);
+
+          objectSettingsError.textContent = translations[
+            getCurrentLanguage()
+          ].invalidObjectDimensions
+            .replace("{objectName}", objectName)
+            .replace("{maxSize}", String(maxSize));
 
           objectSettingsError.style.display = "block";
         }
@@ -1090,7 +1070,28 @@ export class MapScene extends Phaser.Scene {
         return;
       }
 
-      const selectedObject = this.objectManager.getSelectedObject();
+      const validSize = this.objectManager.isValidObjectSize(
+        objectType,
+        width,
+        height,
+      );
+
+      if (!validSize) {
+        if (objectSettingsError) {
+          const objectName = this.objectManager.getObjectName(objectType);
+          const maxDifference =
+            this.objectManager.getMaxSizeDifference(objectType);
+
+          objectSettingsError.textContent = translations[
+            getCurrentLanguage()
+          ].invalidObjectProportions
+            .replace("{objectName}", objectName)
+            .replace("{maxDifference}", String(maxDifference));
+          objectSettingsError.style.display = "block";
+        }
+
+        return;
+      }
 
       if (selectedObject) {
         const canResize = this.objectManager.canPlaceObject(
@@ -1102,7 +1103,6 @@ export class MapScene extends Phaser.Scene {
           selectedObject,
         );
 
-        // Invalid position / overlap
         if (!canResize) {
           if (objectSettingsError) {
             objectSettingsError.textContent =
@@ -1125,11 +1125,6 @@ export class MapScene extends Phaser.Scene {
       this.selectedObjectHeight = height;
 
       panel.style.display = "none";
-    });
-    objectSettingsCancelButton?.addEventListener("click", () => {
-      if (panel) {
-        panel.style.display = "none";
-      }
     });
 
     //CHARACTER TOOL BUTTONS

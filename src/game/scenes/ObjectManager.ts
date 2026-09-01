@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import type { MapObject } from "./MapObjects";
+import type { MapObjectType } from "./MapObjects";
 
 interface ObjectAction {
   type: "add" | "remove";
@@ -57,6 +58,66 @@ const OBJECT_DEFINITIONS = {
   },
 };
 
+const OBJECT_RULES: Record<
+  MapObjectType,
+  {
+    name: string;
+    maxSize: number;
+    maxSizeDifference: number;
+  }
+> = {
+  boulder: {
+    name: "Boulder",
+    maxSize: 10,
+    maxSizeDifference: 2,
+  },
+  tree: {
+    name: "Tree",
+    maxSize: 10,
+    maxSizeDifference: 3,
+  },
+  table: {
+    name: "Table",
+    maxSize: 10,
+    maxSizeDifference: 2,
+  },
+
+  chair: {
+    name: "Chair",
+    maxSize: 10,
+    maxSizeDifference: 2,
+  },
+
+  chest: {
+    name: "Chest",
+    maxSize: 10,
+    maxSizeDifference: 2,
+  },
+
+  pillar: {
+    name: "Pillar",
+    maxSize: 10,
+    maxSizeDifference: 2,
+  },
+
+  statue: {
+    name: "Statue",
+    maxSize: 10,
+    maxSizeDifference: 2,
+  },
+
+  door: {
+    name: "Door",
+    maxSize: 10,
+    maxSizeDifference: 2,
+  },
+
+  stairs: {
+    name: "Stairs",
+    maxSize: 10,
+    maxSizeDifference: 2,
+  },
+};
 export class ObjectManager {
   private scene: Phaser.Scene;
 
@@ -721,5 +782,25 @@ export class ObjectManager {
     }
 
     return true;
+  }
+
+  isValidObjectSize(
+    type: MapObjectType,
+    width: number,
+    height: number,
+  ): boolean {
+    return Math.abs(width - height) <= OBJECT_RULES[type].maxSizeDifference;
+  }
+
+  getObjectName(type: MapObjectType): string {
+    return OBJECT_RULES[type].name;
+  }
+
+  getMaxSizeDifference(type: MapObjectType): number {
+    return OBJECT_RULES[type].maxSizeDifference;
+  }
+
+  getMaxSize(type: MapObjectType): number {
+    return OBJECT_RULES[type].maxSize;
   }
 }
