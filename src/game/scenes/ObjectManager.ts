@@ -703,6 +703,15 @@ export class ObjectManager {
         objectColumn < column + width;
         objectColumn++
       ) {
+        if (
+          objectRow < 0 ||
+          objectRow >= 30 ||
+          objectColumn < 0 ||
+          objectColumn >= 30
+        ) {
+          return false;
+        }
+
         const existingObject = this.getObjectAt(objectRow, objectColumn, layer);
 
         if (existingObject && existingObject.id !== ignoredObject?.id) {

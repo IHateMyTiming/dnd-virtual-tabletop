@@ -3,6 +3,7 @@ import { CharacterManager } from "../characters/CharacterManager";
 import { ObjectManager } from "./ObjectManager";
 import type { MapObjectType } from "./MapObjects";
 import { InteractionManager } from "../input/InteractionManager";
+import { translations, getCurrentLanguage } from "../translation/translation";
 
 type Terrain =
   | "empty"
@@ -988,6 +989,10 @@ export class MapScene extends Phaser.Scene {
     const heightInput =
       document.querySelector<HTMLInputElement>("#object-height");
 
+    const objectSettingsError = document.querySelector<HTMLParagraphElement>(
+      "#object-settings-error",
+    );
+
     objectSettingsButton?.addEventListener("click", () => {
       if (!panel || !widthInput || !heightInput) {
         return;
@@ -1019,25 +1024,60 @@ export class MapScene extends Phaser.Scene {
       const width = Number(widthInput.value);
       const height = Number(heightInput.value);
 
+      // Clear previous error
+      if (objectSettingsError) {
+        objectSettingsError.style.display = "none";
+        objectSettingsError.textContent = "";
+      }
+
+      // Invalid dimensions
       if (width < 1 || height < 1) {
+        if (objectSettingsError) {
+          objectSettingsError.textContent =
+            translations[getCurrentLanguage()].invalidDimensions;
+
+          objectSettingsError.style.display = "block";
+        }
+
         return;
       }
 
       const selectedObject = this.objectManager.getSelectedObject();
 
       if (selectedObject) {
+        const canResize = this.objectManager.canPlaceObject(
+          selectedObject.row,
+          selectedObject.column,
+          selectedObject.layer,
+          width,
+          height,
+          selectedObject,
+        );
+
+        // Invalid position / overlap
+        if (!canResize) {
+          if (objectSettingsError) {
+            objectSettingsError.textContent =
+              translations[getCurrentLanguage()].invalidObjectSize;
+
+            objectSettingsError.style.display = "block";
+          }
+
+          return;
+        }
+
         selectedObject.width = width;
         selectedObject.height = height;
 
         this.objectManager.updateObjectPosition(selectedObject);
       }
 
+      // Remember size for the next object
       this.selectedObjectWidth = width;
       this.selectedObjectHeight = height;
 
       panel.style.display = "none";
     });
-
     objectSettingsCancelButton?.addEventListener("click", () => {
       if (panel) {
         panel.style.display = "none";

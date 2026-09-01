@@ -1,7 +1,8 @@
-type Language = "en" | "pt";
+export type Language = "en" | "pt";
 
-const translations = {
+export const translations = {
   en: {
+    //Terrain
     layer: "Layer",
     brush: "Brush",
     rectangle: "Rectangle",
@@ -15,9 +16,11 @@ const translations = {
     sand: "Sand",
     erase: "Erase",
     eraseAll: "Erase All",
+    //Character
     addCharacter: "Add / Move Character",
     eraseCharacter: "Erase Character",
     eraseAllCharacters: "Erase All Characters",
+    //Props
     boulder: "Boulder",
     tree: "Tree",
     settings: "Settings",
@@ -26,9 +29,14 @@ const translations = {
     height: "Height",
     apply: "Apply",
     cancel: "Cancel",
+    //Error Handling
+    invalidObjectSize:
+      "Object overlaps another object or extends outside the map.",
+    invalidDimensions: "Width and height must be at least 1.",
   },
 
   pt: {
+    //Terreno
     layer: "Pisos",
     brush: "Pincel",
     rectangle: "Retângulo",
@@ -42,9 +50,11 @@ const translations = {
     sand: "Areia",
     erase: "Apagar",
     eraseAll: "Apagar Tudo",
+    //Personagem
     addCharacter: "Adiciona / Mova Personagem",
     eraseCharacter: "Apagar Personagem",
     eraseAllCharacters: "Apagar todos os Personagens",
+    //Objetos
     boulder: "Pedra",
     tree: "Árvore",
     settings: "Configurações",
@@ -53,6 +63,10 @@ const translations = {
     height: "Altura",
     apply: "Aplicar",
     cancel: "Cancelar",
+    //Mensagem de Erro
+    invalidObjectSize:
+      "O objeto sobrepõe outro objeto ou ultrapassa os limites do mapa.",
+    invalidDimensions: "Largura e altura devem ser no mínimo 1.",
   },
 };
 
@@ -80,4 +94,10 @@ function translatePage(language: Language) {
 
     element.textContent = translations[language][key];
   });
+}
+
+export function getCurrentLanguage(): Language {
+  const languageSelect = document.querySelector<HTMLSelectElement>("#language");
+
+  return (languageSelect?.value as Language) ?? "en";
 }
