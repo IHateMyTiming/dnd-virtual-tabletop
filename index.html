@@ -1,4 +1,3 @@
-<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -8,15 +7,15 @@
   </head>
 
   <body>
+    <!--LANGUAGE-->
     <select id="language">
       <option value="en">English</option>
       <option value="pt">Português</option>
     </select>
 
+    <!--LAYERS-->
     <button id="remove-layer">−</button>
-
     <span data-i18n="layer">Layer</span>
-
     <button id="add-layer">+</button>
 
     <div id="layers">
@@ -25,6 +24,7 @@
       <button id="next-layer">&gt;</button>
     </div>
 
+    <!--MAP SIZE-->
     <button id="map-size" data-i18n="map"></button>
 
     <div id="map-size-panel" style="display: none">
@@ -40,6 +40,7 @@
       <button id="map-size-cancel" data-i18n="cancel"></button>
     </div>
 
+    <!--TERRAIN-->
     <div id="toolbar">
       <div id="tools">
         <button data-tool="brush" data-i18n="brush"></button>
@@ -58,12 +59,15 @@
       <button id="empty-all" data-i18n="eraseAll"></button>
     </div>
 
+    <!--CHARACTER-->
     <div id="character-bar">
-      <button data-tool="character" data-i18n="addCharacter"></button>
+      <button data-tool="character-add" data-i18n="addCharacter"></button>
+      <button data-tool="character-select" data-i18n="selectCharacter"></button>
       <button data-tool="character-erase" data-i18n="eraseCharacter"></button>
       <button id="erase-all-characters" data-i18n="eraseAllCharacters"></button>
     </div>
 
+    <!--OBJECT-->
     <div id="object-bar">
       <span>Objects</span>
       <br />

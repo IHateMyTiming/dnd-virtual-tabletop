@@ -3,5 +3,7 @@ export interface Character {
   name: string;
   row: number;
   column: number;
+  width: number;
+  height: number;
   layer: number;
 }

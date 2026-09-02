@@ -20,7 +20,8 @@ type Tool =
   | "brush"
   | "rectangle"
   | "fill"
-  | "character"
+  | "character-add"
+  | "character-select"
   | "character-erase"
   | "object-brush"
   | "object-rectangle"
@@ -549,8 +550,15 @@ export class MapScene extends Phaser.Scene {
       return;
     }
 
-    // CHARACTER
-    if (this.selectedTool === "character") {
+    // CHARACTER ADD
+    if (this.selectedTool === "character-add") {
+      this.characterManager.addCharacter(row, column, this.currentLayer);
+
+      return;
+    }
+
+    // CHARACTER SELECT
+    if (this.selectedTool === "character-select") {
       const character = this.characterManager.getCharacterAt(
         row,
         column,
@@ -559,8 +567,6 @@ export class MapScene extends Phaser.Scene {
 
       if (character) {
         this.characterManager.startDragging(character);
-      } else {
-        this.characterManager.addCharacter(row, column, this.currentLayer);
       }
 
       return;
@@ -729,7 +735,7 @@ export class MapScene extends Phaser.Scene {
     }
     // CHARACTER DRAGGING
     if (
-      this.selectedTool === "character" &&
+      this.selectedTool === "character-select" &&
       this.characterManager.isDragging()
     ) {
       if (!pointer.isDown) {
@@ -856,8 +862,9 @@ export class MapScene extends Phaser.Scene {
       return;
     }
     // CHARACTER
+    // CHARACTER SELECT
     if (
-      this.selectedTool === "character" &&
+      this.selectedTool === "character-select" &&
       this.characterManager.isDragging()
     ) {
       this.characterManager.stopDragging();
@@ -1261,7 +1268,8 @@ export class MapScene extends Phaser.Scene {
       }
 
       if (
-        this.selectedTool === "character" ||
+        this.selectedTool === "character-add" ||
+        this.selectedTool === "character-select" ||
         this.selectedTool === "character-erase"
       ) {
         this.characterManager.undo();
@@ -1387,7 +1395,8 @@ export class MapScene extends Phaser.Scene {
       }
 
       if (
-        this.selectedTool === "character" ||
+        this.selectedTool === "character-add" ||
+        this.selectedTool === "character-select" ||
         this.selectedTool === "character-erase"
       ) {
         this.characterManager.redo();

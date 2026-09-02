@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import type { Character } from "./Character";
-
+import { gridWidth, gridHeight, cellSize } from "../scenes/Grid";
 interface CharacterAction {
   type: "add" | "remove" | "move";
   character: Character;
@@ -9,8 +9,6 @@ interface CharacterAction {
   newRow?: number;
   newColumn?: number;
 }
-
-const cellSize = 24;
 
 export class CharacterManager {
   private scene: Phaser.Scene;
@@ -29,12 +27,22 @@ export class CharacterManager {
   private undoStack: CharacterAction[] = [];
   private redoStack: CharacterAction[] = [];
 
+  private movePreviewGraphics: Phaser.GameObjects.Graphics;
+
+  private moveStartRow = 0;
+  private moveStartColumn = 0;
+
+  private moveCurrentRow = 0;
+  private moveCurrentColumn = 0;
+
   constructor(
     scene: Phaser.Scene,
     getLayerGraphics: (layer: number) => Phaser.GameObjects.Graphics,
   ) {
     this.scene = scene;
     this.getLayerGraphics = getLayerGraphics;
+    this.movePreviewGraphics = this.scene.add.graphics();
+    this.movePreviewGraphics.setDepth(101);
   }
 
   addCharacter(row: number, column: number, layer: number, name = "Character") {
@@ -148,8 +156,37 @@ export class CharacterManager {
   startDragging(character: Character) {
     this.draggingCharacter = character;
 
-    this.dragStartRow = character.row;
-    this.dragStartColumn = character.column;
+    this.moveStartRow = character.row;
+    this.moveStartColumn = character.column;
+
+    this.moveCurrentRow = character.row;
+    this.moveCurrentColumn = character.column;
+
+    this.drawMovePreview(character);
+  }
+
+  private drawMovePreview(character: Character) {
+    const layerGraphics = this.getLayerGraphics(character.layer);
+
+    const scale = layerGraphics.scaleX;
+
+    const x =
+      layerGraphics.x +
+      this.moveCurrentColumn * cellSize * scale +
+      (cellSize / 2) * scale;
+
+    const y =
+      layerGraphics.y +
+      this.moveCurrentRow * cellSize * scale +
+      (cellSize / 2) * scale;
+
+    this.movePreviewGraphics.clear();
+
+    this.movePreviewGraphics.fillStyle(0xff0000, 0.35);
+    this.movePreviewGraphics.fillCircle(x, y, cellSize * 0.4 * scale);
+
+    this.movePreviewGraphics.lineStyle(2, 0xffffff, 0.5);
+    this.movePreviewGraphics.strokeCircle(x, y, cellSize * 0.4 * scale);
   }
 
   isDragging() {
@@ -161,7 +198,6 @@ export class CharacterManager {
       return;
     }
 
-    // Don't allow two characters on the same tile
     const existingCharacter = this.getCharacterAt(
       row,
       column,
@@ -175,10 +211,10 @@ export class CharacterManager {
       return;
     }
 
-    this.draggingCharacter.row = row;
-    this.draggingCharacter.column = column;
+    this.moveCurrentRow = row;
+    this.moveCurrentColumn = column;
 
-    this.updateCharacterPosition(this.draggingCharacter);
+    this.drawMovePreview(this.draggingCharacter);
   }
 
   stopDragging() {
@@ -189,26 +225,29 @@ export class CharacterManager {
     const character = this.draggingCharacter;
 
     if (
-      this.dragStartRow !== null &&
-      this.dragStartColumn !== null &&
-      (this.dragStartRow !== character.row ||
-        this.dragStartColumn !== character.column)
+      this.moveStartRow !== this.moveCurrentRow ||
+      this.moveStartColumn !== this.moveCurrentColumn
     ) {
+      character.row = this.moveCurrentRow;
+      character.column = this.moveCurrentColumn;
+
+      this.updateCharacterPosition(character);
+
       this.undoStack.push({
         type: "move",
         character,
-        previousRow: this.dragStartRow,
-        previousColumn: this.dragStartColumn,
-        newRow: character.row,
-        newColumn: character.column,
+        previousRow: this.moveStartRow,
+        previousColumn: this.moveStartColumn,
+        newRow: this.moveCurrentRow,
+        newColumn: this.moveCurrentColumn,
       });
 
       this.redoStack = [];
     }
 
+    this.movePreviewGraphics.clear();
+
     this.draggingCharacter = null;
-    this.dragStartRow = null;
-    this.dragStartColumn = null;
   }
 
   removeCharacter(character: Character) {

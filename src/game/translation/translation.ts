@@ -18,10 +18,13 @@ export const translations = {
     sand: "Sand",
     erase: "Erase",
     eraseAll: "Erase All",
+
     //Character
-    addCharacter: "Add / Move Character",
+    addCharacter: "Add Character",
+    selectCharacter: "Select Character",
     eraseCharacter: "Erase Character",
     eraseAllCharacters: "Erase All Characters",
+
     //Props
     boulder: "Boulder",
     tree: "Tree",
@@ -31,6 +34,7 @@ export const translations = {
     height: "Height",
     apply: "Apply",
     cancel: "Cancel",
+
     //Error Handling
     invalidObjectSize:
       "Object overlaps another object or extends outside the map.",
@@ -42,6 +46,7 @@ export const translations = {
       "The {objectName} cannot be larger than {maxSize} tiles in either dimension.",
     invalidObjectProportions:
       "The {objectName} cannot have these proportions. Its width and height can only differ by up to {maxDifference} tiles.",
+
     //Map Size
     invalidMapDimensions:
       "Map width and height must be whole numbers of at least 5 and must end in 0 or 5.",
@@ -52,6 +57,7 @@ export const translations = {
   pt: {
     //MAPA
     map: "Tamanho do Mapa",
+
     //Terreno
     layer: "Pisos",
     brush: "Pincel",
@@ -66,10 +72,13 @@ export const translations = {
     sand: "Areia",
     erase: "Apagar",
     eraseAll: "Apagar Tudo",
+
     //Personagem
-    addCharacter: "Adiciona / Mova Personagem",
+    addCharacter: "Adicionar Personagem",
+    selectCharacter: "Selecionar Personagem",
     eraseCharacter: "Apagar Personagem",
     eraseAllCharacters: "Apagar todos os Personagens",
+
     //Objetos
     boulder: "Pedra",
     tree: "Árvore",
@@ -79,6 +88,7 @@ export const translations = {
     height: "Altura",
     apply: "Aplicar",
     cancel: "Cancelar",
+
     //Mensagem de Erro
     invalidObjectSize:
       "O objeto sobrepõe outro objeto ou ultrapassa os limites do mapa.",
@@ -90,6 +100,7 @@ export const translations = {
       "O {objectName} não pode ser maior que {maxSize} quadrados em nenhuma das dimensões.",
     invalidObjectProportions:
       "O {objectName} não pode ter essas proporções. A largura e a altura só podem diferir em até {maxDifference} quadrados.",
+
     //Tamanho do Mapa
     invalidMapDimensions:
       "A largura e a altura do mapa devem ser números inteiros de no mínimo 5 e devem terminar em 0 ou 5.",
