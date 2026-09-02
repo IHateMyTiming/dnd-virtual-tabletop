@@ -1,8 +1,7 @@
 import Phaser from "phaser";
 import type { MapObject } from "./MapObjects";
 import type { MapObjectType } from "./MapObjects";
-import { gridWidth, gridHeight } from "./Grid";
-
+import { gridWidth, gridHeight, cellSize } from "./Grid";
 interface ObjectAction {
   type: "add" | "remove";
   objects: MapObject[];
@@ -31,9 +30,6 @@ interface ObjectGroupMoveAction {
     newColumn: number;
   }>;
 }
-
-const cellSize = 24;
-
 type ObjectGameObject = Phaser.GameObjects.Graphics | Phaser.GameObjects.Image;
 
 const OBJECT_DEFINITIONS = {

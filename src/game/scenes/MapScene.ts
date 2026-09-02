@@ -4,7 +4,7 @@ import { ObjectManager } from "./ObjectManager";
 import type { MapObjectType } from "./MapObjects";
 import { InteractionManager } from "../input/InteractionManager";
 import { translations, getCurrentLanguage } from "../translation/translation";
-import { gridWidth, gridHeight, setGridSize } from "./Grid";
+import { gridWidth, gridHeight, setGridSize, cellSize } from "./Grid";
 
 type Terrain =
   | "empty"
@@ -42,9 +42,6 @@ interface TileChange {
 interface MapAction {
   changes: TileChange[];
 }
-
-const cellSize = 24;
-
 export class MapScene extends Phaser.Scene {
   private layers: Tile[][][] = [];
   private currentLayer = 0;
