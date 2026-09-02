@@ -19,13 +19,15 @@ export interface TerrainVariant {
 
 export const TERRAIN_VARIANTS: TerrainVariant[] = [
   {
+    //GRASS
+
     id: "short-grass",
     category: "grass",
     name: "Short Grass",
     width: 1,
     height: 1,
     imageKey: "short-grass",
-    assetPath: "assets/terrain/shortGrass.png",
+    assetPath: "assets/terrain/grass/shortGrass.png",
   },
   {
     id: "tall-grass",
@@ -34,8 +36,10 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     width: 1,
     height: 2,
     imageKey: "tall-grass",
-    assetPath: "assets/terrain/tallGrass.png",
+    assetPath: "assets/terrain/grass/tallGrass.png",
   },
+
+  //WATER
 
   {
     id: "water-center",
@@ -44,7 +48,7 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     width: 1,
     height: 1,
     imageKey: "water-center",
-    assetPath: "assets/terrain/waterCenter.png",
+    assetPath: "assets/terrain/water/waterCenter.png",
   },
   {
     id: "water-top",
@@ -53,7 +57,7 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     width: 1,
     height: 1,
     imageKey: "water-top",
-    assetPath: "assets/terrain/waterTop.png",
+    assetPath: "assets/terrain/water/waterTop.png",
   },
   {
     id: "water-bottom",
@@ -62,7 +66,7 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     width: 1,
     height: 1,
     imageKey: "water-bottom",
-    assetPath: "assets/terrain/waterBottom.png",
+    assetPath: "assets/terrain/water/waterBottom.png",
   },
   {
     id: "water-right",
@@ -71,7 +75,7 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     width: 1,
     height: 1,
     imageKey: "water-right",
-    assetPath: "assets/terrain/waterRight.png",
+    assetPath: "assets/terrain/water/waterRight.png",
   },
   {
     id: "water-left",
@@ -80,7 +84,7 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     width: 1,
     height: 1,
     imageKey: "water-left",
-    assetPath: "assets/terrain/waterLeft.png",
+    assetPath: "assets/terrain/water/waterLeft.png",
   },
   {
     id: "water-top-right",
@@ -89,7 +93,7 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     width: 1,
     height: 1,
     imageKey: "water-top-right",
-    assetPath: "assets/terrain/waterTopRight.png",
+    assetPath: "assets/terrain/water/waterTopRight.png",
   },
   {
     id: "water-top-left",
@@ -98,7 +102,7 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     width: 1,
     height: 1,
     imageKey: "water-top-left",
-    assetPath: "assets/terrain/waterTopLeft.png",
+    assetPath: "assets/terrain/water/waterTopLeft.png",
   },
   {
     id: "water-bottom-right",
@@ -107,7 +111,7 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     width: 1,
     height: 1,
     imageKey: "water-bottom-right",
-    assetPath: "assets/terrain/waterBottomRight.png",
+    assetPath: "assets/terrain/water/waterBottomRight.png",
   },
   {
     id: "water-bottom-left",
@@ -116,7 +120,7 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     width: 1,
     height: 1,
     imageKey: "water-bottom-left",
-    assetPath: "assets/terrain/waterBottomLeft.png",
+    assetPath: "assets/terrain/water/waterBottomLeft.png",
   },
   {
     id: "water-river-vertical",
@@ -125,7 +129,7 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     width: 1,
     height: 1,
     imageKey: "water-river-vertical",
-    assetPath: "assets/terrain/waterRiverVertical.png",
+    assetPath: "assets/terrain/water/waterRiverVertical.png",
   },
   {
     id: "water-river-horizontal",
@@ -134,7 +138,7 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     width: 1,
     height: 1,
     imageKey: "water-river-horizontal",
-    assetPath: "assets/terrain/waterRiverHorizontal.png",
+    assetPath: "assets/terrain/water/waterRiverHorizontal.png",
   },
   {
     id: "water-inner-top-right",
@@ -143,7 +147,7 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     width: 1,
     height: 1,
     imageKey: "water-inner-top-right",
-    assetPath: "assets/terrain/waterInnerTopRight.png",
+    assetPath: "assets/terrain/water/waterInnerTopRight.png",
   },
   {
     id: "water-inner-top-left",
@@ -152,7 +156,7 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     width: 1,
     height: 1,
     imageKey: "water-inner-top-left",
-    assetPath: "assets/terrain/waterInnerTopLeft.png",
+    assetPath: "assets/terrain/water/waterInnerTopLeft.png",
   },
   {
     id: "water-inner-bottom-right",
@@ -161,7 +165,7 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     width: 1,
     height: 1,
     imageKey: "water-inner-bottom-right",
-    assetPath: "assets/terrain/waterInnerBottomRight.png",
+    assetPath: "assets/terrain/water/waterInnerBottomRight.png",
   },
   {
     id: "water-inner-bottom-left",
@@ -170,6 +174,144 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     width: 1,
     height: 1,
     imageKey: "water-inner-bottom-left",
-    assetPath: "assets/terrain/waterInnerBottomLeft.png",
+    assetPath: "assets/terrain/water/waterInnerBottomLeft.png",
+  },
+
+  //SAND
+
+  {
+    id: "sand-center",
+    category: "sand",
+    name: "Sand",
+    width: 1,
+    height: 1,
+    imageKey: "sand-center",
+    assetPath: "assets/terrain/sand/sandCenter.png",
+  },
+  {
+    id: "sand-top",
+    category: "sand",
+    name: "Sand Top",
+    width: 1,
+    height: 1,
+    imageKey: "sand-top",
+    assetPath: "assets/terrain/sand/sandTop.png",
+  },
+  {
+    id: "sand-bottom",
+    category: "sand",
+    name: "Sand Bottom",
+    width: 1,
+    height: 1,
+    imageKey: "sand-bottom",
+    assetPath: "assets/terrain/sand/sandBottom.png",
+  },
+  {
+    id: "sand-left",
+    category: "sand",
+    name: "Sand Left",
+    width: 1,
+    height: 1,
+    imageKey: "sand-left",
+    assetPath: "assets/terrain/sand/sandLeft.png",
+  },
+  {
+    id: "sand-right",
+    category: "sand",
+    name: "Sand Right",
+    width: 1,
+    height: 1,
+    imageKey: "sand-right",
+    assetPath: "assets/terrain/sand/sandRight.png",
+  },
+  {
+    id: "sand-top-left",
+    category: "sand",
+    name: "Sand Top Left",
+    width: 1,
+    height: 1,
+    imageKey: "sand-top-left",
+    assetPath: "assets/terrain/sand/sandTopLeft.png",
+  },
+  {
+    id: "sand-top-right",
+    category: "sand",
+    name: "Sand Top Right",
+    width: 1,
+    height: 1,
+    imageKey: "sand-top-right",
+    assetPath: "assets/terrain/sand/sandTopRight.png",
+  },
+  {
+    id: "sand-bottom-left",
+    category: "sand",
+    name: "Sand Bottom Left",
+    width: 1,
+    height: 1,
+    imageKey: "sand-bottom-left",
+    assetPath: "assets/terrain/sand/sandBottomLeft.png",
+  },
+  {
+    id: "sand-bottom-right",
+    category: "sand",
+    name: "Sand Bottom Right",
+    width: 1,
+    height: 1,
+    imageKey: "sand-bottom-right",
+    assetPath: "assets/terrain/sand/sandBottomRight.png",
+  },
+  {
+    id: "sand-vertical",
+    category: "sand",
+    name: "Sand Vertical",
+    width: 1,
+    height: 1,
+    imageKey: "sand-vertical",
+    assetPath: "assets/terrain/sand/sandVertical.png",
+  },
+  {
+    id: "sand-horizontal",
+    category: "sand",
+    name: "Sand Horizontal",
+    width: 1,
+    height: 1,
+    imageKey: "sand-horizontal",
+    assetPath: "assets/terrain/sand/sandHorizontal.png",
+  },
+  {
+    id: "sand-inner-top-left",
+    category: "sand",
+    name: "Sand Inner Top Left",
+    width: 1,
+    height: 1,
+    imageKey: "sand-inner-top-left",
+    assetPath: "assets/terrain/sand/sandCurveLeft.png",
+  },
+  {
+    id: "sand-inner-top-right",
+    category: "sand",
+    name: "Sand Inner Top Right",
+    width: 1,
+    height: 1,
+    imageKey: "sand-inner-top-right",
+    assetPath: "assets/terrain/sand/sandCurveRight.png",
+  },
+  {
+    id: "sand-inner-bottom-left",
+    category: "sand",
+    name: "Sand Inner Bottom Left",
+    width: 1,
+    height: 1,
+    imageKey: "sand-inner-bottom-left",
+    assetPath: "assets/terrain/sand/sandPitBottom.png",
+  },
+  {
+    id: "sand-inner-bottom-right",
+    category: "sand",
+    name: "Sand Inner Bottom Right",
+    width: 1,
+    height: 1,
+    imageKey: "sand-inner-bottom-right",
+    assetPath: "assets/terrain/sand/sandPitTop.png",
   },
 ];

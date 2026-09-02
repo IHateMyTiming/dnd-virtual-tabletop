@@ -929,47 +929,96 @@ export class MapScene extends Phaser.Scene {
   }
 
   preload() {
+    //OBJECT
     this.load.image("boulder", "assets/objects/boulder.webp");
-    this.load.image("short-grass", "assets/terrain/shortGrass.png");
-    this.load.image("tall-grass", "assets/terrain/tallGrass.png");
-    this.load.image("water-center", "assets/terrain/waterCenter.png");
-    this.load.image("water-top", "assets/terrain/waterTop.png");
-    this.load.image("water-left", "assets/terrain/waterLeft.png");
-    this.load.image("water-right", "assets/terrain/waterRight.png");
-    this.load.image("water-bottom", "assets/terrain/waterBottom.png");
-    this.load.image("water-top-right", "assets/terrain/waterTopRight.png");
-    this.load.image("water-top-left", "assets/terrain/waterTopLeft.png");
+
+    //GRASS
+
+    this.load.image("short-grass", "assets/terrain/grass/shortGrass.png");
+    this.load.image("tall-grass", "assets/terrain/grass/tallGrass.png");
+
+    //WATER
+
+    this.load.image("water-center", "assets/terrain/water/waterCenter.png");
+    this.load.image("water-top", "assets/terrain/water/waterTop.png");
+    this.load.image("water-left", "assets/terrain/water/waterLeft.png");
+    this.load.image("water-right", "assets/terrain/water/waterRight.png");
+    this.load.image("water-bottom", "assets/terrain/water/waterBottom.png");
+    this.load.image(
+      "water-top-right",
+      "assets/terrain/water/waterTopRight.png",
+    );
+    this.load.image("water-top-left", "assets/terrain/water/waterTopLeft.png");
     this.load.image(
       "water-bottom-right",
-      "assets/terrain/waterBottomRight.png",
+      "assets/terrain/water/waterBottomRight.png",
     );
-    this.load.image("water-bottom-left", "assets/terrain/waterBottomLeft.png");
+    this.load.image(
+      "water-bottom-left",
+      "assets/terrain/water/waterBottomLeft.png",
+    );
     this.load.image(
       "water-river-horizontal",
-      "assets/terrain/waterRiverHorizontal.png",
+      "assets/terrain/water/waterRiverHorizontal.png",
     );
     this.load.image(
       "water-river-vertical",
-      "assets/terrain/waterRiverVertical.png",
+      "assets/terrain/water/waterRiverVertical.png",
     );
     this.load.image(
       "water-inner-top-left",
-      "assets/terrain/waterInnerTopLeft.png",
+      "assets/terrain/water/waterInnerTopLeft.png",
     );
-
     this.load.image(
       "water-inner-top-right",
-      "assets/terrain/waterInnerTopRight.png",
+      "assets/terrain/water/waterInnerTopRight.png",
     );
-
     this.load.image(
       "water-inner-bottom-left",
-      "assets/terrain/waterInnerBottomLeft.png",
+      "assets/terrain/water/waterInnerBottomLeft.png",
     );
-
     this.load.image(
       "water-inner-bottom-right",
-      "assets/terrain/waterInnerBottomRight.png",
+      "assets/terrain/water/waterInnerBottomRight.png",
+    );
+
+    //SAND
+
+    this.load.image("sand-center", "assets/terrain/sand/sandCenter.png");
+    this.load.image("sand-top", "assets/terrain/sand/sandTop.png");
+    this.load.image("sand-bottom", "assets/terrain/sand/sandBottom.png");
+    this.load.image("sand-left", "assets/terrain/sand/sandLeft.png");
+    this.load.image("sand-right", "assets/terrain/sand/sandRight.png");
+    this.load.image("sand-top-left", "assets/terrain/sand/sandTopLeft.png");
+    this.load.image("sand-top-right", "assets/terrain/sand/sandTopRight.png");
+    this.load.image(
+      "sand-bottom-left",
+      "assets/terrain/sand/sandBottomLeft.png",
+    );
+    this.load.image(
+      "sand-bottom-right",
+      "assets/terrain/sand/sandBottomRight.png",
+    );
+    this.load.image("sand-vertical", "assets/terrain/sand/sandVertical.png");
+    this.load.image(
+      "sand-horizontal",
+      "assets/terrain/sand/sandHorizontal.png",
+    );
+    this.load.image(
+      "sand-inner-top-left",
+      "assets/terrain/sand/sandCurveLeft.png",
+    );
+    this.load.image(
+      "sand-inner-top-right",
+      "assets/terrain/sand/sandCurveRight.png",
+    );
+    this.load.image(
+      "sand-inner-bottom-left",
+      "assets/terrain/sand/sandPitBottom.png",
+    );
+    this.load.image(
+      "sand-inner-bottom-right",
+      "assets/terrain/sand/sandPitTop.png",
     );
   }
 
@@ -1126,6 +1175,55 @@ export class MapScene extends Phaser.Scene {
 
       waterButton.addEventListener("click", () => {
         waterMenu.classList.toggle("open");
+      });
+    }
+
+    //SAND TERRAIN BUTTON
+    const sandButton = document.querySelector<HTMLButtonElement>(
+      "#terrain-sand-button",
+    );
+
+    const sandMenu =
+      document.querySelector<HTMLDivElement>("#terrain-sand-menu");
+
+    if (sandButton && sandMenu) {
+      const sandVariants = TERRAIN_VARIANTS.filter(
+        (variant) => variant.category === "sand",
+      );
+
+      for (const variant of sandVariants) {
+        const option = document.createElement("button");
+
+        option.type = "button";
+        option.className = "terrain-option";
+
+        option.innerHTML = `
+      <img
+        src="${variant.assetPath}"
+        alt="${variant.name}"
+      />
+      <span>${variant.name}</span>
+    `;
+
+        option.addEventListener("click", () => {
+          this.selectedTerrain = variant;
+
+          sandMenu.classList.remove("open");
+
+          console.log(
+            "Selected terrain:",
+            variant.name,
+            variant.width,
+            "x",
+            variant.height,
+          );
+        });
+
+        sandMenu.appendChild(option);
+      }
+
+      sandButton.addEventListener("click", () => {
+        sandMenu.classList.toggle("open");
       });
     }
 
