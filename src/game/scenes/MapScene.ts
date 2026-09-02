@@ -980,6 +980,24 @@ export class MapScene extends Phaser.Scene {
     this.characterManager = new CharacterManager(
       this,
       (layer) => this.layerGraphics[layer],
+      (row, column, layer) =>
+        !this.objectManager.isCharacterMovementBlocked(row, column, layer),
+      (row, column, layer) => {
+        const layerGraphics = this.layerGraphics[layer];
+        const scale = layerGraphics.scaleX;
+
+        this.interactionManager.showInvalidTile(
+          row,
+          column,
+          cellSize,
+          layerGraphics.x,
+          layerGraphics.y,
+          scale,
+        );
+      },
+      () => {
+        this.interactionManager.clear();
+      },
     );
 
     this.objectManager = new ObjectManager(

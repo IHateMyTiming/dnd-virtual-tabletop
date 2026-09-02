@@ -359,6 +359,22 @@ export class ObjectManager {
     );
   }
 
+  isCharacterMovementBlocked(
+    row: number,
+    column: number,
+    layer: number,
+  ): boolean {
+    return this.objects.some(
+      (object) =>
+        object.layer === layer &&
+        object.blocksMovement &&
+        row >= object.row &&
+        row < object.row + object.height &&
+        column >= object.column &&
+        column < object.column + object.width,
+    );
+  }
+
   getSelectedObject(): MapObject | null {
     return this.selectedObject;
   }

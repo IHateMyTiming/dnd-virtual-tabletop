@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import type { Character } from "./Character";
-import { gridWidth, gridHeight, cellSize } from "../scenes/Grid";
+import { cellSize } from "../scenes/Grid";
 interface CharacterAction {
   type: "add" | "remove" | "move";
   character: Character;
@@ -21,9 +21,6 @@ export class CharacterManager {
 
   private draggingCharacter: Character | null = null;
 
-  private dragStartRow: number | null = null;
-  private dragStartColumn: number | null = null;
-
   private undoStack: CharacterAction[] = [];
   private redoStack: CharacterAction[] = [];
 
@@ -35,14 +32,30 @@ export class CharacterManager {
   private moveCurrentRow = 0;
   private moveCurrentColumn = 0;
 
+  private showInvalidMove: (row: number, column: number, layer: number) => void;
+
+  private clearInteraction: () => void;
+
+  private canCharacterMoveTo: (
+    row: number,
+    column: number,
+    layer: number,
+  ) => boolean;
+
   constructor(
     scene: Phaser.Scene,
     getLayerGraphics: (layer: number) => Phaser.GameObjects.Graphics,
+    canCharacterMoveTo: (row: number, column: number, layer: number) => boolean,
+    showInvalidMove: (row: number, column: number, layer: number) => void,
+    clearInteraction: () => void,
   ) {
     this.scene = scene;
     this.getLayerGraphics = getLayerGraphics;
     this.movePreviewGraphics = this.scene.add.graphics();
     this.movePreviewGraphics.setDepth(101);
+    this.canCharacterMoveTo = canCharacterMoveTo;
+    this.showInvalidMove = showInvalidMove;
+    this.clearInteraction = clearInteraction;
   }
 
   addCharacter(row: number, column: number, layer: number, name = "Character") {
@@ -198,18 +211,24 @@ export class CharacterManager {
       return;
     }
 
-    const existingCharacter = this.getCharacterAt(
-      row,
-      column,
-      this.draggingCharacter.layer,
-    );
+    const layer = this.draggingCharacter.layer;
+
+    const existingCharacter = this.getCharacterAt(row, column, layer);
 
     if (
       existingCharacter &&
       existingCharacter.id !== this.draggingCharacter.id
     ) {
+      this.showInvalidMove(row, column, layer);
       return;
     }
+
+    if (!this.canCharacterMoveTo(row, column, layer)) {
+      this.showInvalidMove(row, column, layer);
+      return;
+    }
+
+    this.clearInteraction();
 
     this.moveCurrentRow = row;
     this.moveCurrentColumn = column;
@@ -246,6 +265,7 @@ export class CharacterManager {
     }
 
     this.movePreviewGraphics.clear();
+    this.clearInteraction();
 
     this.draggingCharacter = null;
   }
