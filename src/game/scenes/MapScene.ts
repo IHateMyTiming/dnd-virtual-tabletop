@@ -83,6 +83,10 @@ export class MapScene extends Phaser.Scene {
   private objectStartRow: number | null = null;
   private objectStartColumn: number | null = null;
 
+  private objectSelectStartRow: number | null = null;
+  private objectSelectStartColumn: number | null = null;
+  private isSelectingObjects = false;
+
   private interactionManager!: InteractionManager;
 
   constructor() {
@@ -572,7 +576,9 @@ export class MapScene extends Phaser.Scene {
     }
 
     if (this.selectedTool === "object-select") {
-      this.objectManager.selectObjectAt(row, column, this.currentLayer);
+      this.objectSelectStartRow = row;
+      this.objectSelectStartColumn = column;
+      this.isSelectingObjects = true;
 
       return;
     }
@@ -667,6 +673,26 @@ export class MapScene extends Phaser.Scene {
       this.objectManager.isMovingSelectedObject()
     ) {
       this.objectManager.updateMovingSelectedObject(pointer);
+      return;
+    }
+
+    if (
+      this.selectedTool === "object-select" &&
+      this.isSelectingObjects &&
+      this.objectSelectStartRow !== null &&
+      this.objectSelectStartColumn !== null
+    ) {
+      const { row, column } = this.getPointerTile(pointer, this.currentLayer);
+
+      this.objectManager.drawRectanglePreview(
+        this.objectSelectStartRow,
+        this.objectSelectStartColumn,
+        row,
+        column,
+        this.currentLayer,
+        this.objectPreviewGraphics,
+      );
+
       return;
     }
 
@@ -800,6 +826,38 @@ export class MapScene extends Phaser.Scene {
       this.objectManager.stopMovingSelectedObject();
       return;
     }
+
+    if (
+      this.selectedTool === "object-select" &&
+      this.isSelectingObjects &&
+      this.objectSelectStartRow !== null &&
+      this.objectSelectStartColumn !== null
+    ) {
+      const { row, column } = this.getPointerTile(pointer, this.currentLayer);
+
+      if (
+        row === this.objectSelectStartRow &&
+        column === this.objectSelectStartColumn
+      ) {
+        this.objectManager.selectObjectAt(row, column, this.currentLayer);
+      } else {
+        this.objectManager.selectObjectsInArea(
+          this.objectSelectStartRow,
+          this.objectSelectStartColumn,
+          row,
+          column,
+          this.currentLayer,
+        );
+      }
+
+      this.objectSelectStartRow = null;
+      this.objectSelectStartColumn = null;
+      this.isSelectingObjects = false;
+
+      this.objectPreviewGraphics.clear();
+
+      return;
+    }
     // CHARACTER
     if (
       this.selectedTool === "character" &&
@@ -899,6 +957,10 @@ export class MapScene extends Phaser.Scene {
 
     this.objectStartRow = null;
     this.objectStartColumn = null;
+
+    this.objectSelectStartRow = null;
+    this.objectSelectStartColumn = null;
+    this.isSelectingObjects = false;
 
     // Create a new empty layer using the new grid size
     this.addLayer();

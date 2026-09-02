@@ -21,6 +21,17 @@ interface ObjectEditAction {
   newHeight: number;
 }
 
+interface ObjectGroupMoveAction {
+  type: "move-group";
+  objects: Array<{
+    object: MapObject;
+    previousRow: number;
+    previousColumn: number;
+    newRow: number;
+    newColumn: number;
+  }>;
+}
+
 const cellSize = 24;
 
 type ObjectGameObject = Phaser.GameObjects.Graphics | Phaser.GameObjects.Image;
@@ -142,15 +153,28 @@ export class ObjectManager {
   private objectGraphics = new Map<string, ObjectGameObject>();
 
   private selectedObject: MapObject | null = null;
+  private selectedObjects: MapObject[] = [];
   private isMovingObject = false;
   private moveOffsetRow = 0;
   private moveOffsetColumn = 0;
   private moveHandleGraphics: Phaser.GameObjects.Graphics;
+  private movePreviewGraphics: Phaser.GameObjects.Graphics;
   private moveStartRow = 0;
   private moveStartColumn = 0;
+  private moveCurrentRow = 0;
+  private moveCurrentColumn = 0;
 
-  private undoStack: (ObjectAction | ObjectEditAction)[] = [];
-  private redoStack: (ObjectAction | ObjectEditAction)[] = [];
+  private undoStack: (
+    | ObjectAction
+    | ObjectEditAction
+    | ObjectGroupMoveAction
+  )[] = [];
+
+  private redoStack: (
+    | ObjectAction
+    | ObjectEditAction
+    | ObjectGroupMoveAction
+  )[] = [];
 
   private layerMasks = new Map<number, Phaser.Display.Masks.GeometryMask>();
 
@@ -163,6 +187,9 @@ export class ObjectManager {
     this.moveHandleGraphics = this.scene.add.graphics();
     this.moveHandleGraphics.setDepth(100);
     this.moveHandleGraphics.setVisible(false);
+    this.movePreviewGraphics = this.scene.add.graphics();
+    this.movePreviewGraphics.setDepth(99);
+    this.movePreviewGraphics.setVisible(false);
   }
 
   addObject(
@@ -308,7 +335,7 @@ export class ObjectManager {
       graphics.setScale(scale * object.width, scale * object.height);
     }
 
-    if (this.selectedObject?.id === object.id) {
+    if (this.selectedObject?.id === object.id && !this.isMovingObject) {
       this.updateMoveHandle();
     }
   }
@@ -340,8 +367,13 @@ export class ObjectManager {
     return this.selectedObject;
   }
 
+  getSelectedObjects(): MapObject[] {
+    return this.selectedObjects;
+  }
+
   selectObject(object: MapObject | null) {
     this.selectedObject = object;
+    this.selectedObjects = object ? [object] : [];
     this.isMovingObject = false;
 
     this.updateMoveHandle();
@@ -724,7 +756,18 @@ export class ObjectManager {
       }
     }
 
-    this.redoStack.push(action);
+    if (action.type === "move-group") {
+      for (const entry of action.objects) {
+        entry.object.row = entry.previousRow;
+        entry.object.column = entry.previousColumn;
+
+        this.updateObjectPosition(entry.object);
+      }
+
+      this.redoStack.push(action);
+      this.updateMoveHandle();
+      return;
+    }
   }
 
   redo() {
@@ -785,7 +828,18 @@ export class ObjectManager {
       }
     }
 
-    this.undoStack.push(action);
+    if (action.type === "move-group") {
+      for (const entry of action.objects) {
+        entry.object.row = entry.newRow;
+        entry.object.column = entry.newColumn;
+
+        this.updateObjectPosition(entry.object);
+      }
+
+      this.undoStack.push(action);
+      this.updateMoveHandle();
+      return;
+    }
   }
 
   private getLayerMask(layer: number) {
@@ -898,52 +952,31 @@ export class ObjectManager {
     this.redoStack = [];
   }
 
-  private drawMoveHandle() {
-    const graphics = this.moveHandleGraphics;
-
-    graphics.clear();
-
-    // Background
-    graphics.fillStyle(0x222222, 0.9);
-    graphics.fillCircle(0, 0, 9);
-
-    // Four arrows
-    graphics.lineStyle(2, 0xffffff, 1);
-
-    // Up
-    graphics.lineBetween(0, -5, 0, -2);
-    graphics.fillStyle(0xffffff, 1);
-    graphics.fillTriangle(0, -7, -3, -3, 3, -3);
-
-    // Down
-    graphics.lineBetween(0, 2, 0, 5);
-    graphics.fillTriangle(0, 7, -3, 3, 3, 3);
-
-    // Left
-    graphics.lineBetween(-5, 0, -2, 0);
-    graphics.fillTriangle(-7, 0, -3, -3, -3, 3);
-
-    // Right
-    graphics.lineBetween(2, 0, 5, 0);
-    graphics.fillTriangle(7, 0, 3, -3, 3, 3);
-  }
-
   private updateMoveHandle() {
-    const object = this.selectedObject;
-
-    if (!object) {
+    if (this.selectedObjects.length === 0) {
       this.moveHandleGraphics.setVisible(false);
       return;
     }
 
-    const layerGraphics = this.getLayerGraphics(object.layer);
+    const objects = this.selectedObjects;
+
+    const layerGraphics = this.getLayerGraphics(objects[0].layer);
     const scale = layerGraphics.scaleX;
 
-    const objectRight =
-      layerGraphics.x + (object.column + object.width) * cellSize * scale;
+    const minRow = Math.min(...objects.map((object) => object.row));
 
-    const objectCenterY =
-      layerGraphics.y + (object.row + object.height / 2) * cellSize * scale;
+    const maxColumn = Math.max(
+      ...objects.map((object) => object.column + object.width),
+    );
+
+    const maxRow = Math.max(
+      ...objects.map((object) => object.row + object.height),
+    );
+
+    const selectionRight = layerGraphics.x + maxColumn * cellSize * scale;
+
+    const selectionCenterY =
+      layerGraphics.y + ((minRow + maxRow) / 2) * cellSize * scale;
 
     this.moveHandleGraphics.clear();
 
@@ -967,8 +1000,8 @@ export class ObjectManager {
     this.moveHandleGraphics.fillTriangle(8, 0, 3, -4, 3, 4);
 
     this.moveHandleGraphics.setPosition(
-      objectRight + 12 * scale,
-      objectCenterY,
+      selectionRight + 12 * scale,
+      selectionCenterY,
     );
 
     this.moveHandleGraphics.setScale(scale);
@@ -995,13 +1028,15 @@ export class ObjectManager {
   }
 
   startMovingSelectedObject(pointer: Phaser.Input.Pointer) {
-    if (!this.selectedObject) {
+    if (!this.selectedObject || this.selectedObjects.length === 0) {
       return;
     }
 
     const object = this.selectedObject;
+
     this.moveStartRow = object.row;
     this.moveStartColumn = object.column;
+
     const layerGraphics = this.getLayerGraphics(object.layer);
     const scale = layerGraphics.scaleX;
 
@@ -1013,6 +1048,11 @@ export class ObjectManager {
     this.moveOffsetRow = pointerRow - object.row;
 
     this.isMovingObject = true;
+
+    this.moveHandleGraphics.setVisible(false);
+
+    this.drawMovePreview(0, 0);
+    this.movePreviewGraphics.setVisible(true);
   }
 
   isMovingSelectedObject(): boolean {
@@ -1020,12 +1060,17 @@ export class ObjectManager {
   }
 
   updateMovingSelectedObject(pointer: Phaser.Input.Pointer) {
-    if (!this.selectedObject || !this.isMovingObject) {
+    if (
+      !this.selectedObject ||
+      !this.isMovingObject ||
+      this.selectedObjects.length === 0
+    ) {
       return;
     }
 
-    const object = this.selectedObject;
-    const layerGraphics = this.getLayerGraphics(object.layer);
+    const anchorObject = this.selectedObject;
+
+    const layerGraphics = this.getLayerGraphics(anchorObject.layer);
     const scale = layerGraphics.scaleX;
 
     const pointerColumn = (pointer.x - layerGraphics.x) / (cellSize * scale);
@@ -1036,27 +1081,13 @@ export class ObjectManager {
 
     const targetRow = Math.round(pointerRow - this.moveOffsetRow);
 
-    if (targetRow === object.row && targetColumn === object.column) {
-      return;
-    }
+    this.moveCurrentRow = targetRow;
+    this.moveCurrentColumn = targetColumn;
 
-    const canMove = this.canPlaceObject(
-      targetRow,
-      targetColumn,
-      object.layer,
-      object.width,
-      object.height,
-      object,
-    );
+    const rowDelta = targetRow - this.moveStartRow;
+    const columnDelta = targetColumn - this.moveStartColumn;
 
-    if (!canMove) {
-      return;
-    }
-
-    object.row = targetRow;
-    object.column = targetColumn;
-
-    this.updateObjectPosition(object);
+    this.drawMovePreview(rowDelta, columnDelta);
   }
 
   stopMovingSelectedObject() {
@@ -1064,29 +1095,40 @@ export class ObjectManager {
       return;
     }
 
-    const object = this.selectedObject;
+    const rowDelta = this.moveCurrentRow - this.moveStartRow;
 
-    if (
-      object.row !== this.moveStartRow ||
-      object.column !== this.moveStartColumn
-    ) {
-      this.undoStack.push({
-        type: "move",
+    const columnDelta = this.moveCurrentColumn - this.moveStartColumn;
+
+    if (rowDelta !== 0 || columnDelta !== 0) {
+      const movedObjects = this.selectedObjects.map((object) => ({
         object,
-        previousRow: this.moveStartRow,
-        previousColumn: this.moveStartColumn,
-        previousWidth: object.width,
-        previousHeight: object.height,
-        newRow: object.row,
-        newColumn: object.column,
-        newWidth: object.width,
-        newHeight: object.height,
+        previousRow: object.row,
+        previousColumn: object.column,
+        newRow: object.row + rowDelta,
+        newColumn: object.column + columnDelta,
+      }));
+
+      for (const object of this.selectedObjects) {
+        object.row += rowDelta;
+        object.column += columnDelta;
+
+        this.updateObjectPosition(object);
+      }
+
+      this.undoStack.push({
+        type: "move-group",
+        objects: movedObjects,
       });
 
       this.redoStack = [];
     }
 
     this.isMovingObject = false;
+
+    this.movePreviewGraphics.clear();
+    this.movePreviewGraphics.setVisible(false);
+
+    this.updateMoveHandle();
   }
 
   resizeSelectedObject(width: number, height: number): boolean {
@@ -1137,5 +1179,80 @@ export class ObjectManager {
     this.redoStack = [];
 
     return true;
+  }
+
+  selectObjectsInArea(
+    startRow: number,
+    startColumn: number,
+    endRow: number,
+    endColumn: number,
+    layer: number,
+  ) {
+    const minRow = Math.min(startRow, endRow);
+    const maxRow = Math.max(startRow, endRow);
+
+    const minColumn = Math.min(startColumn, endColumn);
+    const maxColumn = Math.max(startColumn, endColumn);
+
+    this.selectedObjects = this.objects.filter((object) => {
+      if (object.layer !== layer) {
+        return false;
+      }
+
+      const objectMaxRow = object.row + object.height - 1;
+      const objectMaxColumn = object.column + object.width - 1;
+
+      return (
+        object.row <= maxRow &&
+        objectMaxRow >= minRow &&
+        object.column <= maxColumn &&
+        objectMaxColumn >= minColumn
+      );
+    });
+
+    this.selectedObject = this.selectedObjects[0] ?? null;
+
+    this.isMovingObject = false;
+
+    this.updateMoveHandle();
+  }
+
+  private drawMovePreview(rowDelta: number, columnDelta: number) {
+    if (this.selectedObjects.length === 0) {
+      return;
+    }
+
+    const objects = this.selectedObjects;
+
+    const layerGraphics = this.getLayerGraphics(objects[0].layer);
+    const scale = layerGraphics.scaleX;
+
+    const minRow = Math.min(...objects.map((object) => object.row));
+
+    const minColumn = Math.min(...objects.map((object) => object.column));
+
+    const maxRow = Math.max(
+      ...objects.map((object) => object.row + object.height),
+    );
+
+    const maxColumn = Math.max(
+      ...objects.map((object) => object.column + object.width),
+    );
+
+    const x = layerGraphics.x + (minColumn + columnDelta) * cellSize * scale;
+
+    const y = layerGraphics.y + (minRow + rowDelta) * cellSize * scale;
+
+    const width = (maxColumn - minColumn) * cellSize * scale;
+
+    const height = (maxRow - minRow) * cellSize * scale;
+
+    this.movePreviewGraphics.clear();
+
+    this.movePreviewGraphics.fillStyle(0x888888, 0.25);
+    this.movePreviewGraphics.fillRect(x, y, width, height);
+
+    this.movePreviewGraphics.lineStyle(2, 0xffffff, 0.8);
+    this.movePreviewGraphics.strokeRect(x, y, width, height);
   }
 }
