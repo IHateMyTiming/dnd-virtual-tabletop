@@ -69,6 +69,8 @@ export class CharacterManager {
       name,
       row,
       column,
+      width: 1,
+      height: 1,
       layer,
     };
 

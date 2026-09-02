@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import "./style.css";
 
 import { MapScene } from "./game/scenes/MapScene";
 

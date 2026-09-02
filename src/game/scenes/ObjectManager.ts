@@ -172,11 +172,18 @@ export class ObjectManager {
     | ObjectGroupMoveAction
   )[] = [];
 
+  private isCharacterAt: (
+    row: number,
+    column: number,
+    layer: number,
+  ) => boolean;
+
   private layerMasks = new Map<number, Phaser.Display.Masks.GeometryMask>();
 
   constructor(
     scene: Phaser.Scene,
     getLayerGraphics: (layer: number) => Phaser.GameObjects.Graphics,
+    isCharacterAt: (row: number, column: number, layer: number) => boolean,
   ) {
     this.scene = scene;
     this.getLayerGraphics = getLayerGraphics;
@@ -186,6 +193,7 @@ export class ObjectManager {
     this.movePreviewGraphics = this.scene.add.graphics();
     this.movePreviewGraphics.setDepth(99);
     this.movePreviewGraphics.setVisible(false);
+    this.isCharacterAt = isCharacterAt;
   }
 
   addObject(
@@ -197,17 +205,13 @@ export class ObjectManager {
     height = 1,
   ) {
     // Check the entire footprint before placing
-    for (let r = row; r < row + height; r++) {
-      for (let c = column; c < column + width; c++) {
-        if (
-          row < 0 ||
-          column < 0 ||
-          row + height > gridHeight ||
-          column + width > gridWidth
-        ) {
-          return;
-        }
-      }
+    if (
+      row < 0 ||
+      column < 0 ||
+      row + height > gridHeight ||
+      column + width > gridWidth
+    ) {
+      return;
     }
 
     const object: MapObject = {
@@ -914,6 +918,65 @@ export class ObjectManager {
         if (existingObject && existingObject.id !== ignoredObject?.id) {
           return false;
         }
+        if (this.isCharacterAt(objectRow, objectColumn, layer)) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  private canMoveSelectedObjects(
+    targetRow: number,
+    targetColumn: number,
+  ): boolean {
+    if (this.selectedObjects.length === 0) {
+      return false;
+    }
+
+    const rowDelta = targetRow - this.moveStartRow;
+    const columnDelta = targetColumn - this.moveStartColumn;
+
+    for (const object of this.selectedObjects) {
+      const newRow = object.row + rowDelta;
+      const newColumn = object.column + columnDelta;
+
+      // Check map boundaries
+      if (
+        newRow < 0 ||
+        newColumn < 0 ||
+        newRow + object.height > gridHeight ||
+        newColumn + object.width > gridWidth
+      ) {
+        return false;
+      }
+
+      // Check every cell of this object's footprint
+      for (let row = 0; row < object.height; row++) {
+        for (let column = 0; column < object.width; column++) {
+          const checkRow = newRow + row;
+          const checkColumn = newColumn + column;
+
+          // Characters cannot be overlapped
+          if (this.isCharacterAt(checkRow, checkColumn, object.layer)) {
+            return false;
+          }
+
+          // Check other objects
+          const existingObject = this.getObjectAt(
+            checkRow,
+            checkColumn,
+            object.layer,
+          );
+
+          if (
+            existingObject &&
+            !this.selectedObjects.includes(existingObject)
+          ) {
+            return false;
+          }
+        }
       }
     }
 
@@ -1099,11 +1162,25 @@ export class ObjectManager {
     const rowDelta = targetRow - this.moveStartRow;
     const columnDelta = targetColumn - this.moveStartColumn;
 
-    this.drawMovePreview(rowDelta, columnDelta);
+    const canMove = this.canMoveSelectedObjects(targetRow, targetColumn);
+
+    this.drawMovePreview(rowDelta, columnDelta, canMove);
   }
 
   stopMovingSelectedObject() {
     if (!this.selectedObject || !this.isMovingObject) {
+      return;
+    }
+
+    const canMove = this.canMoveSelectedObjects(
+      this.moveCurrentRow,
+      this.moveCurrentColumn,
+    );
+
+    if (!canMove) {
+      this.isMovingObject = false;
+      this.movePreviewGraphics.clear();
+      this.movePreviewGraphics.setVisible(false);
       return;
     }
 
@@ -1229,7 +1306,11 @@ export class ObjectManager {
     this.updateMoveHandle();
   }
 
-  private drawMovePreview(rowDelta: number, columnDelta: number) {
+  private drawMovePreview(
+    rowDelta: number,
+    columnDelta: number,
+    canMove: boolean = true,
+  ) {
     if (this.selectedObjects.length === 0) {
       return;
     }
@@ -1261,10 +1342,12 @@ export class ObjectManager {
 
     this.movePreviewGraphics.clear();
 
-    this.movePreviewGraphics.fillStyle(0x888888, 0.25);
+    this.movePreviewGraphics.fillStyle(canMove ? 0x888888 : 0xff0000, 0.25);
+
     this.movePreviewGraphics.fillRect(x, y, width, height);
 
-    this.movePreviewGraphics.lineStyle(2, 0xffffff, 0.8);
+    this.movePreviewGraphics.lineStyle(2, canMove ? 0xffffff : 0xff0000, 0.8);
+
     this.movePreviewGraphics.strokeRect(x, y, width, height);
   }
 }

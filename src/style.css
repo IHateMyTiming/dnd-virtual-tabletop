@@ -1,0 +1,48 @@
+#terrain-selector {
+  position: relative;
+  display: inline-block;
+}
+
+.terrain-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+
+  background: #2a2a2a;
+  border: 1px solid #555;
+  padding: 8px;
+
+  min-width: 180px;
+}
+
+.terrain-menu.open {
+  display: block;
+}
+
+.terrain-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  width: 100%;
+  padding: 6px;
+
+  background: #333;
+  border: 1px solid #555;
+
+  color: white;
+  cursor: pointer;
+}
+
+.terrain-option:hover {
+  background: #444;
+}
+
+.terrain-option img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}

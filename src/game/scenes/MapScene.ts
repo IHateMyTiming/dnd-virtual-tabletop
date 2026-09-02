@@ -5,16 +5,12 @@ import type { MapObjectType } from "./MapObjects";
 import { InteractionManager } from "../input/InteractionManager";
 import { translations, getCurrentLanguage } from "../translation/translation";
 import { gridWidth, gridHeight, setGridSize, cellSize } from "./Grid";
-
-type Terrain =
-  | "empty"
-  | "floor"
-  | "wall"
-  | "water"
-  | "grass"
-  | "mud"
-  | "lava"
-  | "sand";
+import { TerrainManager } from "./TerrainManager";
+import {
+  TERRAIN_VARIANTS,
+  type TerrainCategory,
+  type TerrainVariant,
+} from "./TerrainObject";
 
 type Tool =
   | "brush"
@@ -30,14 +26,14 @@ type Tool =
   | "object-select";
 
 interface Tile {
-  terrain: Terrain;
+  terrain: TerrainVariant | null;
 }
 
 interface TileChange {
   row: number;
   column: number;
-  previousTerrain: Terrain;
-  newTerrain: Terrain;
+  previousTerrain: TerrainVariant | null;
+  newTerrain: TerrainVariant | null;
 }
 
 interface MapAction {
@@ -52,7 +48,7 @@ export class MapScene extends Phaser.Scene {
   private previewGraphics!: Phaser.GameObjects.Graphics;
   private objectPreviewGraphics!: Phaser.GameObjects.Graphics;
 
-  private selectedTerrain: Terrain = "floor";
+  private selectedTerrain: TerrainVariant = TERRAIN_VARIANTS[0];
   private selectedTool: Tool = "brush";
 
   private isPainting = false;
@@ -87,6 +83,8 @@ export class MapScene extends Phaser.Scene {
 
   private interactionManager!: InteractionManager;
 
+  private terrainManager!: TerrainManager;
+
   constructor() {
     super("MapScene");
   }
@@ -102,46 +100,12 @@ export class MapScene extends Phaser.Scene {
     const x = column * cellSize;
     const y = row * cellSize;
 
+    // Base tile
     graphics.fillStyle(0x1e1e1e);
     graphics.fillRect(x, y, cellSize, cellSize);
 
-    if (tile.terrain === "floor") {
-      graphics.fillStyle(0xaaaaaa);
-      graphics.fillRect(x, y, cellSize, cellSize);
-    }
-
-    if (tile.terrain === "wall") {
-      graphics.fillStyle(0x555555);
-      graphics.fillRect(x, y, cellSize, cellSize);
-    }
-
-    if (tile.terrain === "water") {
-      graphics.fillStyle(0x3366aa);
-      graphics.fillRect(x, y, cellSize, cellSize);
-    }
-
-    if (tile.terrain === "grass") {
-      graphics.fillStyle(0x7cfc00);
-      graphics.fillRect(x, y, cellSize, cellSize);
-    }
-
-    if (tile.terrain === "mud") {
-      graphics.fillStyle(0x6b4423);
-      graphics.fillRect(x, y, cellSize, cellSize);
-    }
-
-    if (tile.terrain === "lava") {
-      graphics.fillStyle(0xa83232);
-      graphics.fillRect(x, y, cellSize, cellSize);
-    }
-
-    if (tile.terrain === "sand") {
-      graphics.fillStyle(0xd6b83d);
-      graphics.fillRect(x, y, cellSize, cellSize);
-    }
-
+    // Draw grid
     graphics.lineStyle(1, 0x555555);
-
     graphics.strokeRect(x, y, cellSize, cellSize);
   }
 
@@ -185,28 +149,22 @@ export class MapScene extends Phaser.Scene {
     this.lastPaintedColumn = column;
   }
 
-  private paintSingleTile(row: number, column: number) {
-    const previousTerrain = this.layers[this.currentLayer][row][column].terrain;
+  private paintSingleTile(row: number, column: number): void {
+    const variant = this.selectedTerrain;
 
-    if (previousTerrain === this.selectedTerrain) {
+    if (
+      !this.terrainManager.canPlaceTerrain(
+        row,
+        column,
+        variant.width,
+        variant.height,
+        this.currentLayer,
+      )
+    ) {
       return;
     }
 
-    this.currentAction?.changes.push({
-      row,
-      column,
-      previousTerrain,
-      newTerrain: this.selectedTerrain,
-    });
-
-    this.layers[this.currentLayer][row][column].terrain = this.selectedTerrain;
-
-    this.drawTile(
-      this.layerGraphics[this.currentLayer],
-      this.currentLayer,
-      row,
-      column,
-    );
+    this.terrainManager.addTerrain(variant, row, column, this.currentLayer);
   }
 
   private fillRectangle(
@@ -490,7 +448,7 @@ export class MapScene extends Phaser.Scene {
 
       for (let column = 0; column < gridWidth; column++) {
         newLayer[row][column] = {
-          terrain: "empty",
+          terrain: null,
         };
       }
     }
@@ -972,6 +930,47 @@ export class MapScene extends Phaser.Scene {
 
   preload() {
     this.load.image("boulder", "assets/objects/boulder.webp");
+    this.load.image("short-grass", "assets/terrain/shortGrass.png");
+    this.load.image("tall-grass", "assets/terrain/tallGrass.png");
+    this.load.image("water-center", "assets/terrain/waterCenter.png");
+    this.load.image("water-top", "assets/terrain/waterTop.png");
+    this.load.image("water-left", "assets/terrain/waterLeft.png");
+    this.load.image("water-right", "assets/terrain/waterRight.png");
+    this.load.image("water-bottom", "assets/terrain/waterBottom.png");
+    this.load.image("water-top-right", "assets/terrain/waterTopRight.png");
+    this.load.image("water-top-left", "assets/terrain/waterTopLeft.png");
+    this.load.image(
+      "water-bottom-right",
+      "assets/terrain/waterBottomRight.png",
+    );
+    this.load.image("water-bottom-left", "assets/terrain/waterBottomLeft.png");
+    this.load.image(
+      "water-river-horizontal",
+      "assets/terrain/waterRiverHorizontal.png",
+    );
+    this.load.image(
+      "water-river-vertical",
+      "assets/terrain/waterRiverVertical.png",
+    );
+    this.load.image(
+      "water-inner-top-left",
+      "assets/terrain/waterInnerTopLeft.png",
+    );
+
+    this.load.image(
+      "water-inner-top-right",
+      "assets/terrain/waterInnerTopRight.png",
+    );
+
+    this.load.image(
+      "water-inner-bottom-left",
+      "assets/terrain/waterInnerBottomLeft.png",
+    );
+
+    this.load.image(
+      "water-inner-bottom-right",
+      "assets/terrain/waterInnerBottomRight.png",
+    );
   }
 
   create() {
@@ -1003,10 +1002,14 @@ export class MapScene extends Phaser.Scene {
     this.objectManager = new ObjectManager(
       this,
       (layer) => this.layerGraphics[layer],
+      (row, column, layer) =>
+        this.characterManager.getCharacterAt(row, column, layer) !== null,
     );
 
     this.interactionManager = new InteractionManager(this);
-
+    this.terrainManager = new TerrainManager(this, (layer) =>
+      this.getLayerOffset(layer),
+    );
     this.previewGraphics = this.add.graphics();
 
     this.previewGraphics.setDepth(100);
@@ -1026,16 +1029,105 @@ export class MapScene extends Phaser.Scene {
     this.input.on("pointerup", this.handlePointerUp.bind(this));
 
     //TERRAIN TOOL BUTTONS
-    const buttons =
-      document.querySelectorAll<HTMLButtonElement>("#toolbar button");
+    //GRASS TERRAIN BUTTON
+    const grassButton = document.querySelector<HTMLButtonElement>(
+      "#terrain-grass-button",
+    );
 
-    buttons.forEach((button) => {
-      button.addEventListener("click", () => {
-        const terrain = button.dataset.terrain as Terrain;
+    const grassMenu = document.querySelector<HTMLDivElement>(
+      "#terrain-grass-menu",
+    );
 
-        this.selectedTerrain = terrain;
+    if (grassButton && grassMenu) {
+      const grassVariants = TERRAIN_VARIANTS.filter(
+        (variant) => variant.category === "grass",
+      );
+
+      for (const variant of grassVariants) {
+        const option = document.createElement("button");
+
+        option.type = "button";
+        option.className = "terrain-option";
+
+        option.innerHTML = `
+          <img
+            src="${variant.assetPath}"
+            alt="${variant.name}"
+          />
+          <span>${variant.name}</span>
+        `;
+
+        option.addEventListener("click", () => {
+          this.selectedTerrain = variant;
+
+          grassMenu.classList.remove("open");
+
+          console.log(
+            "Selected terrain:",
+            variant.name,
+            variant.width,
+            "x",
+            variant.height,
+          );
+        });
+
+        grassMenu.appendChild(option);
+      }
+
+      grassButton.addEventListener("click", () => {
+        grassMenu.classList.toggle("open");
       });
-    });
+    }
+
+    //WATER TERRAIN
+    const waterButton = document.querySelector<HTMLButtonElement>(
+      "#terrain-water-button",
+    );
+
+    const waterMenu = document.querySelector<HTMLDivElement>(
+      "#terrain-water-menu",
+    );
+
+    if (waterButton && waterMenu) {
+      const waterVariants = TERRAIN_VARIANTS.filter(
+        (variant) => variant.category === "water",
+      );
+
+      for (const variant of waterVariants) {
+        const option = document.createElement("button");
+
+        option.type = "button";
+        option.className = "terrain-option";
+
+        option.innerHTML = `
+          <img
+            src="${variant.assetPath}"
+            alt="${variant.name}"
+          />
+          <span>${variant.name}</span>
+        `;
+
+        option.addEventListener("click", () => {
+          this.selectedTerrain = variant;
+
+          waterMenu.classList.remove("open");
+
+          console.log(
+            "Selected terrain:",
+            variant.name,
+            variant.width,
+            "x",
+            variant.height,
+          );
+        });
+
+        waterMenu.appendChild(option);
+      }
+
+      waterButton.addEventListener("click", () => {
+        waterMenu.classList.toggle("open");
+      });
+    }
 
     const toolButtons = document.querySelectorAll<HTMLButtonElement>(
       "#tools button, #character-bar button, #object-bar button[data-object-tool]",
@@ -1057,35 +1149,7 @@ export class MapScene extends Phaser.Scene {
       document.querySelector<HTMLButtonElement>("#empty-all");
 
     eraseAllButton?.addEventListener("click", () => {
-      const action: MapAction = {
-        changes: [],
-      };
-
-      for (let row = 0; row < gridHeight; row++) {
-        for (let column = 0; column < gridWidth; column++) {
-          const previousTerrain =
-            this.layers[this.currentLayer][row][column].terrain;
-
-          if (previousTerrain !== "empty") {
-            action.changes.push({
-              row,
-              column,
-              previousTerrain,
-              newTerrain: "empty",
-            });
-
-            this.layers[this.currentLayer][row][column].terrain = "empty";
-          }
-        }
-      }
-
-      if (action.changes.length > 0) {
-        this.undoStack.push(action);
-
-        this.redoStack = [];
-      }
-
-      this.redrawLayer(this.currentLayer);
+      this.terrainManager.clear();
     });
 
     // OBJECT TOOL BUTTONS
@@ -1309,9 +1373,6 @@ export class MapScene extends Phaser.Scene {
     });
 
     //MAP GRID TOOL
-
-    // MAP GRID TOOL
-
     const mapSizeButton =
       document.querySelector<HTMLButtonElement>("#map-size");
 
