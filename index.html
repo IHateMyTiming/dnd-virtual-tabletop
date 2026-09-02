@@ -58,7 +58,6 @@
       <button id="empty-all" data-i18n="eraseAll"></button>
     </div>
 
-    //REMINDER TO TAKE THE BR OF THE CODE LATER
     <div id="character-bar">
       <button data-tool="character" data-i18n="addCharacter"></button>
       <button data-tool="character-erase" data-i18n="eraseCharacter"></button>
@@ -68,7 +67,7 @@
     <div id="object-bar">
       <span>Objects</span>
       <br />
-
+      <div></div>
       <button data-object-tool="object-brush" data-i18n="brush"></button>
       <button
         data-object-tool="object-rectangle"
@@ -77,33 +76,33 @@
       <button data-object-tool="object-fill" data-i18n="fill"></button>
       <button data-object-tool="object-erase" data-i18n="erase"></button>
       <button id="erase-all-objects" data-i18n="eraseAll"></button>
-
-      <br />
-      <button data-object-type="boulder" data-i18n="boulder"></button>
-      <button data-object-type="tree" data-i18n="tree"></button>
-      <br />
-      <button id="object-settings" data-i18n="settings"></button>
-
-      <div id="object-settings-panel" style="display: none">
-        <label>
-          <span data-i18n="width"></span>
-          <input id="object-width" type="number" min="1" max="100" />
-        </label>
-
-        <label
-          ><span data-i18n="height"></span
-          ><input id="object-height" type="number" min="1" max="100"
-        /></label>
-
-        <p id="object-settings-error" style="display: none"></p>
-        <button id="object-settings-apply" data-i18n="apply"></button>
-        <button id="object-settings-cancel" data-i18n="cancel"></button>
+      <div>
+        <button data-object-type="boulder" data-i18n="boulder"></button>
+        <button data-object-type="tree" data-i18n="tree"></button>
       </div>
-      <button data-object-tool="object-select" data-i18n="select">
-        Select
-      </button>
-    </div>
+      <div>
+        <button id="object-settings" data-i18n="settings"></button>
 
+        <div id="object-settings-panel" style="display: none">
+          <label>
+            <span data-i18n="width"></span>
+            <input id="object-width" type="number" min="1" max="100" />
+          </label>
+
+          <label
+            ><span data-i18n="height"></span
+            ><input id="object-height" type="number" min="1" max="100"
+          /></label>
+
+          <p id="object-settings-error" style="display: none"></p>
+          <button id="object-settings-apply" data-i18n="apply"></button>
+          <button id="object-settings-cancel" data-i18n="cancel"></button>
+        </div>
+        <button data-object-tool="object-select" data-i18n="select">
+          Select
+        </button>
+      </div>
+    </div>
     <div id="game"></div>
 
     <script type="module" src="/src/main.ts"></script>

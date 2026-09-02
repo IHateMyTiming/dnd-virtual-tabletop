@@ -534,6 +534,14 @@ export class MapScene extends Phaser.Scene {
   }
 
   private handlePointerDown(pointer: Phaser.Input.Pointer) {
+    if (
+      this.selectedTool === "object-select" &&
+      this.objectManager.isPointerOnMoveHandle(pointer)
+    ) {
+      this.objectManager.startMovingSelectedObject(pointer);
+      return;
+    }
+
     const { row, column } = this.getPointerTile(pointer, this.currentLayer);
 
     if (row < 0 || row >= gridHeight || column < 0 || column >= gridWidth) {
@@ -654,6 +662,14 @@ export class MapScene extends Phaser.Scene {
   }
 
   private handlePointerMove(pointer: Phaser.Input.Pointer) {
+    if (
+      this.selectedTool === "object-select" &&
+      this.objectManager.isMovingSelectedObject()
+    ) {
+      this.objectManager.updateMovingSelectedObject(pointer);
+      return;
+    }
+
     if (this.selectedTool === "object-brush" && !this.objectIsPainting) {
       const { row, column } = this.getPointerTile(pointer, this.currentLayer);
 
@@ -777,6 +793,13 @@ export class MapScene extends Phaser.Scene {
   }
 
   private handlePointerUp(pointer: Phaser.Input.Pointer) {
+    if (
+      this.selectedTool === "object-select" &&
+      this.objectManager.isMovingSelectedObject()
+    ) {
+      this.objectManager.stopMovingSelectedObject();
+      return;
+    }
     // CHARACTER
     if (
       this.selectedTool === "character" &&
@@ -943,8 +966,6 @@ export class MapScene extends Phaser.Scene {
         if (tool !== "object-brush") {
           this.interactionManager.clear();
         }
-
-        console.log(`Selected tool: ${tool}`);
       });
     });
 
@@ -993,8 +1014,6 @@ export class MapScene extends Phaser.Scene {
       button.addEventListener("click", () => {
         const objectType = button.dataset.objectType as MapObjectType;
         this.selectedObjectType = objectType;
-
-        console.log(`Selected object type: ${objectType}`);
       });
     });
 
@@ -1151,8 +1170,12 @@ export class MapScene extends Phaser.Scene {
           return;
         }
 
-        selectedObject.width = width;
-        selectedObject.height = height;
+        const resized = this.objectManager.resizeSelectedObject(width, height);
+
+        if (!resized) {
+          // your existing error handling
+          return;
+        }
 
         this.objectManager.updateObjectPosition(selectedObject);
       }
@@ -1190,7 +1213,8 @@ export class MapScene extends Phaser.Scene {
         this.selectedTool === "object-brush" ||
         this.selectedTool === "object-rectangle" ||
         this.selectedTool === "object-fill" ||
-        this.selectedTool === "object-erase"
+        this.selectedTool === "object-erase" ||
+        this.selectedTool === "object-select"
       ) {
         this.objectManager.undo();
         return;
@@ -1315,7 +1339,8 @@ export class MapScene extends Phaser.Scene {
         this.selectedTool === "object-brush" ||
         this.selectedTool === "object-rectangle" ||
         this.selectedTool === "object-fill" ||
-        this.selectedTool === "object-erase"
+        this.selectedTool === "object-erase" ||
+        this.selectedTool === "object-select"
       ) {
         this.objectManager.redo();
         return;
