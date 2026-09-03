@@ -10,6 +10,7 @@ import { gridWidth, gridHeight, setGridSize, cellSize } from "./Grid";
 import { TerrainManager, type TerrainObject } from "./TerrainManager";
 import { TERRAIN_VARIANTS, type TerrainVariant } from "./TerrainObject";
 import { MapHistory, type MapSnapshot } from "./MapHistory";
+import type { MapSaveData } from "../save/MapSave";
 
 type Tool =
   | "brush"
@@ -29,6 +30,10 @@ interface Tile {
   terrain: TerrainVariant | null;
 }
 export class MapScene extends Phaser.Scene {
+  constructor() {
+    super("MapScene");
+  }
+
   private layers: Tile[][][] = [];
   private currentLayer = 0;
 
@@ -147,8 +152,169 @@ export class MapScene extends Phaser.Scene {
     this.restoreMapSnapshot(snapshot);
   }
 
-  constructor() {
-    super("MapScene");
+  private createSaveData(): MapSaveData {
+    const snapshot = this.createMapSnapshot();
+
+    return {
+      version: 1,
+
+      gridWidth,
+      gridHeight,
+
+      currentLayer: this.currentLayer,
+      layerCount: this.layers.length,
+
+      terrains: snapshot.terrains,
+      objects: snapshot.objects,
+      characters: snapshot.characters,
+    };
+  }
+
+  private saveMap(): void {
+    const saveData = this.createSaveData();
+
+    const json = JSON.stringify(saveData, null, 2);
+
+    const blob = new Blob([json], {
+      type: "application/json",
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "dnd-map.json";
+
+    link.click();
+
+    URL.revokeObjectURL(url);
+  }
+
+  private loadMap(): void {
+    const input = document.querySelector<HTMLInputElement>("#load-map-input");
+
+    if (!input) return;
+
+    input.value = "";
+
+    input.onchange = async () => {
+      const file = input.files?.[0];
+
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const saveData: MapSaveData = JSON.parse(text);
+
+        // Basic validation
+        if (
+          saveData.version !== 1 ||
+          !Number.isInteger(saveData.gridWidth) ||
+          !Number.isInteger(saveData.gridHeight) ||
+          !Number.isInteger(saveData.currentLayer) ||
+          !Number.isInteger(saveData.layerCount) ||
+          !Array.isArray(saveData.terrains) ||
+          !Array.isArray(saveData.objects) ||
+          !Array.isArray(saveData.characters)
+        ) {
+          throw new Error("Invalid map file.");
+        }
+
+        if (
+          saveData.gridWidth < 5 ||
+          saveData.gridWidth > 100 ||
+          saveData.gridHeight < 5 ||
+          saveData.gridHeight > 100 ||
+          saveData.gridWidth % 5 !== 0 ||
+          saveData.gridHeight % 5 !== 0
+        ) {
+          throw new Error("Invalid map size.");
+        }
+
+        if (
+          saveData.layerCount < 1 ||
+          saveData.currentLayer < 0 ||
+          saveData.currentLayer >= saveData.layerCount
+        ) {
+          throw new Error("Invalid layer data.");
+        }
+
+        console.log("Loading map:", saveData);
+
+        // Change grid size
+        const gridChanged =
+          saveData.gridWidth !== gridWidth ||
+          saveData.gridHeight !== gridHeight;
+
+        if (gridChanged) {
+          const success = setGridSize(saveData.gridWidth, saveData.gridHeight);
+
+          if (!success) {
+            throw new Error("Failed to change grid size.");
+          }
+        }
+
+        // Remove existing layer graphics
+        for (const graphics of this.layerGraphics) {
+          graphics.destroy();
+        }
+
+        this.layerGraphics = [];
+        this.layers = [];
+
+        // Clear map content
+        this.characterManager.removeAllCharacters();
+        this.objectManager.clearAllObjects();
+        this.terrainManager.clear();
+
+        // Reset layer state
+        this.currentLayer = 0;
+
+        // Recreate layers
+        for (let i = 0; i < saveData.layerCount; i++) {
+          this.addLayer();
+        }
+
+        // Restore terrain
+        this.terrainManager.restore(saveData.terrains, (variantId) =>
+          TERRAIN_VARIANTS.find((variant) => variant.id === variantId),
+        );
+
+        // Restore objects
+        this.objectManager.restoreObjects(saveData.objects);
+
+        // Restore characters
+        this.characterManager.restoreCharacters(saveData.characters);
+
+        // Restore current layer
+        this.currentLayer = saveData.currentLayer;
+
+        // Update everything visually
+        this.updateLayerPositions();
+        this.bringCurrentLayerToFront();
+
+        this.terrainManager.updateAllTerrainPositions((variantId) =>
+          TERRAIN_VARIANTS.find((variant) => variant.id === variantId),
+        );
+
+        this.objectManager.updateAllObjectPositions();
+
+        this.characterManager.updateAllCharacterPositions();
+
+        this.updateLayerCounter();
+
+        // Loading creates a new history state
+        this.mapHistory.clear();
+        this.mapActionStart = null;
+
+        console.log("Map loaded successfully.");
+      } catch (error) {
+        console.error("Failed to load map:", error);
+        alert("Failed to load map.");
+      }
+    };
+
+    input.click();
   }
 
   private drawTile(
@@ -1786,5 +1952,21 @@ export class MapScene extends Phaser.Scene {
     nextLayerButton?.addEventListener("click", () => this.nextLayer());
 
     this.bringCurrentLayerToFront();
+
+    //Game save
+    const saveMapButton =
+      document.querySelector<HTMLButtonElement>("#save-map");
+
+    saveMapButton?.addEventListener("click", () => {
+      this.saveMap();
+    });
+
+    //Load game
+    const loadMapButton =
+      document.querySelector<HTMLButtonElement>("#load-map");
+
+    loadMapButton?.addEventListener("click", () => {
+      this.loadMap();
+    });
   }
 }
