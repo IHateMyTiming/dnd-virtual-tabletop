@@ -373,6 +373,7 @@ export class MapScene extends Phaser.Scene {
   private getLayerOffset(layer: number) {
     const difference = layer - this.currentLayer;
 
+    // Current layer
     if (difference === 0) {
       return {
         offsetX: 0,
@@ -381,22 +382,9 @@ export class MapScene extends Phaser.Scene {
       };
     }
 
-    if (difference === -1) {
-      return {
-        offsetX: 0,
-        offsetY: 270,
-        scale: 0.25,
-      };
-    }
-
-    if (difference === 1) {
-      return {
-        offsetX: 780,
-        offsetY: 270,
-        scale: 0.25,
-      };
-    }
-
+    // Hide all other layers for now.
+    // The side-layer preview will be implemented
+    // when we finish the interface.
     return {
       offsetX: -10000,
       offsetY: 0,
@@ -405,9 +393,13 @@ export class MapScene extends Phaser.Scene {
   }
 
   private updateLayerPositions() {
-    for (const graphics of this.layerGraphics) {
-      graphics.setPosition(0, 0);
-      graphics.setScale(1);
+    for (let layer = 0; layer < this.layerGraphics.length; layer++) {
+      const graphics = this.layerGraphics[layer];
+
+      const { offsetX, offsetY, scale } = this.getLayerOffset(layer);
+
+      graphics.setPosition(offsetX, offsetY);
+      graphics.setScale(scale);
     }
   }
 
@@ -467,8 +459,11 @@ export class MapScene extends Phaser.Scene {
     this.bringCurrentLayerToFront();
     this.updateLayerCounter();
 
-    this.characterManager.updateAllCharacterPositions();
+    this.terrainManager.updateAllTerrainPositions((variantId) =>
+      TERRAIN_VARIANTS.find((variant) => variant.id === variantId),
+    );
 
+    this.characterManager.updateAllCharacterPositions();
     this.objectManager.updateAllObjectPositions();
   }
 
@@ -529,8 +524,9 @@ export class MapScene extends Phaser.Scene {
     this.bringCurrentLayerToFront();
     this.updateLayerCounter();
 
-    this.terrainUndoStack = [];
-    this.terrainRedoStack = [];
+    this.terrainManager.updateAllTerrainPositions((variantId) =>
+      TERRAIN_VARIANTS.find((variant) => variant.id === variantId),
+    );
   }
 
   private handlePointerDown(pointer: Phaser.Input.Pointer) {
@@ -988,15 +984,13 @@ export class MapScene extends Phaser.Scene {
     this.layerGraphics = [];
     this.layers = [];
 
-    // Clear characters and objects
+    // Clear characters, objects and terrain
     this.characterManager.removeAllCharacters();
     this.objectManager.clearAllObjects();
+    this.terrainManager.clear();
+
     // Reset map state
     this.currentLayer = 0;
-
-    this.terrainUndoStack = [];
-    this.terrainRedoStack = [];
-    this.terrainActionStart = null;
 
     this.mapHistory.clear();
     this.mapActionStart = null;
@@ -1214,14 +1208,6 @@ export class MapScene extends Phaser.Scene {
           this.selectedTerrain = variant;
 
           grassMenu.classList.remove("open");
-
-          console.log(
-            "Selected terrain:",
-            variant.name,
-            variant.width,
-            "x",
-            variant.height,
-          );
         });
 
         grassMenu.appendChild(option);
@@ -1264,14 +1250,6 @@ export class MapScene extends Phaser.Scene {
           this.selectedTerrain = variant;
 
           waterMenu.classList.remove("open");
-
-          console.log(
-            "Selected terrain:",
-            variant.name,
-            variant.width,
-            "x",
-            variant.height,
-          );
         });
 
         waterMenu.appendChild(option);
@@ -1313,14 +1291,6 @@ export class MapScene extends Phaser.Scene {
           this.selectedTerrain = variant;
 
           sandMenu.classList.remove("open");
-
-          console.log(
-            "Selected terrain:",
-            variant.name,
-            variant.width,
-            "x",
-            variant.height,
-          );
         });
 
         sandMenu.appendChild(option);
@@ -1362,14 +1332,6 @@ export class MapScene extends Phaser.Scene {
           this.selectedTerrain = variant;
 
           mudMenu.classList.remove("open");
-
-          console.log(
-            "Selected terrain:",
-            variant.name,
-            variant.width,
-            "x",
-            variant.height,
-          );
         });
 
         mudMenu.appendChild(option);
@@ -1412,14 +1374,6 @@ export class MapScene extends Phaser.Scene {
           this.selectedTerrain = variant;
 
           lavaMenu.classList.remove("open");
-
-          console.log(
-            "Selected terrain:",
-            variant.name,
-            variant.width,
-            "x",
-            variant.height,
-          );
         });
 
         lavaMenu.appendChild(option);
@@ -1431,8 +1385,6 @@ export class MapScene extends Phaser.Scene {
     }
 
     //FLOOR
-
-    //LAVA TERRAIN BUTTON
 
     const floor = document.querySelector<HTMLButtonElement>(
       "#terrain-floor-button",
@@ -1465,14 +1417,6 @@ export class MapScene extends Phaser.Scene {
           this.selectedTerrain = variant;
 
           floorMenu.classList.remove("open");
-
-          console.log(
-            "Selected terrain:",
-            variant.name,
-            variant.width,
-            "x",
-            variant.height,
-          );
         });
 
         floorMenu.appendChild(option);
