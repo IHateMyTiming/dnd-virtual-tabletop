@@ -1303,6 +1303,14 @@ export class MapScene extends Phaser.Scene {
       "character-cape-human-white-red",
       "assets/characters/capes/capeHumanWhiteRed.png",
     );
+    this.load.image(
+      "character-cape-human-white-red-top",
+      "assets/characters/capes/capeHumanWhiteRedTop.png",
+    );
+    this.load.image(
+      "character-cape-human-white-red-bottom",
+      "assets/characters/capes/capeHumanWhiteRedBottom.png",
+    );
     // EQUIPMENT
     this.load.image(
       "character-equipment-sword",

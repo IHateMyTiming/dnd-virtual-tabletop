@@ -84,6 +84,7 @@ export class CharacterManager {
       customization: {
         headId: CHARACTER_HEADS[0].id,
         bodyId: CHARACTER_BODIES[0].id,
+        capeId: CHARACTER_CAPES[0].id,
       },
     };
 
@@ -137,19 +138,21 @@ export class CharacterManager {
       (sprite) => sprite.id === character.customization.equipmentId,
     );
 
-    if (body) {
-      const image = this.scene.add.image(0, 0, body[direction]);
-
-      image.setOrigin(0.5, 0.5);
-
-      container.add(image);
-    }
-
     if (cape) {
       const image = this.scene.add.image(0, 0, cape[direction]);
 
       image.setOrigin(0.5, 0.5);
+      image.setDisplaySize(cellSize, cellSize / 2);
+      image.setPosition(0, cellSize * 0.2);
 
+      container.add(image);
+    }
+    if (body) {
+      const image = this.scene.add.image(0, 0, body[direction]);
+
+      image.setOrigin(0.5, 0.5);
+      image.setDisplaySize(cellSize, cellSize / 2);
+      image.setPosition(0, cellSize * 0.2);
       container.add(image);
     }
 
@@ -157,7 +160,8 @@ export class CharacterManager {
       const image = this.scene.add.image(0, 0, head[direction]);
 
       image.setOrigin(0.5, 0.5);
-
+      image.setDisplaySize(cellSize, cellSize / 2);
+      image.setPosition(0, -cellSize * 0.25);
       container.add(image);
     }
 
@@ -165,20 +169,20 @@ export class CharacterManager {
       const image = this.scene.add.image(0, 0, equipment[direction]);
 
       image.setOrigin(0.5, 0.5);
+      image.setDisplaySize(cellSize, cellSize);
 
       container.add(image);
     }
   }
 
   updateCharacterPosition(character: Character) {
-    const graphics = this.characterGraphics.get(character.id);
+    const container = this.characterGraphics.get(character.id);
 
-    if (!graphics) {
+    if (!container) {
       return;
     }
 
     const layerGraphics = this.getLayerGraphics(character.layer);
-
     const scale = layerGraphics.scaleX;
 
     const x =
@@ -191,14 +195,8 @@ export class CharacterManager {
       character.row * cellSize * scale +
       (cellSize / 2) * scale;
 
-    graphics.setPosition(x, y);
-    graphics.setScale(scale);
-  }
-
-  updateAllCharacterPositions() {
-    for (const character of this.characters) {
-      this.updateCharacterPosition(character);
-    }
+    container.setPosition(x, y);
+    container.setScale(scale);
   }
 
   updateCharacterCustomization(

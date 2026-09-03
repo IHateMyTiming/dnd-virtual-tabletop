@@ -10,6 +10,25 @@ export interface CharacterSpritePart {
   right: string;
 }
 
+export interface CharacterCape {
+  id: string;
+  name: string;
+
+  top: {
+    front: string;
+    back: string;
+    left: string;
+    right: string;
+  };
+
+  bottom: {
+    front: string;
+    back: string;
+    left: string;
+    right: string;
+  };
+}
+
 export const CHARACTER_HEADS: CharacterSpritePart[] = [
   {
     id: "human-head-white-brown",
@@ -32,17 +51,26 @@ export const CHARACTER_BODIES: CharacterSpritePart[] = [
   },
 ];
 
-export const CHARACTER_CAPES: CharacterSpritePart[] = [
+export const CHARACTER_CAPES: CharacterCape[] = [
   {
     id: "human-white-red",
     name: "White & Red Cape",
-    front: "character-cape-human-white-red",
-    back: "character-cape-human-white-red",
-    left: "character-cape-human-white-red",
-    right: "character-cape-human-white-red",
+
+    top: {
+      front: "character-cape-human-white-red-top",
+      back: "character-cape-human-white-red-top",
+      left: "character-cape-human-white-red-top",
+      right: "character-cape-human-white-red-top",
+    },
+
+    bottom: {
+      front: "character-cape-human-white-red-bottom",
+      back: "character-cape-human-white-red-bottom",
+      left: "character-cape-human-white-red-bottom",
+      right: "character-cape-human-white-red-bottom",
+    },
   },
 ];
-
 export const CHARACTER_EQUIPMENT: CharacterSpritePart[] = [
   {
     id: "sword",
