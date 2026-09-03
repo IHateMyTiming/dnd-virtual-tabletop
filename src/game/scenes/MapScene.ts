@@ -602,11 +602,13 @@ export class MapScene extends Phaser.Scene {
   private getPointerTile(pointer: Phaser.Input.Pointer, layer: number) {
     const graphics = this.layerGraphics[layer];
 
+    const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+
     const scale = graphics.scaleX;
 
-    const column = Math.floor((pointer.x - graphics.x) / (cellSize * scale));
+    const column = Math.floor((worldPoint.x - graphics.x) / (cellSize * scale));
 
-    const row = Math.floor((pointer.y - graphics.y) / (cellSize * scale));
+    const row = Math.floor((worldPoint.y - graphics.y) / (cellSize * scale));
 
     return {
       row,
@@ -1284,6 +1286,28 @@ export class MapScene extends Phaser.Scene {
     this.load.image("floor-wood2", "assets/terrain/floor/wood2.png");
     this.load.image("floor-dungeon1", "assets/terrain/floor/dungeon1.png");
     this.load.image("floor-dungeon2", "assets/terrain/floor/dungeon2.png");
+
+    //Character SPRITES
+    //HEAD
+    this.load.image(
+      "character-head-human-white-brown",
+      "assets/characters/heads/headHumanWhiteBrown.png",
+    );
+    //BODY
+    this.load.image(
+      "character-body-human-green-tunic",
+      "assets/characters/bodies/bodyHumanGreenTunic.png",
+    );
+    //CAPE
+    this.load.image(
+      "character-cape-human-white-red",
+      "assets/characters/capes/capeHumanWhiteRed.png",
+    );
+    // EQUIPMENT
+    this.load.image(
+      "character-equipment-sword",
+      "assets/characters/equipments/sword.png",
+    );
   }
 
   create() {
@@ -1968,5 +1992,46 @@ export class MapScene extends Phaser.Scene {
     loadMapButton?.addEventListener("click", () => {
       this.loadMap();
     });
+
+    const camera = this.cameras.main;
+
+    camera.setZoom(1);
+
+    camera.setBounds(0, 0, gridWidth * cellSize, gridHeight * cellSize);
+
+    this.input.on(
+      "wheel",
+      (
+        pointer: Phaser.Input.Pointer,
+        _gameObjects: Phaser.GameObjects.GameObject[],
+        _deltaX: number,
+        deltaY: number,
+      ) => {
+        const worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
+
+        const zoomStep = 0.1;
+
+        let newZoom = camera.zoom;
+
+        if (deltaY < 0) {
+          newZoom += zoomStep;
+        } else if (deltaY > 0) {
+          newZoom -= zoomStep;
+        }
+
+        newZoom = Phaser.Math.Clamp(newZoom, 0.5, 2);
+
+        if (newZoom === camera.zoom) {
+          return;
+        }
+
+        camera.setZoom(newZoom);
+
+        const newWorldPoint = camera.getWorldPoint(pointer.x, pointer.y);
+
+        camera.scrollX += worldPoint.x - newWorldPoint.x;
+        camera.scrollY += worldPoint.y - newWorldPoint.y;
+      },
+    );
   }
 }

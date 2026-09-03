@@ -1,6 +1,13 @@
 import Phaser from "phaser";
-import type { Character } from "./Character";
+import type { Character, CharacterCustomization } from "./Character";
 import { cellSize } from "../scenes/Grid";
+import {
+  CHARACTER_HEADS,
+  CHARACTER_BODIES,
+  CHARACTER_CAPES,
+  CHARACTER_EQUIPMENT,
+} from "./CharacterSprites";
+
 interface CharacterAction {
   type: "add" | "remove" | "move";
   character: Character;
@@ -17,8 +24,7 @@ export class CharacterManager {
 
   private characters: Character[] = [];
 
-  private characterGraphics = new Map<string, Phaser.GameObjects.Graphics>();
-
+  private characterGraphics = new Map<string, Phaser.GameObjects.Container>();
   private draggingCharacter: Character | null = null;
 
   private undoStack: CharacterAction[] = [];
@@ -72,6 +78,13 @@ export class CharacterManager {
       width: 1,
       height: 1,
       layer,
+
+      direction: "front",
+
+      customization: {
+        headId: CHARACTER_HEADS[0].id,
+        bodyId: CHARACTER_BODIES[0].id,
+      },
     };
 
     this.characters.push(character);
@@ -89,27 +102,72 @@ export class CharacterManager {
   }
 
   private drawCharacter(character: Character) {
-    const graphics = this.scene.add.graphics();
+    const container = this.scene.add.container(0, 0);
 
-    this.drawCharacterGraphic(graphics);
+    this.drawCharacterSprites(container, character);
 
-    this.characterGraphics.set(character.id, graphics);
+    this.characterGraphics.set(character.id, container);
 
     this.updateCharacterPosition(character);
 
-    graphics.setDepth(100);
+    container.setDepth(100);
   }
 
-  private drawCharacterGraphic(graphics: Phaser.GameObjects.Graphics) {
-    graphics.clear();
+  private drawCharacterSprites(
+    container: Phaser.GameObjects.Container,
+    character: Character,
+  ): void {
+    container.removeAll(true);
 
-    graphics.fillStyle(0xff0000, 1);
+    const direction = character.direction;
 
-    graphics.fillCircle(0, 0, cellSize * 0.4);
+    const head = CHARACTER_HEADS.find(
+      (sprite) => sprite.id === character.customization.headId,
+    );
 
-    graphics.lineStyle(2, 0xffffff, 1);
+    const body = CHARACTER_BODIES.find(
+      (sprite) => sprite.id === character.customization.bodyId,
+    );
 
-    graphics.strokeCircle(0, 0, cellSize * 0.4);
+    const cape = CHARACTER_CAPES.find(
+      (sprite) => sprite.id === character.customization.capeId,
+    );
+
+    const equipment = CHARACTER_EQUIPMENT.find(
+      (sprite) => sprite.id === character.customization.equipmentId,
+    );
+
+    if (body) {
+      const image = this.scene.add.image(0, 0, body[direction]);
+
+      image.setOrigin(0.5, 0.5);
+
+      container.add(image);
+    }
+
+    if (cape) {
+      const image = this.scene.add.image(0, 0, cape[direction]);
+
+      image.setOrigin(0.5, 0.5);
+
+      container.add(image);
+    }
+
+    if (head) {
+      const image = this.scene.add.image(0, 0, head[direction]);
+
+      image.setOrigin(0.5, 0.5);
+
+      container.add(image);
+    }
+
+    if (equipment) {
+      const image = this.scene.add.image(0, 0, equipment[direction]);
+
+      image.setOrigin(0.5, 0.5);
+
+      container.add(image);
+    }
   }
 
   updateCharacterPosition(character: Character) {
@@ -141,6 +199,31 @@ export class CharacterManager {
     for (const character of this.characters) {
       this.updateCharacterPosition(character);
     }
+  }
+
+  updateCharacterCustomization(
+    characterId: string,
+    customization: CharacterCustomization,
+  ): void {
+    const character = this.characters.find(
+      (character) => character.id === characterId,
+    );
+
+    if (!character) {
+      return;
+    }
+
+    character.customization = {
+      ...customization,
+    };
+
+    const container = this.characterGraphics.get(characterId);
+
+    if (!container) {
+      return;
+    }
+
+    this.drawCharacterSprites(container, character);
   }
 
   eraseAt(row: number, column: number, layer: number) {
