@@ -204,13 +204,7 @@ export class ObjectManager {
     width = 1,
     height = 1,
   ) {
-    // Check the entire footprint before placing
-    if (
-      row < 0 ||
-      column < 0 ||
-      row + height > gridHeight ||
-      column + width > gridWidth
-    ) {
+    if (!this.canPlaceObject(row, column, layer, width, height)) {
       return;
     }
 
@@ -222,11 +216,9 @@ export class ObjectManager {
       layer,
       width,
       height,
-
       imageKey: OBJECT_DEFINITIONS[type].imageKey,
       blocksMovement: OBJECT_DEFINITIONS[type].blocksMovement,
     };
-
     this.objects.push(object);
 
     this.drawObject(object);
@@ -346,8 +338,40 @@ export class ObjectManager {
     }
   }
 
-  getObjects() {
-    return this.objects;
+  getObjects(): MapObject[] {
+    return this.objects.map((object) => ({
+      ...object,
+    }));
+  }
+
+  restoreObjects(objects: MapObject[]): void {
+    // Destroy existing object graphics
+    for (const graphics of this.objectGraphics.values()) {
+      graphics.destroy();
+    }
+
+    this.objectGraphics.clear();
+
+    // Clear selection
+    this.selectedObject = null;
+    this.selectedObjects = [];
+    this.isMovingObject = false;
+
+    this.moveHandleGraphics.setVisible(false);
+    this.movePreviewGraphics.clear();
+    this.movePreviewGraphics.setVisible(false);
+
+    // Restore object data
+    this.objects = objects.map((object) => ({
+      ...object,
+    }));
+
+    // Recreate graphics
+    for (const object of this.objects) {
+      this.drawObject(object);
+    }
+
+    this.updateAllObjectPositions();
   }
 
   getObjectAt(row: number, column: number, layer: number): MapObject | null {

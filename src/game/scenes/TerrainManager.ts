@@ -36,7 +36,9 @@ export class TerrainManager {
   }
 
   public getTerrainObjects(): TerrainObject[] {
-    return this.terrainObjects;
+    return this.terrainObjects.map((terrain) => ({
+      ...terrain,
+    }));
   }
 
   public canPlaceTerrain(
@@ -46,7 +48,6 @@ export class TerrainManager {
     height: number,
     layer: number,
   ): boolean {
-    // Outside map
     if (
       row < 0 ||
       column < 0 ||
@@ -56,7 +57,6 @@ export class TerrainManager {
       return false;
     }
 
-    // Check overlap with existing terrain
     for (const terrain of this.terrainObjects) {
       if (terrain.layer !== layer) {
         continue;
@@ -74,6 +74,23 @@ export class TerrainManager {
     }
 
     return true;
+  }
+
+  public getTerrainAt(
+    row: number,
+    column: number,
+    layer: number,
+  ): TerrainObject | null {
+    return (
+      this.terrainObjects.find(
+        (terrain) =>
+          terrain.layer === layer &&
+          row >= terrain.row &&
+          row < terrain.row + terrain.height &&
+          column >= terrain.column &&
+          column < terrain.column + terrain.width,
+      ) ?? null
+    );
   }
 
   public addTerrain(
@@ -99,10 +116,106 @@ export class TerrainManager {
     };
 
     this.terrainObjects.push(terrain);
-
     this.renderTerrain(terrain, variant);
 
     return terrain;
+  }
+
+  public removeTerrain(id: string): TerrainObject | null {
+    const index = this.terrainObjects.findIndex((terrain) => terrain.id === id);
+
+    if (index === -1) {
+      return null;
+    }
+
+    const terrain = this.terrainObjects[index];
+    const image = this.images.get(id);
+
+    if (image) {
+      image.destroy();
+      this.images.delete(id);
+    }
+
+    this.terrainObjects.splice(index, 1);
+
+    return terrain;
+  }
+
+  public eraseAt(
+    row: number,
+    column: number,
+    layer: number,
+  ): TerrainObject | null {
+    const terrain = this.getTerrainAt(row, column, layer);
+
+    if (!terrain) {
+      return null;
+    }
+
+    return this.removeTerrain(terrain.id);
+  }
+
+  public clear(): void {
+    for (const image of this.images.values()) {
+      image.destroy();
+    }
+
+    this.images.clear();
+    this.terrainObjects = [];
+  }
+
+  public restore(
+    snapshot: TerrainObject[],
+    getVariant: (variantId: string) => TerrainVariant | undefined,
+  ): void {
+    this.clear();
+
+    for (const terrain of snapshot) {
+      const variant = getVariant(terrain.variantId);
+
+      if (!variant) {
+        continue;
+      }
+
+      const restored: TerrainObject = {
+        ...terrain,
+      };
+
+      this.terrainObjects.push(restored);
+      this.renderTerrain(restored, variant);
+    }
+  }
+
+  public updateAllTerrainPositions(
+    getVariant: (variantId: string) => TerrainVariant | undefined,
+  ): void {
+    for (const terrain of this.terrainObjects) {
+      const image = this.images.get(terrain.id);
+      const variant = getVariant(terrain.variantId);
+
+      if (!image || !variant) {
+        continue;
+      }
+
+      const { offsetX, offsetY, scale } = this.getLayerOffset(terrain.layer);
+
+      const x =
+        offsetX +
+        terrain.column * cellSize * scale +
+        (terrain.width * cellSize * scale) / 2;
+
+      const y =
+        offsetY +
+        terrain.row * cellSize * scale +
+        (terrain.height * cellSize * scale) / 2;
+
+      image.setPosition(x, y);
+
+      image.setDisplaySize(
+        terrain.width * cellSize * scale,
+        terrain.height * cellSize * scale,
+      );
+    }
   }
 
   private renderTerrain(terrain: TerrainObject, variant: TerrainVariant): void {
@@ -125,39 +238,8 @@ export class TerrainManager {
       terrain.height * cellSize * scale,
     );
 
-    // Make sure terrain is above the grid graphics
-    image.setDepth(1000 + terrain.layer);
+    image.setDepth(10 + terrain.layer);
 
     this.images.set(terrain.id, image);
-  }
-
-  public removeTerrain(id: string): TerrainObject | null {
-    const index = this.terrainObjects.findIndex((terrain) => terrain.id === id);
-
-    if (index === -1) {
-      return null;
-    }
-
-    const terrain = this.terrainObjects[index];
-
-    const image = this.images.get(id);
-
-    if (image) {
-      image.destroy();
-      this.images.delete(id);
-    }
-
-    this.terrainObjects.splice(index, 1);
-
-    return terrain;
-  }
-
-  public clear(): void {
-    for (const image of this.images.values()) {
-      image.destroy();
-    }
-
-    this.images.clear();
-    this.terrainObjects = [];
   }
 }

@@ -46,3 +46,20 @@
   object-fit: contain;
   image-rendering: pixelated;
 }
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+#game {
+  width: 960px;
+  height: 720px;
+}
+
+#game canvas {
+  display: block;
+  width: 960px !important;
+  height: 720px !important;
+}

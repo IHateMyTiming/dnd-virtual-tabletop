@@ -153,8 +153,10 @@ export class CharacterManager {
     this.removeCharacter(character);
   }
 
-  getCharacters() {
-    return this.characters;
+  getCharacters(): Character[] {
+    return this.characters.map((character) => ({
+      ...character,
+    }));
   }
 
   getCharacterAt(row: number, column: number, layer: number): Character | null {
@@ -404,5 +406,28 @@ export class CharacterManager {
     }
 
     this.undoStack.push(action);
+  }
+
+  restoreCharacters(characters: Character[]) {
+    // Remove current graphics
+    for (const character of this.characters) {
+      const graphics = this.characterGraphics.get(character.id);
+
+      if (graphics) {
+        graphics.destroy();
+      }
+    }
+
+    this.characterGraphics.clear();
+
+    // Restore snapshot
+    this.characters = characters.map((character) => ({
+      ...character,
+    }));
+
+    // Recreate graphics
+    for (const character of this.characters) {
+      this.drawCharacter(character);
+    }
   }
 }

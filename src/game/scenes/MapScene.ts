@@ -2,20 +2,20 @@ import Phaser from "phaser";
 import { CharacterManager } from "../characters/CharacterManager";
 import { ObjectManager } from "./ObjectManager";
 import type { MapObjectType } from "./MapObjects";
+import type { MapObject } from "./MapObjects";
+import type { Character } from "../characters/Character";
 import { InteractionManager } from "../input/InteractionManager";
 import { translations, getCurrentLanguage } from "../translation/translation";
 import { gridWidth, gridHeight, setGridSize, cellSize } from "./Grid";
-import { TerrainManager } from "./TerrainManager";
-import {
-  TERRAIN_VARIANTS,
-  type TerrainCategory,
-  type TerrainVariant,
-} from "./TerrainObject";
+import { TerrainManager, type TerrainObject } from "./TerrainManager";
+import { TERRAIN_VARIANTS, type TerrainVariant } from "./TerrainObject";
+import { MapHistory, type MapSnapshot } from "./MapHistory";
 
 type Tool =
   | "brush"
   | "rectangle"
   | "fill"
+  | "terrain-erase"
   | "character-add"
   | "character-select"
   | "character-erase"
@@ -27,17 +27,6 @@ type Tool =
 
 interface Tile {
   terrain: TerrainVariant | null;
-}
-
-interface TileChange {
-  row: number;
-  column: number;
-  previousTerrain: TerrainVariant | null;
-  newTerrain: TerrainVariant | null;
-}
-
-interface MapAction {
-  changes: TileChange[];
 }
 export class MapScene extends Phaser.Scene {
   private layers: Tile[][][] = [];
@@ -58,11 +47,6 @@ export class MapScene extends Phaser.Scene {
 
   private startPaintedRow: number | null = null;
   private startPaintedColumn: number | null = null;
-
-  private undoStack: MapAction[] = [];
-  private redoStack: MapAction[] = [];
-
-  private currentAction: MapAction | null = null;
 
   private characterManager!: CharacterManager;
   private objectManager!: ObjectManager;
@@ -85,18 +69,93 @@ export class MapScene extends Phaser.Scene {
 
   private terrainManager!: TerrainManager;
 
+  private mapHistory = new MapHistory<TerrainObject, MapObject, Character>();
+  private mapActionStart: MapSnapshot<
+    TerrainObject,
+    MapObject,
+    Character
+  > | null = null;
+
+  private createMapSnapshot(): MapSnapshot<
+    TerrainObject,
+    MapObject,
+    Character
+  > {
+    return {
+      terrains: this.terrainManager.getTerrainObjects(),
+      objects: this.objectManager.getObjects(),
+      characters: this.characterManager.getCharacters(),
+    };
+  }
+
+  private restoreMapSnapshot(
+    snapshot: MapSnapshot<TerrainObject, MapObject, Character>,
+  ): void {
+    this.terrainManager.restore(snapshot.terrains, (variantId) =>
+      TERRAIN_VARIANTS.find((variant) => variant.id === variantId),
+    );
+
+    this.objectManager.restoreObjects(snapshot.objects);
+
+    this.characterManager.restoreCharacters(snapshot.characters);
+
+    this.terrainManager.updateAllTerrainPositions((variantId) =>
+      TERRAIN_VARIANTS.find((variant) => variant.id === variantId),
+    );
+
+    this.objectManager.updateAllObjectPositions();
+  }
+
+  private beginMapAction(): void {
+    this.mapActionStart = this.createMapSnapshot();
+  }
+
+  private finishMapAction(): void {
+    if (!this.mapActionStart) {
+      return;
+    }
+
+    const before = this.mapActionStart;
+    const after = this.createMapSnapshot();
+
+    if (JSON.stringify(before) !== JSON.stringify(after)) {
+      this.mapHistory.push(before);
+    }
+
+    this.mapActionStart = null;
+  }
+
+  private undoMap(): void {
+    const current = this.createMapSnapshot();
+    const snapshot = this.mapHistory.undo(current);
+
+    if (!snapshot) {
+      return;
+    }
+
+    this.restoreMapSnapshot(snapshot);
+  }
+
+  private redoMap(): void {
+    const current = this.createMapSnapshot();
+    const snapshot = this.mapHistory.redo(current);
+
+    if (!snapshot) {
+      return;
+    }
+
+    this.restoreMapSnapshot(snapshot);
+  }
+
   constructor() {
     super("MapScene");
   }
 
   private drawTile(
     graphics: Phaser.GameObjects.Graphics,
-    layer: number,
     row: number,
     column: number,
   ) {
-    const tile = this.layers[layer][row][column];
-
     const x = column * cellSize;
     const y = row * cellSize;
 
@@ -152,6 +211,17 @@ export class MapScene extends Phaser.Scene {
   private paintSingleTile(row: number, column: number): void {
     const variant = this.selectedTerrain;
 
+    // Brush cannot paint over existing terrain.
+    const existing = this.terrainManager.getTerrainAt(
+      row,
+      column,
+      this.currentLayer,
+    );
+
+    if (existing) {
+      return;
+    }
+
     if (
       !this.terrainManager.canPlaceTerrain(
         row,
@@ -174,15 +244,23 @@ export class MapScene extends Phaser.Scene {
     endColumn: number,
   ) {
     const minRow = Math.max(0, Math.min(startRow, endRow));
-
     const maxRow = Math.min(gridHeight - 1, Math.max(startRow, endRow));
 
     const minColumn = Math.max(0, Math.min(startColumn, endColumn));
-
     const maxColumn = Math.min(gridWidth - 1, Math.max(startColumn, endColumn));
 
     for (let row = minRow; row <= maxRow; row++) {
       for (let column = minColumn; column <= maxColumn; column++) {
+        const existing = this.terrainManager.getTerrainAt(
+          row,
+          column,
+          this.currentLayer,
+        );
+
+        if (existing) {
+          continue;
+        }
+
         this.paintSingleTile(row, column);
       }
     }
@@ -223,21 +301,25 @@ export class MapScene extends Phaser.Scene {
     this.previewGraphics.strokeRect(x, y, width, height);
   }
 
-  private fillTile(startRow: number, startColumn: number) {
-    const originalTerrain =
-      this.layers[this.currentLayer][startRow][startColumn].terrain;
+  private fillTile(startRow: number, startColumn: number): void {
+    const variant = this.selectedTerrain;
 
-    const newTerrain = this.selectedTerrain;
-
-    if (originalTerrain === newTerrain) {
+    // Multi-cell terrain cannot currently be flood-filled.
+    if (variant.width !== 1 || variant.height !== 1) {
       return;
     }
 
-    const action: MapAction = {
-      changes: [],
-    };
+    const startTerrain = this.terrainManager.getTerrainAt(
+      startRow,
+      startColumn,
+      this.currentLayer,
+    );
+
+    const startVariantId = startTerrain?.variantId ?? null;
 
     const queue: Array<[number, number]> = [[startRow, startColumn]];
+
+    const visited = new Set<string>();
 
     while (queue.length > 0) {
       const [row, column] = queue.shift()!;
@@ -246,85 +328,46 @@ export class MapScene extends Phaser.Scene {
         continue;
       }
 
-      if (
-        this.layers[this.currentLayer][row][column].terrain !== originalTerrain
-      ) {
+      const key = `${row},${column}`;
+
+      if (visited.has(key)) {
         continue;
       }
 
-      action.changes.push({
+      visited.add(key);
+
+      const terrain = this.terrainManager.getTerrainAt(
         row,
         column,
-        previousTerrain: originalTerrain,
-        newTerrain,
-      });
-
-      this.layers[this.currentLayer][row][column].terrain = newTerrain;
-
-      this.drawTile(
-        this.layerGraphics[this.currentLayer],
         this.currentLayer,
-        row,
-        column,
       );
+
+      const terrainVariantId = terrain?.variantId ?? null;
+
+      if (terrainVariantId !== startVariantId) {
+        continue;
+      }
+
+      if (terrain?.variantId === variant.id) {
+        queue.push([row - 1, column]);
+        queue.push([row + 1, column]);
+        queue.push([row, column - 1]);
+        queue.push([row, column + 1]);
+
+        continue;
+      }
+
+      if (terrain) {
+        this.terrainManager.removeTerrain(terrain.id);
+      }
+
+      this.terrainManager.addTerrain(variant, row, column, this.currentLayer);
 
       queue.push([row - 1, column]);
-
       queue.push([row + 1, column]);
-
       queue.push([row, column - 1]);
-
       queue.push([row, column + 1]);
     }
-
-    if (action.changes.length > 0) {
-      this.undoStack.push(action);
-      this.redoStack = [];
-    }
-  }
-
-  private undoTerrain() {
-    const action = this.undoStack.pop();
-
-    if (!action) {
-      return;
-    }
-
-    for (const change of action.changes) {
-      this.layers[this.currentLayer][change.row][change.column].terrain =
-        change.previousTerrain;
-
-      this.drawTile(
-        this.layerGraphics[this.currentLayer],
-        this.currentLayer,
-        change.row,
-        change.column,
-      );
-    }
-
-    this.redoStack.push(action);
-  }
-
-  private redoTerrain() {
-    const action = this.redoStack.pop();
-
-    if (!action) {
-      return;
-    }
-
-    for (const change of action.changes) {
-      this.layers[this.currentLayer][change.row][change.column].terrain =
-        change.newTerrain;
-
-      this.drawTile(
-        this.layerGraphics[this.currentLayer],
-        this.currentLayer,
-        change.row,
-        change.column,
-      );
-    }
-
-    this.undoStack.push(action);
   }
 
   private getLayerOffset(layer: number) {
@@ -332,7 +375,7 @@ export class MapScene extends Phaser.Scene {
 
     if (difference === 0) {
       return {
-        offsetX: 120,
+        offsetX: 0,
         offsetY: 0,
         scale: 1,
       };
@@ -362,12 +405,9 @@ export class MapScene extends Phaser.Scene {
   }
 
   private updateLayerPositions() {
-    for (let layer = 0; layer < this.layerGraphics.length; layer++) {
-      const { offsetX, offsetY, scale } = this.getLayerOffset(layer);
-
-      this.layerGraphics[layer].setPosition(offsetX, offsetY);
-
-      this.layerGraphics[layer].setScale(scale);
+    for (const graphics of this.layerGraphics) {
+      graphics.setPosition(0, 0);
+      graphics.setScale(1);
     }
   }
 
@@ -378,7 +418,7 @@ export class MapScene extends Phaser.Scene {
 
     for (let row = 0; row < gridHeight; row++) {
       for (let column = 0; column < gridWidth; column++) {
-        this.drawTile(graphics, layer, row, column);
+        this.drawTile(graphics, row, column);
       }
     }
   }
@@ -489,8 +529,8 @@ export class MapScene extends Phaser.Scene {
     this.bringCurrentLayerToFront();
     this.updateLayerCounter();
 
-    this.undoStack = [];
-    this.redoStack = [];
+    this.terrainUndoStack = [];
+    this.terrainRedoStack = [];
   }
 
   private handlePointerDown(pointer: Phaser.Input.Pointer) {
@@ -498,7 +538,10 @@ export class MapScene extends Phaser.Scene {
       this.selectedTool === "object-select" &&
       this.objectManager.isPointerOnMoveHandle(pointer)
     ) {
+      this.beginMapAction();
+
       this.objectManager.startMovingSelectedObject(pointer);
+
       return;
     }
 
@@ -510,7 +553,11 @@ export class MapScene extends Phaser.Scene {
 
     // CHARACTER ADD
     if (this.selectedTool === "character-add") {
+      this.beginMapAction();
+
       this.characterManager.addCharacter(row, column, this.currentLayer);
+
+      this.finishMapAction();
 
       return;
     }
@@ -524,6 +571,8 @@ export class MapScene extends Phaser.Scene {
       );
 
       if (character) {
+        this.beginMapAction();
+
         this.characterManager.startDragging(character);
       }
 
@@ -531,7 +580,11 @@ export class MapScene extends Phaser.Scene {
     }
 
     if (this.selectedTool === "character-erase") {
+      this.beginMapAction();
+
       this.characterManager.eraseAt(row, column, this.currentLayer);
+
+      this.finishMapAction();
 
       return;
     }
@@ -546,6 +599,8 @@ export class MapScene extends Phaser.Scene {
 
     if (this.selectedTool === "object-brush") {
       this.objectIsPainting = true;
+
+      this.beginMapAction();
 
       this.objectManager.addObject(
         row,
@@ -562,13 +617,19 @@ export class MapScene extends Phaser.Scene {
     if (this.selectedTool === "object-erase") {
       this.objectIsPainting = true;
 
+      this.beginMapAction();
+
       this.objectManager.eraseAt(row, column, this.currentLayer);
 
       return;
     }
     // TERRAIN FILL
     if (this.selectedTool === "fill") {
+      this.beginMapAction();
+
       this.fillTile(row, column);
+
+      this.finishMapAction();
 
       return;
     }
@@ -576,12 +637,9 @@ export class MapScene extends Phaser.Scene {
     if (this.selectedTool === "rectangle") {
       this.isPainting = true;
 
-      this.currentAction = {
-        changes: [],
-      };
+      this.beginMapAction();
 
       this.startPaintedRow = row;
-
       this.startPaintedColumn = column;
 
       return;
@@ -591,8 +649,9 @@ export class MapScene extends Phaser.Scene {
     if (this.selectedTool === "object-rectangle") {
       this.objectIsPainting = true;
 
-      this.objectStartRow = row;
+      this.beginMapAction();
 
+      this.objectStartRow = row;
       this.objectStartColumn = column;
 
       return;
@@ -600,6 +659,8 @@ export class MapScene extends Phaser.Scene {
 
     // OBJECT FILL
     if (this.selectedTool === "object-fill") {
+      this.beginMapAction();
+
       this.objectManager.fill(
         row,
         column,
@@ -609,6 +670,8 @@ export class MapScene extends Phaser.Scene {
         this.selectedObjectHeight,
       );
 
+      this.finishMapAction();
+
       return;
     }
 
@@ -616,15 +679,27 @@ export class MapScene extends Phaser.Scene {
     if (this.selectedTool === "brush") {
       this.isPainting = true;
 
-      this.currentAction = {
-        changes: [],
-      };
+      this.beginMapAction();
 
       this.lastPaintedRow = null;
-
       this.lastPaintedColumn = null;
 
       this.paintTile(pointer);
+
+      return;
+    }
+
+    if (this.selectedTool === "terrain-erase") {
+      this.isPainting = true;
+
+      this.beginMapAction();
+
+      this.terrainManager.eraseAt(row, column, this.currentLayer);
+
+      this.lastPaintedRow = row;
+      this.lastPaintedColumn = column;
+
+      return;
     }
   }
 
@@ -777,6 +852,20 @@ export class MapScene extends Phaser.Scene {
         );
       }
     }
+
+    if (
+      this.selectedTool === "terrain-erase" &&
+      this.isPainting &&
+      pointer.isDown
+    ) {
+      const { row, column } = this.getPointerTile(pointer, this.currentLayer);
+
+      if (row >= 0 && row < gridHeight && column >= 0 && column < gridWidth) {
+        this.terrainManager.eraseAt(row, column, this.currentLayer);
+      }
+
+      return;
+    }
   }
 
   private handlePointerUp(pointer: Phaser.Input.Pointer) {
@@ -785,6 +874,9 @@ export class MapScene extends Phaser.Scene {
       this.objectManager.isMovingSelectedObject()
     ) {
       this.objectManager.stopMovingSelectedObject();
+
+      this.finishMapAction();
+
       return;
     }
 
@@ -826,6 +918,9 @@ export class MapScene extends Phaser.Scene {
       this.characterManager.isDragging()
     ) {
       this.characterManager.stopDragging();
+
+      this.finishMapAction();
+
       return;
     }
 
@@ -867,13 +962,9 @@ export class MapScene extends Phaser.Scene {
     this.objectPreviewGraphics.clear();
     this.interactionManager.clear();
 
-    if (this.currentAction !== null && this.currentAction.changes.length > 0) {
-      this.undoStack.push(this.currentAction);
-
-      this.redoStack = [];
+    if (this.mapActionStart !== null) {
+      this.finishMapAction();
     }
-
-    this.currentAction = null;
 
     this.isPainting = false;
     this.objectIsPainting = false;
@@ -903,10 +994,12 @@ export class MapScene extends Phaser.Scene {
     // Reset map state
     this.currentLayer = 0;
 
-    this.undoStack = [];
-    this.redoStack = [];
+    this.terrainUndoStack = [];
+    this.terrainRedoStack = [];
+    this.terrainActionStart = null;
 
-    this.currentAction = null;
+    this.mapHistory.clear();
+    this.mapActionStart = null;
 
     this.isPainting = false;
     this.objectIsPainting = false;
@@ -996,6 +1089,41 @@ export class MapScene extends Phaser.Scene {
       "sand-inner-bottom-right",
       "assets/terrain/sand/sandPitTop.png",
     );
+
+    //MUD
+    this.load.image("mud", "assets/terrain/mud/mud.png");
+
+    //LAVA
+    this.load.image("lava-center", "assets/terrain/lava/lavaCenter.png");
+    this.load.image("lava-top", "assets/terrain/lava/lavaTop.png");
+    this.load.image("lava-bottom", "assets/terrain/lava/lavaBottom.png");
+    this.load.image("lava-left", "assets/terrain/lava/lavaLeft.png");
+    this.load.image("lava-right", "assets/terrain/lava/lavaRight.png");
+    this.load.image("lava-top-left", "assets/terrain/lava/lavaTopLeft.png");
+    this.load.image("lava-top-right", "assets/terrain/lava/lavaTopRight.png");
+    this.load.image(
+      "lava-bottom-right",
+      "assets/terrain/lava/lavaBottomRight.png",
+    );
+    this.load.image(
+      "lava-bottom-left",
+      "assets/terrain/lava/lavaBottomLeft.png",
+    );
+
+    //FLOOR
+    this.load.image("floor-brick", "assets/terrain/floor/brick.png");
+    this.load.image("floor-bridge", "assets/terrain/floor/bridge.png");
+    this.load.image("floor-concrete", "assets/terrain/floor/concrete.png");
+    this.load.image("floor-japanese", "assets/terrain/floor/japanese.png");
+    this.load.image("floor-rock", "assets/terrain/floor/rock.png");
+    this.load.image("floor-rock2", "assets/terrain/floor/rock2.png");
+    this.load.image("floor-rock3", "assets/terrain/floor/rock3.png");
+    this.load.image("floor-rock4", "assets/terrain/floor/rock4.png");
+    this.load.image("floor-rock5", "assets/terrain/floor/rock5.png");
+    this.load.image("floor-wood1", "assets/terrain/floor/wood1.png");
+    this.load.image("floor-wood2", "assets/terrain/floor/wood2.png");
+    this.load.image("floor-dungeon1", "assets/terrain/floor/dungeon1.png");
+    this.load.image("floor-dungeon2", "assets/terrain/floor/dungeon2.png");
   }
 
   create() {
@@ -1203,6 +1331,158 @@ export class MapScene extends Phaser.Scene {
       });
     }
 
+    //MUD TERRAIN BUTTON
+
+    const mud = document.querySelector<HTMLButtonElement>(
+      "#terrain-mud-button",
+    );
+
+    const mudMenu = document.querySelector<HTMLDivElement>("#terrain-mud-menu");
+
+    if (mud && mudMenu) {
+      const mudVariants = TERRAIN_VARIANTS.filter(
+        (variant) => variant.category === "mud",
+      );
+
+      for (const variant of mudVariants) {
+        const option = document.createElement("button");
+
+        option.type = "button";
+        option.className = "terrain-option";
+
+        option.innerHTML = `
+      <img
+        src="${variant.assetPath}"
+        alt="${variant.name}"
+      />
+      <span>${variant.name}</span>
+    `;
+
+        option.addEventListener("click", () => {
+          this.selectedTerrain = variant;
+
+          mudMenu.classList.remove("open");
+
+          console.log(
+            "Selected terrain:",
+            variant.name,
+            variant.width,
+            "x",
+            variant.height,
+          );
+        });
+
+        mudMenu.appendChild(option);
+      }
+
+      mud.addEventListener("click", () => {
+        mudMenu.classList.toggle("open");
+      });
+    }
+
+    //LAVA TERRAIN BUTTON
+
+    const lava = document.querySelector<HTMLButtonElement>(
+      "#terrain-lava-button",
+    );
+
+    const lavaMenu =
+      document.querySelector<HTMLDivElement>("#terrain-lava-menu");
+
+    if (lava && lavaMenu) {
+      const lavaVariants = TERRAIN_VARIANTS.filter(
+        (variant) => variant.category === "lava",
+      );
+
+      for (const variant of lavaVariants) {
+        const option = document.createElement("button");
+
+        option.type = "button";
+        option.className = "terrain-option";
+
+        option.innerHTML = `
+      <img
+        src="${variant.assetPath}"
+        alt="${variant.name}"
+      />
+      <span>${variant.name}</span>
+    `;
+
+        option.addEventListener("click", () => {
+          this.selectedTerrain = variant;
+
+          lavaMenu.classList.remove("open");
+
+          console.log(
+            "Selected terrain:",
+            variant.name,
+            variant.width,
+            "x",
+            variant.height,
+          );
+        });
+
+        lavaMenu.appendChild(option);
+      }
+
+      lava.addEventListener("click", () => {
+        lavaMenu.classList.toggle("open");
+      });
+    }
+
+    //FLOOR
+
+    //LAVA TERRAIN BUTTON
+
+    const floor = document.querySelector<HTMLButtonElement>(
+      "#terrain-floor-button",
+    );
+
+    const floorMenu = document.querySelector<HTMLDivElement>(
+      "#terrain-floor-menu",
+    );
+
+    if (floor && floorMenu) {
+      const floorVariants = TERRAIN_VARIANTS.filter(
+        (variant) => variant.category === "floor",
+      );
+
+      for (const variant of floorVariants) {
+        const option = document.createElement("button");
+
+        option.type = "button";
+        option.className = "terrain-option";
+
+        option.innerHTML = `
+      <img
+        src="${variant.assetPath}"
+        alt="${variant.name}"
+      />
+      <span>${variant.name}</span>
+    `;
+
+        option.addEventListener("click", () => {
+          this.selectedTerrain = variant;
+
+          floorMenu.classList.remove("open");
+
+          console.log(
+            "Selected terrain:",
+            variant.name,
+            variant.width,
+            "x",
+            variant.height,
+          );
+        });
+
+        floorMenu.appendChild(option);
+      }
+
+      floor.addEventListener("click", () => {
+        floorMenu.classList.toggle("open");
+      });
+    }
+
     const toolButtons = document.querySelectorAll<HTMLButtonElement>(
       "#tools button, #character-bar button, #object-bar button[data-object-tool]",
     );
@@ -1217,6 +1497,14 @@ export class MapScene extends Phaser.Scene {
           this.interactionManager.clear();
         }
       });
+    });
+
+    const terrainEraseButton =
+      document.querySelector<HTMLButtonElement>("#terrain-erase");
+
+    terrainEraseButton?.addEventListener("click", () => {
+      this.selectedTool = "terrain-erase";
+      this.interactionManager.clear();
     });
 
     const eraseAllButton =
@@ -1392,8 +1680,11 @@ export class MapScene extends Phaser.Scene {
           return;
         }
 
+        this.beginMapAction();
+
         const resized = this.objectManager.resizeSelectedObject(width, height);
 
+        this.finishMapAction();
         if (!resized) {
           // your existing error handling
           return;
@@ -1423,27 +1714,7 @@ export class MapScene extends Phaser.Scene {
         return;
       }
 
-      if (
-        this.selectedTool === "character-add" ||
-        this.selectedTool === "character-select" ||
-        this.selectedTool === "character-erase"
-      ) {
-        this.characterManager.undo();
-        return;
-      }
-
-      if (
-        this.selectedTool === "object-brush" ||
-        this.selectedTool === "object-rectangle" ||
-        this.selectedTool === "object-fill" ||
-        this.selectedTool === "object-erase" ||
-        this.selectedTool === "object-select"
-      ) {
-        this.objectManager.undo();
-        return;
-      }
-
-      this.undoTerrain();
+      this.undoMap();
     });
 
     //MAP GRID TOOL
@@ -1547,27 +1818,7 @@ export class MapScene extends Phaser.Scene {
         return;
       }
 
-      if (
-        this.selectedTool === "character-add" ||
-        this.selectedTool === "character-select" ||
-        this.selectedTool === "character-erase"
-      ) {
-        this.characterManager.redo();
-        return;
-      }
-
-      if (
-        this.selectedTool === "object-brush" ||
-        this.selectedTool === "object-rectangle" ||
-        this.selectedTool === "object-fill" ||
-        this.selectedTool === "object-erase" ||
-        this.selectedTool === "object-select"
-      ) {
-        this.objectManager.redo();
-        return;
-      }
-
-      this.redoTerrain();
+      this.redoMap();
     });
 
     const previousLayerButton =

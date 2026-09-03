@@ -1,6 +1,5 @@
 export type TerrainCategory =
   | "floor"
-  | "wall"
   | "water"
   | "grass"
   | "mud"
@@ -18,9 +17,8 @@ export interface TerrainVariant {
 }
 
 export const TERRAIN_VARIANTS: TerrainVariant[] = [
+  //GRASS
   {
-    //GRASS
-
     id: "short-grass",
     category: "grass",
     name: "Short Grass",
@@ -37,6 +35,18 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     height: 2,
     imageKey: "tall-grass",
     assetPath: "assets/terrain/grass/tallGrass.png",
+  },
+
+  //MUD
+
+  {
+    id: "mud",
+    category: "mud",
+    name: "Mud",
+    width: 1,
+    height: 1,
+    imageKey: "mud",
+    assetPath: "assets/terrain/mud/mud.png",
   },
 
   //WATER
@@ -140,42 +150,6 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     imageKey: "water-river-horizontal",
     assetPath: "assets/terrain/water/waterRiverHorizontal.png",
   },
-  {
-    id: "water-curve-bottom-right",
-    category: "water",
-    name: "Water Curve Bottom Right",
-    width: 1,
-    height: 1,
-    imageKey: "water-curve-bottom-right",
-    assetPath: "assets/terrain/water/waterCurveBottomRight.png",
-  },
-  {
-    id: "water-curve-bottom-left",
-    category: "water",
-    name: "Water Curve Bottom Left",
-    width: 1,
-    height: 1,
-    imageKey: "water-curve-bottom-left",
-    assetPath: "assets/terrain/water/waterCurveBottomLeft.png",
-  },
-  {
-    id: "water-curve-top-right",
-    category: "water",
-    name: "Water Curve Top Right",
-    width: 1,
-    height: 1,
-    imageKey: "water-curve-top-right",
-    assetPath: "assets/terrain/water/waterCurveTopRight.png",
-  },
-  {
-    id: "water-curve-top-left",
-    category: "water",
-    name: "Water Curve Top Left",
-    width: 1,
-    height: 1,
-    imageKey: "water-curve-top-left",
-    assetPath: "assets/terrain/water/waterCurveTopLeft.png",
-  },
 
   //SAND
 
@@ -207,15 +181,6 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     assetPath: "assets/terrain/sand/sandBottom.png",
   },
   {
-    id: "sand-left",
-    category: "sand",
-    name: "Sand Left",
-    width: 1,
-    height: 1,
-    imageKey: "sand-left",
-    assetPath: "assets/terrain/sand/sandLeft.png",
-  },
-  {
     id: "sand-right",
     category: "sand",
     name: "Sand Right",
@@ -225,13 +190,13 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     assetPath: "assets/terrain/sand/sandRight.png",
   },
   {
-    id: "sand-top-left",
+    id: "sand-left",
     category: "sand",
-    name: "Sand Top Left",
+    name: "Sand Left",
     width: 1,
     height: 1,
-    imageKey: "sand-top-left",
-    assetPath: "assets/terrain/sand/sandTopLeft.png",
+    imageKey: "sand-left",
+    assetPath: "assets/terrain/sand/sandLeft.png",
   },
   {
     id: "sand-top-right",
@@ -243,13 +208,13 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     assetPath: "assets/terrain/sand/sandTopRight.png",
   },
   {
-    id: "sand-bottom-left",
+    id: "sand-top-left",
     category: "sand",
-    name: "Sand Bottom Left",
+    name: "Sand Top Left",
     width: 1,
     height: 1,
-    imageKey: "sand-bottom-left",
-    assetPath: "assets/terrain/sand/sandBottomLeft.png",
+    imageKey: "sand-top-left",
+    assetPath: "assets/terrain/sand/sandTopLeft.png",
   },
   {
     id: "sand-bottom-right",
@@ -259,6 +224,15 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     height: 1,
     imageKey: "sand-bottom-right",
     assetPath: "assets/terrain/sand/sandBottomRight.png",
+  },
+  {
+    id: "sand-bottom-left",
+    category: "sand",
+    name: "Sand Bottom Left",
+    width: 1,
+    height: 1,
+    imageKey: "sand-bottom-left",
+    assetPath: "assets/terrain/sand/sandBottomLeft.png",
   },
   {
     id: "sand-vertical",
@@ -277,5 +251,209 @@ export const TERRAIN_VARIANTS: TerrainVariant[] = [
     height: 1,
     imageKey: "sand-horizontal",
     assetPath: "assets/terrain/sand/sandHorizontal.png",
+  },
+
+  //LAVA
+  {
+    id: "lava-center",
+    category: "lava",
+    name: "Lava Center",
+    width: 1,
+    height: 1,
+    imageKey: "lava-center",
+    assetPath: "assets/terrain/lava/lavaCenter.png",
+  },
+  {
+    id: "lava-top",
+    category: "lava",
+    name: "Lava Top",
+    width: 1,
+    height: 1,
+    imageKey: "lava-top",
+    assetPath: "assets/terrain/lava/lavaTop.png",
+  },
+  {
+    id: "lava-bottom",
+    category: "lava",
+    name: "Lava Bottom",
+    width: 1,
+    height: 1,
+    imageKey: "lava-bottom",
+    assetPath: "assets/terrain/lava/lavaBottom.png",
+  },
+  {
+    id: "lava-right",
+    category: "lava",
+    name: "Lava Right",
+    width: 1,
+    height: 1,
+    imageKey: "lava-right",
+    assetPath: "assets/terrain/lava/lavaRight.png",
+  },
+  {
+    id: "lava-left",
+    category: "lava",
+    name: "Lava Left",
+    width: 1,
+    height: 1,
+    imageKey: "lava-left",
+    assetPath: "assets/terrain/lava/lavaLeft.png",
+  },
+  {
+    id: "lava-top-right",
+    category: "lava",
+    name: "Lava Top Right",
+    width: 1,
+    height: 1,
+    imageKey: "lava-top-right",
+    assetPath: "assets/terrain/lava/lavaTopRight.png",
+  },
+  {
+    id: "lava-top-left",
+    category: "lava",
+    name: "Lava Top Left",
+    width: 1,
+    height: 1,
+    imageKey: "lava-top-left",
+    assetPath: "assets/terrain/lava/lavaTopLeft.png",
+  },
+  {
+    id: "lava-bottom-right",
+    category: "lava",
+    name: "Lava Bottom Right",
+    width: 1,
+    height: 1,
+    imageKey: "lava-bottom-right",
+    assetPath: "assets/terrain/lava/lavaBottomRight.png",
+  },
+  {
+    id: "lava-bottom-left",
+    category: "lava",
+    name: "Lava Bottom Left",
+    width: 1,
+    height: 1,
+    imageKey: "lava-bottom-left",
+    assetPath: "assets/terrain/lava/lavaBottomLeft.png",
+  },
+
+  // FLOOR
+
+  {
+    id: "floor-brick",
+    category: "floor",
+    name: "Brick",
+    width: 1,
+    height: 1,
+    imageKey: "floor-brick",
+    assetPath: "assets/terrain/floor/brick.png",
+  },
+  {
+    id: "floor-bridge",
+    category: "floor",
+    name: "Bridge",
+    width: 1,
+    height: 1,
+    imageKey: "floor-bridge",
+    assetPath: "assets/terrain/floor/bridge.png",
+  },
+  {
+    id: "floor-concrete",
+    category: "floor",
+    name: "Concrete",
+    width: 1,
+    height: 1,
+    imageKey: "floor-concrete",
+    assetPath: "assets/terrain/floor/concrete.png",
+  },
+  {
+    id: "floor-japanese",
+    category: "floor",
+    name: "Japanese",
+    width: 1,
+    height: 1,
+    imageKey: "floor-japanese",
+    assetPath: "assets/terrain/floor/japanese.png",
+  },
+  {
+    id: "floor-rock",
+    category: "floor",
+    name: "Rock",
+    width: 1,
+    height: 1,
+    imageKey: "floor-rock",
+    assetPath: "assets/terrain/floor/rock.png",
+  },
+  {
+    id: "floor-rock2",
+    category: "floor",
+    name: "Rock 2",
+    width: 1,
+    height: 1,
+    imageKey: "floor-rock2",
+    assetPath: "assets/terrain/floor/rock2.png",
+  },
+  {
+    id: "floor-rock3",
+    category: "floor",
+    name: "Rock 3",
+    width: 1,
+    height: 1,
+    imageKey: "floor-rock3",
+    assetPath: "assets/terrain/floor/rock3.png",
+  },
+  {
+    id: "floor-rock4",
+    category: "floor",
+    name: "Rock 4",
+    width: 1,
+    height: 1,
+    imageKey: "floor-rock4",
+    assetPath: "assets/terrain/floor/rock4.png",
+  },
+  {
+    id: "floor-rock5",
+    category: "floor",
+    name: "Rock 5",
+    width: 1,
+    height: 1,
+    imageKey: "floor-rock5",
+    assetPath: "assets/terrain/floor/rock5.png",
+  },
+  {
+    id: "floor-wood1",
+    category: "floor",
+    name: "Wood",
+    width: 1,
+    height: 1,
+    imageKey: "floor-wood1",
+    assetPath: "assets/terrain/floor/wood1.png",
+  },
+  {
+    id: "floor-wood2",
+    category: "floor",
+    name: "Wood 2",
+    width: 1,
+    height: 1,
+    imageKey: "floor-wood2",
+    assetPath: "assets/terrain/floor/wood2.png",
+  },
+  {
+    id: "floor-dungeon1",
+    category: "floor",
+    name: "Dungeon",
+    width: 1,
+    height: 1,
+    imageKey: "floor-dungeon1",
+    assetPath: "assets/terrain/floor/dungeon1.png",
+  },
+
+  {
+    id: "floor-dungeon2",
+    category: "floor",
+    name: "Dungeon 2",
+    width: 1,
+    height: 1,
+    imageKey: "floor-dungeon2",
+    assetPath: "assets/terrain/floor/dungeon2.png",
   },
 ];
