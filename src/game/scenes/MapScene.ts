@@ -965,22 +965,6 @@ export class MapScene extends Phaser.Scene {
       "water-river-vertical",
       "assets/terrain/water/waterRiverVertical.png",
     );
-    this.load.image(
-      "water-inner-top-left",
-      "assets/terrain/water/waterInnerTopLeft.png",
-    );
-    this.load.image(
-      "water-inner-top-right",
-      "assets/terrain/water/waterInnerTopRight.png",
-    );
-    this.load.image(
-      "water-inner-bottom-left",
-      "assets/terrain/water/waterInnerBottomLeft.png",
-    );
-    this.load.image(
-      "water-inner-bottom-right",
-      "assets/terrain/water/waterInnerBottomRight.png",
-    );
 
     //SAND
 
@@ -1003,14 +987,6 @@ export class MapScene extends Phaser.Scene {
     this.load.image(
       "sand-horizontal",
       "assets/terrain/sand/sandHorizontal.png",
-    );
-    this.load.image(
-      "sand-inner-top-left",
-      "assets/terrain/sand/sandCurveLeft.png",
-    );
-    this.load.image(
-      "sand-inner-top-right",
-      "assets/terrain/sand/sandCurveRight.png",
     );
     this.load.image(
       "sand-inner-bottom-left",
