@@ -11,6 +11,9 @@ import { TerrainManager, type TerrainObject } from "./TerrainManager";
 import { TERRAIN_VARIANTS, type TerrainVariant } from "./TerrainObject";
 import { MapHistory, type MapSnapshot } from "./MapHistory";
 import type { MapSaveData } from "../save/MapSave";
+import { preloadCharacterAssets } from "../imgLoad/CharacterAssets";
+import { preloadObjectAssets } from "../imgLoad/ObjectAssets";
+import { preloadTerrainAssets } from "../imgLoad/TerrainAssets";
 
 type Tool =
   | "brush"
@@ -1184,138 +1187,9 @@ export class MapScene extends Phaser.Scene {
   }
 
   preload() {
-    //OBJECT
-    this.load.image("boulder", "assets/objects/boulder.webp");
-
-    //GRASS
-
-    this.load.image("short-grass", "assets/terrain/grass/shortGrass.png");
-    this.load.image("tall-grass", "assets/terrain/grass/tallGrass.png");
-
-    //WATER
-
-    this.load.image("water-center", "assets/terrain/water/waterCenter.png");
-    this.load.image("water-top", "assets/terrain/water/waterTop.png");
-    this.load.image("water-left", "assets/terrain/water/waterLeft.png");
-    this.load.image("water-right", "assets/terrain/water/waterRight.png");
-    this.load.image("water-bottom", "assets/terrain/water/waterBottom.png");
-    this.load.image(
-      "water-top-right",
-      "assets/terrain/water/waterTopRight.png",
-    );
-    this.load.image("water-top-left", "assets/terrain/water/waterTopLeft.png");
-    this.load.image(
-      "water-bottom-right",
-      "assets/terrain/water/waterBottomRight.png",
-    );
-    this.load.image(
-      "water-bottom-left",
-      "assets/terrain/water/waterBottomLeft.png",
-    );
-    this.load.image(
-      "water-river-horizontal",
-      "assets/terrain/water/waterRiverHorizontal.png",
-    );
-    this.load.image(
-      "water-river-vertical",
-      "assets/terrain/water/waterRiverVertical.png",
-    );
-
-    //SAND
-
-    this.load.image("sand-center", "assets/terrain/sand/sandCenter.png");
-    this.load.image("sand-top", "assets/terrain/sand/sandTop.png");
-    this.load.image("sand-bottom", "assets/terrain/sand/sandBottom.png");
-    this.load.image("sand-left", "assets/terrain/sand/sandLeft.png");
-    this.load.image("sand-right", "assets/terrain/sand/sandRight.png");
-    this.load.image("sand-top-left", "assets/terrain/sand/sandTopLeft.png");
-    this.load.image("sand-top-right", "assets/terrain/sand/sandTopRight.png");
-    this.load.image(
-      "sand-bottom-left",
-      "assets/terrain/sand/sandBottomLeft.png",
-    );
-    this.load.image(
-      "sand-bottom-right",
-      "assets/terrain/sand/sandBottomRight.png",
-    );
-    this.load.image("sand-vertical", "assets/terrain/sand/sandVertical.png");
-    this.load.image(
-      "sand-horizontal",
-      "assets/terrain/sand/sandHorizontal.png",
-    );
-    this.load.image(
-      "sand-inner-bottom-left",
-      "assets/terrain/sand/sandPitBottom.png",
-    );
-    this.load.image(
-      "sand-inner-bottom-right",
-      "assets/terrain/sand/sandPitTop.png",
-    );
-
-    //MUD
-    this.load.image("mud", "assets/terrain/mud/mud.png");
-
-    //LAVA
-    this.load.image("lava-center", "assets/terrain/lava/lavaCenter.png");
-    this.load.image("lava-top", "assets/terrain/lava/lavaTop.png");
-    this.load.image("lava-bottom", "assets/terrain/lava/lavaBottom.png");
-    this.load.image("lava-left", "assets/terrain/lava/lavaLeft.png");
-    this.load.image("lava-right", "assets/terrain/lava/lavaRight.png");
-    this.load.image("lava-top-left", "assets/terrain/lava/lavaTopLeft.png");
-    this.load.image("lava-top-right", "assets/terrain/lava/lavaTopRight.png");
-    this.load.image(
-      "lava-bottom-right",
-      "assets/terrain/lava/lavaBottomRight.png",
-    );
-    this.load.image(
-      "lava-bottom-left",
-      "assets/terrain/lava/lavaBottomLeft.png",
-    );
-
-    //FLOOR
-    this.load.image("floor-brick", "assets/terrain/floor/brick.png");
-    this.load.image("floor-bridge", "assets/terrain/floor/bridge.png");
-    this.load.image("floor-concrete", "assets/terrain/floor/concrete.png");
-    this.load.image("floor-japanese", "assets/terrain/floor/japanese.png");
-    this.load.image("floor-rock", "assets/terrain/floor/rock.png");
-    this.load.image("floor-rock2", "assets/terrain/floor/rock2.png");
-    this.load.image("floor-rock3", "assets/terrain/floor/rock3.png");
-    this.load.image("floor-rock4", "assets/terrain/floor/rock4.png");
-    this.load.image("floor-rock5", "assets/terrain/floor/rock5.png");
-    this.load.image("floor-wood1", "assets/terrain/floor/wood1.png");
-    this.load.image("floor-wood2", "assets/terrain/floor/wood2.png");
-    this.load.image("floor-dungeon1", "assets/terrain/floor/dungeon1.png");
-    this.load.image("floor-dungeon2", "assets/terrain/floor/dungeon2.png");
-
-    //Character SPRITES
-    //HEAD
-    this.load.image(
-      "character-head-human-white-brown",
-      "assets/characters/heads/headHumanWhiteBrown.png",
-    );
-    //BODY
-    this.load.image(
-      "character-body-human-green-tunic",
-      "assets/characters/bodies/bodyHumanGreenTunic.png",
-    );
-    //CAPE
-    this.load.image(
-      "character-cape-human-white-red",
-      "assets/characters/capes/capeHumanWhiteRed.png",
-    );
-    this.load.image(
-      "character-cape-human-white-red-top",
-      "assets/characters/capes/capeHumanWhiteRedTop.png",
-    );
-    this.load.image(
-      "character-cape-human-white-red-bottom",
-      "assets/characters/capes/capeHumanWhiteRedBottom.png",
-    );
-    // EQUIPMENT
-    this.load.image(
-      "character-equipment-sword",
-      "assets/characters/equipments/sword.png",
-    );
+    preloadTerrainAssets(this);
+    preloadObjectAssets(this);
+    preloadCharacterAssets(this);
   }
 
   create() {

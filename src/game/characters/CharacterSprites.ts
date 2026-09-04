@@ -1,5 +1,3 @@
-import type { CharacterDirection } from "./Character";
-
 export interface CharacterSpritePart {
   id: string;
   name: string;
@@ -14,29 +12,25 @@ export interface CharacterCape {
   id: string;
   name: string;
 
-  top: {
-    front: string;
-    back: string;
-    left: string;
-    right: string;
+  front: {
+    top: string;
+    bottom: string;
   };
 
-  bottom: {
-    front: string;
-    back: string;
-    left: string;
-    right: string;
-  };
+  back: string;
+  left: string;
+  right: string;
 }
 
 export const CHARACTER_HEADS: CharacterSpritePart[] = [
   {
-    id: "human-head-white-brown",
-    name: "Human White Brown",
-    front: "character-head-human-white-brown",
-    back: "character-head-human-white-brown",
-    left: "character-head-human-white-brown",
-    right: "character-head-human-white-brown",
+    id: "human-head-white-straight-brown",
+    name: "Human White Straight Brown",
+
+    front: "character-head-human-white-brown-straight-front",
+    back: "character-head-human-white-brown-straight-back",
+    left: "character-head-human-white-brown-straight-left",
+    right: "character-head-human-white-brown-straight-right",
   },
 ];
 
@@ -44,10 +38,11 @@ export const CHARACTER_BODIES: CharacterSpritePart[] = [
   {
     id: "human-green-tunic",
     name: "Green Tunic",
-    front: "character-body-human-green-tunic",
-    back: "character-body-human-green-tunic",
-    left: "character-body-human-green-tunic",
-    right: "character-body-human-green-tunic",
+
+    front: "character-body-human-green-tunic-front",
+    back: "character-body-human-green-tunic-back",
+    left: "character-body-human-green-tunic-left",
+    right: "character-body-human-green-tunic-right",
   },
 ];
 
@@ -56,25 +51,22 @@ export const CHARACTER_CAPES: CharacterCape[] = [
     id: "human-white-red",
     name: "White & Red Cape",
 
-    top: {
-      front: "character-cape-human-white-red-top",
-      back: "character-cape-human-white-red-top",
-      left: "character-cape-human-white-red-top",
-      right: "character-cape-human-white-red-top",
+    front: {
+      top: "character-cape-human-white-red-top",
+      bottom: "character-cape-human-white-red-bottom",
     },
 
-    bottom: {
-      front: "character-cape-human-white-red-bottom",
-      back: "character-cape-human-white-red-bottom",
-      left: "character-cape-human-white-red-bottom",
-      right: "character-cape-human-white-red-bottom",
-    },
+    back: "character-cape-human-white-red-back",
+    left: "character-cape-human-white-red-left",
+    right: "character-cape-human-white-red-right",
   },
 ];
+
 export const CHARACTER_EQUIPMENT: CharacterSpritePart[] = [
   {
     id: "sword",
     name: "Sword",
+
     front: "character-equipment-sword",
     back: "character-equipment-sword",
     left: "character-equipment-sword",

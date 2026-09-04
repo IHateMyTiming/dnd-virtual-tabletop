@@ -4,7 +4,6 @@ export interface CharacterCustomization {
   headId: string;
   bodyId: string;
   capeId?: string;
-  equipmentId?: string;
 }
 
 export interface Character {

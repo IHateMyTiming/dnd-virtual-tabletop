@@ -1,11 +1,14 @@
 import Phaser from "phaser";
-import type { Character, CharacterCustomization } from "./Character";
+import type {
+  Character,
+  CharacterCustomization,
+  CharacterDirection,
+} from "./Character";
 import { cellSize } from "../scenes/Grid";
 import {
   CHARACTER_HEADS,
   CHARACTER_BODIES,
   CHARACTER_CAPES,
-  CHARACTER_EQUIPMENT,
 } from "./CharacterSprites";
 
 interface CharacterAction {
@@ -30,13 +33,14 @@ export class CharacterManager {
   private undoStack: CharacterAction[] = [];
   private redoStack: CharacterAction[] = [];
 
-  private movePreviewGraphics: Phaser.GameObjects.Graphics;
-
-  private moveStartRow = 0;
-  private moveStartColumn = 0;
+  private movePreviewContainer: Phaser.GameObjects.Container;
+  private previewDirection: CharacterDirection = "front";
 
   private moveCurrentRow = 0;
   private moveCurrentColumn = 0;
+
+  private previewLastRow = 0;
+  private previewLastColumn = 0;
 
   private showInvalidMove: (row: number, column: number, layer: number) => void;
 
@@ -57,8 +61,10 @@ export class CharacterManager {
   ) {
     this.scene = scene;
     this.getLayerGraphics = getLayerGraphics;
-    this.movePreviewGraphics = this.scene.add.graphics();
-    this.movePreviewGraphics.setDepth(101);
+    this.movePreviewContainer = this.scene.add.container(0, 0);
+    this.movePreviewContainer.setDepth(101);
+    this.movePreviewContainer.setAlpha(0.65);
+    this.movePreviewContainer.setVisible(false);
     this.canCharacterMoveTo = canCharacterMoveTo;
     this.showInvalidMove = showInvalidMove;
     this.clearInteraction = clearInteraction;
@@ -134,42 +140,107 @@ export class CharacterManager {
       (sprite) => sprite.id === character.customization.capeId,
     );
 
-    const equipment = CHARACTER_EQUIPMENT.find(
-      (sprite) => sprite.id === character.customization.equipmentId,
-    );
-
+    // CAPE BOTTOM
     if (cape) {
-      const image = this.scene.add.image(0, 0, cape[direction]);
+      if (direction === "front") {
+        const capeBottom = this.scene.add.image(0, 0, cape.front.bottom);
 
-      image.setOrigin(0.5, 0.5);
-      image.setDisplaySize(cellSize, cellSize / 2);
-      image.setPosition(0, cellSize * 0.2);
+        capeBottom.setOrigin(0.5, 0.5);
+        capeBottom.setDisplaySize(cellSize, cellSize / 2);
+        capeBottom.setPosition(0, cellSize * 0.25);
 
-      container.add(image);
+        container.add(capeBottom);
+      }
     }
+
+    // BODY
     if (body) {
       const image = this.scene.add.image(0, 0, body[direction]);
 
       image.setOrigin(0.5, 0.5);
-      image.setDisplaySize(cellSize, cellSize / 2);
-      image.setPosition(0, cellSize * 0.2);
+
+      if (direction === "front") {
+        image.setDisplaySize(cellSize, cellSize / 2);
+
+        image.setPosition(0, cellSize * 0.2);
+      }
+
+      if (direction === "back") {
+        image.setDisplaySize(cellSize * 0.82, cellSize / 2);
+
+        image.setPosition(2, cellSize * 0.2);
+      }
+
+      if (direction === "left" || direction === "right") {
+        image.setDisplaySize(cellSize * 0.7, cellSize * 0.55);
+
+        image.setPosition(0, cellSize * 0.15);
+      }
+
       container.add(image);
     }
 
+    // CAPE TOP - FRONT
+    if (cape && direction === "front") {
+      const capeTop = this.scene.add.image(0, 0, cape.front.top);
+
+      capeTop.setOrigin(0.5, 0.5);
+      capeTop.setDisplaySize(cellSize, cellSize / 4);
+      capeTop.setPosition(0, -cellSize * 0.05);
+
+      container.add(capeTop);
+    }
+
+    // CAPE - BACK / LEFT / RIGHT
+    if (cape && direction !== "front") {
+      const capeImage = this.scene.add.image(0, 0, cape[direction]);
+
+      capeImage.setOrigin(0.5, 0.5);
+
+      if (direction === "back") {
+        capeImage.setDisplaySize(cellSize * 0.82, cellSize / 2);
+
+        capeImage.setPosition(-1.25, cellSize * 0.2);
+      }
+
+      if (direction === "left") {
+        capeImage.setDisplaySize(cellSize * 0.7, cellSize * 0.55);
+
+        capeImage.setPosition(5, cellSize * 0.15);
+      }
+
+      if (direction === "right") {
+        capeImage.setDisplaySize(cellSize * 0.7, cellSize * 0.55);
+
+        capeImage.setPosition(-5, cellSize * 0.15);
+      }
+
+      container.add(capeImage);
+    }
+
+    // HEAD
     if (head) {
       const image = this.scene.add.image(0, 0, head[direction]);
 
       image.setOrigin(0.5, 0.5);
-      image.setDisplaySize(cellSize, cellSize / 2);
-      image.setPosition(0, -cellSize * 0.25);
-      container.add(image);
-    }
 
-    if (equipment) {
-      const image = this.scene.add.image(0, 0, equipment[direction]);
+      if (direction === "front") {
+        image.setDisplaySize(cellSize, cellSize / 2);
 
-      image.setOrigin(0.5, 0.5);
-      image.setDisplaySize(cellSize, cellSize);
+        image.setPosition(0, -cellSize * 0.25);
+      }
+
+      if (direction === "back") {
+        image.setDisplaySize(cellSize, cellSize / 2);
+
+        image.setPosition(0.2, -cellSize * 0.16);
+      }
+
+      if (direction === "left" || direction === "right") {
+        image.setDisplaySize(cellSize, cellSize / 2);
+
+        image.setPosition(2, -cellSize * 0.25);
+      }
 
       container.add(image);
     }
@@ -254,18 +325,25 @@ export class CharacterManager {
   startDragging(character: Character) {
     this.draggingCharacter = character;
 
-    this.moveStartRow = character.row;
-    this.moveStartColumn = character.column;
+    const characterContainer = this.characterGraphics.get(character.id);
+
+    if (characterContainer) {
+      characterContainer.setVisible(false);
+    }
 
     this.moveCurrentRow = character.row;
     this.moveCurrentColumn = character.column;
+
+    this.previewLastRow = character.row;
+    this.previewLastColumn = character.column;
+
+    this.previewDirection = character.direction;
 
     this.drawMovePreview(character);
   }
 
   private drawMovePreview(character: Character) {
     const layerGraphics = this.getLayerGraphics(character.layer);
-
     const scale = layerGraphics.scaleX;
 
     const x =
@@ -278,13 +356,36 @@ export class CharacterManager {
       this.moveCurrentRow * cellSize * scale +
       (cellSize / 2) * scale;
 
-    this.movePreviewGraphics.clear();
+    const deltaColumn = this.moveCurrentColumn - this.previewLastColumn;
 
-    this.movePreviewGraphics.fillStyle(0xff0000, 0.35);
-    this.movePreviewGraphics.fillCircle(x, y, cellSize * 0.4 * scale);
+    const deltaRow = this.moveCurrentRow - this.previewLastRow;
 
-    this.movePreviewGraphics.lineStyle(2, 0xffffff, 0.5);
-    this.movePreviewGraphics.strokeCircle(x, y, cellSize * 0.4 * scale);
+    let direction = this.previewDirection;
+    if (deltaColumn > 0) {
+      direction = "right";
+    } else if (deltaColumn < 0) {
+      direction = "left";
+    } else if (deltaRow > 0) {
+      direction = "front";
+    } else if (deltaRow < 0) {
+      direction = "back";
+    }
+
+    this.previewDirection = direction;
+
+    this.previewLastRow = this.moveCurrentRow;
+    this.previewLastColumn = this.moveCurrentColumn;
+
+    const previewCharacter: Character = {
+      ...character,
+      direction,
+    };
+
+    this.drawCharacterSprites(this.movePreviewContainer, previewCharacter);
+
+    this.movePreviewContainer.setPosition(x, y);
+    this.movePreviewContainer.setScale(scale);
+    this.movePreviewContainer.setVisible(true);
   }
 
   isDragging() {
@@ -328,30 +429,21 @@ export class CharacterManager {
 
     const character = this.draggingCharacter;
 
-    if (
-      this.moveStartRow !== this.moveCurrentRow ||
-      this.moveStartColumn !== this.moveCurrentColumn
-    ) {
-      character.row = this.moveCurrentRow;
-      character.column = this.moveCurrentColumn;
+    character.row = this.moveCurrentRow;
+    character.column = this.moveCurrentColumn;
 
-      this.updateCharacterPosition(character);
+    this.updateCharacterPosition(character);
 
-      this.undoStack.push({
-        type: "move",
-        character,
-        previousRow: this.moveStartRow,
-        previousColumn: this.moveStartColumn,
-        newRow: this.moveCurrentRow,
-        newColumn: this.moveCurrentColumn,
-      });
+    const characterContainer = this.characterGraphics.get(character.id);
 
-      this.redoStack = [];
+    if (characterContainer) {
+      characterContainer.setVisible(true);
     }
 
-    this.movePreviewGraphics.clear();
-    this.clearInteraction();
+    this.movePreviewContainer.removeAll(true);
+    this.movePreviewContainer.setVisible(false);
 
+    this.clearInteraction();
     this.draggingCharacter = null;
   }
 
