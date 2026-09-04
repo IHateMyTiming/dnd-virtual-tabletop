@@ -7,6 +7,8 @@ import type {
 import { cellSize } from "../scenes/Grid";
 import {
   CHARACTER_HEADS,
+  CHARACTER_HAIR,
+  CHARACTER_SKINS,
   CHARACTER_BODIES,
   CHARACTER_CAPES,
 } from "./CharacterSprites";
@@ -89,6 +91,8 @@ export class CharacterManager {
 
       customization: {
         headId: CHARACTER_HEADS[0].id,
+        hairId: CHARACTER_HAIR[0].id,
+        skinId: CHARACTER_SKINS[0].id,
         bodyId: CHARACTER_BODIES[0].id,
         capeId: CHARACTER_CAPES[0].id,
       },
@@ -130,6 +134,14 @@ export class CharacterManager {
 
     const head = CHARACTER_HEADS.find(
       (sprite) => sprite.id === character.customization.headId,
+    );
+
+    const hair = CHARACTER_HAIR.find(
+      (sprite) => sprite.id === character.customization.hairId,
+    );
+
+    const skin = CHARACTER_SKINS.find(
+      (sprite) => sprite.id === character.customization.skinId,
     );
 
     const body = CHARACTER_BODIES.find(
@@ -178,6 +190,30 @@ export class CharacterManager {
       }
 
       container.add(image);
+
+      // SKIN
+      if (skin) {
+        const skinImage = this.scene.add.image(0, 0, skin[direction]);
+
+        skinImage.setOrigin(0.5, 0.5);
+
+        if (direction === "front") {
+          skinImage.setDisplaySize(cellSize, cellSize / 2);
+          skinImage.setPosition(0, cellSize * 0.2);
+        }
+
+        if (direction === "back") {
+          skinImage.setDisplaySize(cellSize * 0.82, cellSize / 2);
+          skinImage.setPosition(2, cellSize * 0.2);
+        }
+
+        if (direction === "left" || direction === "right") {
+          skinImage.setDisplaySize(cellSize * 0.7, cellSize * 0.55);
+          skinImage.setPosition(0, cellSize * 0.15);
+        }
+
+        container.add(skinImage);
+      }
     }
 
     // CAPE TOP - FRONT
@@ -239,6 +275,30 @@ export class CharacterManager {
       if (direction === "left" || direction === "right") {
         image.setDisplaySize(cellSize, cellSize / 2);
 
+        image.setPosition(2, -cellSize * 0.25);
+      }
+
+      container.add(image);
+    }
+
+    // HAIR
+    if (hair) {
+      const image = this.scene.add.image(0, 0, hair[direction]);
+
+      image.setOrigin(0.5, 0.5);
+
+      if (direction === "front") {
+        image.setDisplaySize(cellSize, cellSize / 2);
+        image.setPosition(0, -cellSize * 0.25);
+      }
+
+      if (direction === "back") {
+        image.setDisplaySize(cellSize, cellSize / 2);
+        image.setPosition(0.2, -cellSize * 0.16);
+      }
+
+      if (direction === "left" || direction === "right") {
+        image.setDisplaySize(cellSize, cellSize / 2);
         image.setPosition(2, -cellSize * 0.25);
       }
 

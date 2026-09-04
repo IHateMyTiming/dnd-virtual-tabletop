@@ -2,6 +2,8 @@ export type CharacterDirection = "front" | "back" | "left" | "right";
 
 export interface CharacterCustomization {
   headId: string;
+  hairId: string;
+  skinId: string;
   bodyId: string;
   capeId?: string;
 }

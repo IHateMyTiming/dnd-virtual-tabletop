@@ -1,292 +1,164 @@
 export function preloadCharacterAssets(scene: Phaser.Scene) {
-  //Character SPRITES
-  //HEAD
-  //BROWN STRAIGHT
+  // HEADS
+
   scene.load.image(
-    "character-head-human-white-brown-straight-front",
-    "assets/characters/heads/brownStraight/whiteFront.png",
-  );
-  scene.load.image(
-    "character-head-human-white-brown-straight-back",
-    "assets/characters/heads/brownStraight/whiteBack.png",
-  );
-  scene.load.image(
-    "character-head-human-white-brown-straight-right",
-    "assets/characters/heads/brownStraight/whiteRight.png",
-  );
-  scene.load.image(
-    "character-head-human-white-brown-straight-left",
-    "assets/characters/heads/brownStraight/whiteLeft.png",
-  );
-  scene.load.image(
-    "character-head-human-black-brown-straight-front",
-    "assets/characters/heads/brownStraight/blackFront.png",
-  );
-  scene.load.image(
-    "character-head-human-black-brown-straight-back",
-    "assets/characters/heads/brownStraight/blackBack.png",
-  );
-  scene.load.image(
-    "character-head-human-black-brown-straight-right",
-    "assets/characters/heads/brownStraight/blackRight.png",
-  );
-  scene.load.image(
-    "character-head-human-black-brown-straight-left",
-    "assets/characters/heads/brownStraight/blackLeft.png",
+    "character-head-human-white-front",
+    "assets/characters/heads/white/front.png",
   );
 
-  //BLACK STRAIGHT
   scene.load.image(
-    "character-head-human-white-black-straight-front",
-    "assets/characters/heads/blackStraight/whiteFront.png",
-  );
-  scene.load.image(
-    "character-head-human-white-black-straight-front",
-    "assets/characters/heads/blackStraight/whiteFront.png",
-  );
-  scene.load.image(
-    "character-head-human-white-black-straight-front",
-    "assets/characters/heads/blackStraight/whiteFront.png",
-  );
-  scene.load.image(
-    "character-head-human-white-black-straight-front",
-    "assets/characters/heads/blackStraight/whiteFront.png",
-  );
-  scene.load.image(
-    "character-head-human-black-black-straight-front",
-    "assets/characters/heads/blackStraight/blackFront.png",
-  );
-  scene.load.image(
-    "character-head-human-black-black-straight-front",
-    "assets/characters/heads/blackStraight/blackFront.png",
-  );
-  scene.load.image(
-    "character-head-human-black-black-straight-front",
-    "assets/characters/heads/blackStraight/blackFront.png",
-  );
-  scene.load.image(
-    "character-head-human-black-black-straight-front",
-    "assets/characters/heads/blackStraight/blackFront.png",
+    "character-head-human-white-back",
+    "assets/characters/heads/white/back.png",
   );
 
-  //BLONDE STRAIGHT
   scene.load.image(
-    "character-head-human-white-blonde-straight-front",
-    "assets/characters/heads/blondeStraight/whiteFront.png",
-  );
-  scene.load.image(
-    "character-head-human-white-blonde-straight-front",
-    "assets/characters/heads/blondeStraight/whiteFront.png",
-  );
-  scene.load.image(
-    "character-head-human-white-blonde-straight-front",
-    "assets/characters/heads/blondeStraight/whiteFront.png",
-  );
-  scene.load.image(
-    "character-head-human-white-blonde-straight-front",
-    "assets/characters/heads/blondeStraight/whiteFront.png",
-  );
-  scene.load.image(
-    "character-head-human-black-blonde-straight-front",
-    "assets/characters/heads/blondeStraight/blackFront.png",
-  );
-  scene.load.image(
-    "character-head-human-black-blonde-straight-front",
-    "assets/characters/heads/blondeStraight/blackFront.png",
-  );
-  scene.load.image(
-    "character-head-human-black-blonde-straight-front",
-    "assets/characters/heads/blondeStraight/blackFront.png",
-  );
-  scene.load.image(
-    "character-head-human-black-blonde-straight-front",
-    "assets/characters/heads/blondeStraight/blackFront.png",
+    "character-head-human-white-left",
+    "assets/characters/heads/white/left.png",
   );
 
-  //RED STRAIGHT
   scene.load.image(
-    "character-head-human-white-red-straight-front",
-    "assets/characters/heads/redStraight/whiteFront.png",
-  );
-  scene.load.image(
-    "character-head-human-white-red-straight-front",
-    "assets/characters/heads/redStraight/whiteFront.png",
-  );
-  scene.load.image(
-    "character-head-human-white-red-straight-front",
-    "assets/characters/heads/redStraight/whiteFront.png",
-  );
-  scene.load.image(
-    "character-head-human-white-red-straight-front",
-    "assets/characters/heads/redStraight/whiteFront.png",
-  );
-  scene.load.image(
-    "character-head-human-black-red-straight-front",
-    "assets/characters/heads/redStraight/blackFront.png",
-  );
-  scene.load.image(
-    "character-head-human-black-red-straight-front",
-    "assets/characters/heads/redStraight/blackFront.png",
-  );
-  scene.load.image(
-    "character-head-human-black-red-straight-front",
-    "assets/characters/heads/redStraight/blackFront.png",
-  );
-  scene.load.image(
-    "character-head-human-black-red-straight-front",
-    "assets/characters/heads/redStraight/blackFront.png",
+    "character-head-human-white-right",
+    "assets/characters/heads/white/right.png",
   );
 
-  //BLACK CURLY
   scene.load.image(
-    "character-head-human-white-black-curly-front",
-    "assets/characters/heads/blackCurly/whiteFront.png",
-  );
-  scene.load.image(
-    "character-head-human-white-black-curly-front",
-    "assets/characters/heads/blackCurly/whiteFront.png",
-  );
-  scene.load.image(
-    "character-head-human-white-black-curly-front",
-    "assets/characters/heads/blackCurly/whiteFront.png",
-  );
-  scene.load.image(
-    "character-head-human-white-black-curly-front",
-    "assets/characters/heads/blackCurly/whiteFront.png",
-  );
-  scene.load.image(
-    "character-head-human-black-black-curly-front",
-    "assets/characters/heads/blackCurly/blackFront.png",
-  );
-  scene.load.image(
-    "character-head-human-black-black-curly-front",
-    "assets/characters/heads/blackCurly/blackFront.png",
-  );
-  scene.load.image(
-    "character-head-human-black-black-curly-front",
-    "assets/characters/heads/blackCurly/blackFront.png",
-  );
-  scene.load.image(
-    "character-head-human-black-black-curly-front",
-    "assets/characters/heads/blackCurly/blackFront.png",
+    "character-head-human-black-front",
+    "assets/characters/heads/black/front.png",
   );
 
-  //BROWN CURLY
   scene.load.image(
-    "character-head-human-white-brown-curly-front",
-    "assets/characters/heads/brownCurly/whiteFront.png",
-  );
-  scene.load.image(
-    "character-head-human-white-brown-curly-back",
-    "assets/characters/heads/brownCurly/whiteBack.png",
-  );
-  scene.load.image(
-    "character-head-human-white-brown-curly-right",
-    "assets/characters/heads/brownCurly/whiteRight.png",
-  );
-  scene.load.image(
-    "character-head-human-white-brown-curly-left",
-    "assets/characters/heads/brownCurly/whiteLeft.png",
-  );
-  scene.load.image(
-    "character-head-human-black-brown-curly-front",
-    "assets/characters/heads/brownCurly/blackFront.png",
-  );
-  scene.load.image(
-    "character-head-human-black-brown-curly-back",
-    "assets/characters/heads/brownCurly/blackBack.png",
-  );
-  scene.load.image(
-    "character-head-human-black-brown-curly-right",
-    "assets/characters/heads/brownCurly/blackRight.png",
-  );
-  scene.load.image(
-    "character-head-human-black-brown-curly-left",
-    "assets/characters/heads/brownCurly/blackLeft.png",
+    "character-head-human-black-back",
+    "assets/characters/heads/black/back.png",
   );
 
-  //BLONDE CURLY
   scene.load.image(
-    "character-head-human-white-blonde-curly-front",
-    "assets/characters/heads/blondeCurly/whiteFront.png",
-  );
-  scene.load.image(
-    "character-head-human-white-blonde-curly-back",
-    "assets/characters/heads/blondeCurly/whiteBack.png",
-  );
-  scene.load.image(
-    "character-head-human-white-blonde-curly-right",
-    "assets/characters/heads/blondeCurly/whiteRight.png",
-  );
-  scene.load.image(
-    "character-head-human-white-blonde-curly-left",
-    "assets/characters/heads/blondeCurly/whiteLeft.png",
-  );
-  scene.load.image(
-    "character-head-human-black-blonde-curly-front",
-    "assets/characters/heads/blondeCurly/blackFront.png",
-  );
-  scene.load.image(
-    "character-head-human-black-blonde-curly-back",
-    "assets/characters/heads/blondeCurly/blackBack.png",
-  );
-  scene.load.image(
-    "character-head-human-black-blonde-curly-right",
-    "assets/characters/heads/blondeCurly/blackRight.png",
-  );
-  scene.load.image(
-    "character-head-human-black-blonde-curly-left",
-    "assets/characters/heads/blondeCurly/blackLeft.png",
+    "character-head-human-black-left",
+    "assets/characters/heads/black/left.png",
   );
 
-  //BODY
-  //Green Tunic
+  scene.load.image(
+    "character-head-human-black-right",
+    "assets/characters/heads/black/right.png",
+  );
+
+  // HAIR
+
+  const hairTypes = ["straight", "curly", "wavy"];
+
+  const hairColors = ["brown", "black", "blonde", "red"];
+
+  for (const hairType of hairTypes) {
+    for (const hairColor of hairColors) {
+      scene.load.image(
+        `character-hair-${hairColor}-${hairType}-front`,
+        `assets/characters/hairs/${hairType}/${hairColor}/front.png`,
+      );
+
+      scene.load.image(
+        `character-hair-${hairColor}-${hairType}-back`,
+        `assets/characters/hairs/${hairType}/${hairColor}/back.png`,
+      );
+
+      scene.load.image(
+        `character-hair-${hairColor}-${hairType}-left`,
+        `assets/characters/hairs/${hairType}/${hairColor}/left.png`,
+      );
+
+      scene.load.image(
+        `character-hair-${hairColor}-${hairType}-right`,
+        `assets/characters/hairs/${hairType}/${hairColor}/right.png`,
+      );
+    }
+  }
+
+  // SKIN
+
+  scene.load.image(
+    "character-skin-human-white-front",
+    "assets/characters/skins/white/skinFront.png",
+  );
+
+  scene.load.image(
+    "character-skin-human-white-back",
+    "assets/characters/skins/white/skinBack.png",
+  );
+
+  scene.load.image(
+    "character-skin-human-white-left",
+    "assets/characters/skins/white/skinLeft.png",
+  );
+
+  scene.load.image(
+    "character-skin-human-white-right",
+    "assets/characters/skins/white/skinRight.png",
+  );
+
+  scene.load.image(
+    "character-skin-human-black-front",
+    "assets/characters/skins/black/skinFront.png",
+  );
+
+  scene.load.image(
+    "character-skin-human-black-back",
+    "assets/characters/skins/black/skinBack.png",
+  );
+
+  scene.load.image(
+    "character-skin-human-black-left",
+    "assets/characters/skins/black/skinLeft.png",
+  );
+
+  scene.load.image(
+    "character-skin-human-black-right",
+    "assets/characters/skins/black/skinRight.png",
+  );
+
+  // BODY
+
   scene.load.image(
     "character-body-human-green-tunic-front",
-    "assets/characters/bodies/greenTunic/whiteFront.png",
-  );
-  scene.load.image(
-    "character-body-human-green-tunic-back",
-    "assets/characters/bodies/greenTunic/whiteBack.png",
-  );
-  scene.load.image(
-    "character-body-human-green-tunic-right",
-    "assets/characters/bodies/greenTunic/whiteRight.png",
-  );
-  scene.load.image(
-    "character-body-human-green-tunic-left",
-    "assets/characters/bodies/greenTunic/whiteLeft.png",
+    "assets/characters/bodies/greenTunic/bodyFront.png",
   );
 
-  //CAPE
-  //Red
   scene.load.image(
-    "character-cape-human-white-red",
-    "assets/characters/capes/redCape/whole.png",
+    "character-body-human-green-tunic-back",
+    "assets/characters/bodies/greenTunic/bodyBack.png",
   );
+
+  scene.load.image(
+    "character-body-human-green-tunic-left",
+    "assets/characters/bodies/greenTunic/bodyLeft.png",
+  );
+
+  scene.load.image(
+    "character-body-human-green-tunic-right",
+    "assets/characters/bodies/greenTunic/bodyRight.png",
+  );
+
+  // CAPE
+
   scene.load.image(
     "character-cape-human-white-red-top",
     "assets/characters/capes/redCape/top.png",
   );
+
   scene.load.image(
     "character-cape-human-white-red-bottom",
     "assets/characters/capes/redCape/bottom.png",
   );
+
   scene.load.image(
     "character-cape-human-white-red-back",
     "assets/characters/capes/redCape/back.png",
   );
-  scene.load.image(
-    "character-cape-human-white-red-right",
-    "assets/characters/capes/redCape/right.png",
-  );
+
   scene.load.image(
     "character-cape-human-white-red-left",
     "assets/characters/capes/redCape/left.png",
   );
-  // EQUIPMENT
+
   scene.load.image(
-    "character-equipment-sword",
-    "assets/characters/equipments/sword.png",
+    "character-cape-human-white-red-right",
+    "assets/characters/capes/redCape/right.png",
   );
 }
