@@ -174,6 +174,132 @@ export const CHARACTER_HAIR: CharacterSpritePart[] = [
     left: "character-hair-red-wavy-left",
     right: "character-hair-red-wavy-right",
   },
+
+  // AFRO
+
+  {
+    id: "brown-afro",
+    name: "Brown Afro",
+
+    front: "character-hair-brown-afro-front",
+    back: "character-hair-brown-afro-back",
+    left: "character-hair-brown-afro-left",
+    right: "character-hair-brown-afro-right",
+  },
+
+  {
+    id: "black-afro",
+    name: "Black Afro",
+
+    front: "character-hair-black-afro-front",
+    back: "character-hair-black-afro-back",
+    left: "character-hair-black-afro-left",
+    right: "character-hair-black-afro-right",
+  },
+
+  {
+    id: "blonde-afro",
+    name: "Blonde Afro",
+
+    front: "character-hair-blonde-afro-front",
+    back: "character-hair-blonde-afro-back",
+    left: "character-hair-blonde-afro-left",
+    right: "character-hair-blonde-afro-right",
+  },
+
+  {
+    id: "red-afro",
+    name: "Red Afro",
+
+    front: "character-hair-red-afro-front",
+    back: "character-hair-red-afro-back",
+    left: "character-hair-red-afro-left",
+    right: "character-hair-red-afro-right",
+  },
+
+  // FEMALE STRAIGHT
+
+  {
+    id: "brown-female-straight",
+    name: "Brown Female Straight",
+
+    front: "character-hair-brown-female-straight-front",
+    back: "character-hair-brown-female-straight-back",
+    left: "character-hair-brown-female-straight-left",
+    right: "character-hair-brown-female-straight-right",
+  },
+
+  {
+    id: "black-female-straight",
+    name: "Black Female Straight",
+
+    front: "character-hair-black-female-straight-front",
+    back: "character-hair-black-female-straight-back",
+    left: "character-hair-black-female-straight-left",
+    right: "character-hair-black-female-straight-right",
+  },
+
+  {
+    id: "blonde-female-straight",
+    name: "Blonde Female Straight",
+
+    front: "character-hair-blonde-female-straight-front",
+    back: "character-hair-blonde-female-straight-back",
+    left: "character-hair-blonde-female-straight-left",
+    right: "character-hair-blonde-female-straight-right",
+  },
+
+  {
+    id: "red-female-straight",
+    name: "Red Female Straight",
+
+    front: "character-hair-red-female-straight-front",
+    back: "character-hair-red-female-straight-back",
+    left: "character-hair-red-female-straight-left",
+    right: "character-hair-red-female-straight-right",
+  },
+
+  // FEMALE GOATED HAIR
+
+  {
+    id: "brown-female-goated-hair",
+    name: "Brown Female goated-hair",
+
+    front: "character-hair-brown-female-goated-hair-front",
+    back: "character-hair-brown-female-goated-hair-back",
+    left: "character-hair-brown-female-goated-hair-left",
+    right: "character-hair-brown-female-goated-hair-right",
+  },
+
+  {
+    id: "black-female-goated-hair",
+    name: "Black Female goated-hair",
+
+    front: "character-hair-black-female-goated-hair-front",
+    back: "character-hair-black-female-goated-hair-back",
+    left: "character-hair-black-female-goated-hair-left",
+    right: "character-hair-black-female-goated-hair-right",
+  },
+
+  {
+    id: "blonde-female-goated-hair",
+    name: "Blonde Female goated-hair",
+
+    front: "character-hair-blonde-female-goated-hair-front",
+    back: "character-hair-blonde-female-goated-hair-back",
+    left: "character-hair-blonde-female-goated-hair-left",
+    right: "character-hair-blonde-female-goated-hair-right",
+  },
+
+  {
+    id: "red-female-goated-hair",
+    name: "Red Female goated-hair",
+
+    front: "character-hair-red-female-goated-hair-front",
+    back: "character-hair-red-female-goated-hair-back",
+    left: "character-hair-red-female-goated-hair-left",
+    right: "character-hair-red-female-goated-hair-right",
+  },
 ];
 
 // SKIN

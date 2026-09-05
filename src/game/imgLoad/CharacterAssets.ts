@@ -43,7 +43,14 @@ export function preloadCharacterAssets(scene: Phaser.Scene) {
 
   // HAIR
 
-  const hairTypes = ["straight", "curly", "wavy"];
+  const hairTypes = [
+    "straight",
+    "curly",
+    "wavy",
+    "afro",
+    "female-straight",
+    "female-goated-hair",
+  ];
 
   const hairColors = ["brown", "black", "blonde", "red"];
 
@@ -75,42 +82,42 @@ export function preloadCharacterAssets(scene: Phaser.Scene) {
 
   scene.load.image(
     "character-skin-human-white-front",
-    "assets/characters/skins/white/skinFront.png",
+    "assets/characters/skins/white/front.png",
   );
 
   scene.load.image(
     "character-skin-human-white-back",
-    "assets/characters/skins/white/skinBack.png",
+    "assets/characters/skins/white/back.png",
   );
 
   scene.load.image(
     "character-skin-human-white-left",
-    "assets/characters/skins/white/skinLeft.png",
+    "assets/characters/skins/white/left.png",
   );
 
   scene.load.image(
     "character-skin-human-white-right",
-    "assets/characters/skins/white/skinRight.png",
+    "assets/characters/skins/white/right.png",
   );
 
   scene.load.image(
     "character-skin-human-black-front",
-    "assets/characters/skins/black/skinFront.png",
+    "assets/characters/skins/black/front.png",
   );
 
   scene.load.image(
     "character-skin-human-black-back",
-    "assets/characters/skins/black/skinBack.png",
+    "assets/characters/skins/black/back.png",
   );
 
   scene.load.image(
     "character-skin-human-black-left",
-    "assets/characters/skins/black/skinLeft.png",
+    "assets/characters/skins/black/left.png",
   );
 
   scene.load.image(
     "character-skin-human-black-right",
-    "assets/characters/skins/black/skinRight.png",
+    "assets/characters/skins/black/right.png",
   );
 
   // BODY

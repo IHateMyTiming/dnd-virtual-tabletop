@@ -4,6 +4,7 @@ export interface CharacterCustomization {
   headId: string;
   hairId: string;
   skinId: string;
+  hairColor: string;
   bodyId: string;
   capeId?: string;
 }

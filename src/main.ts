@@ -20,4 +20,10 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: MapScene,
 };
 
+document
+  .getElementById("character-customization")
+  ?.addEventListener("click", () => {
+    window.location.href = "/src/character-customization/index.html";
+  });
+
 new Phaser.Game(config);

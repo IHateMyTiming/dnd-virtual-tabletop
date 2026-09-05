@@ -92,6 +92,7 @@ export class CharacterManager {
       customization: {
         headId: CHARACTER_HEADS[0].id,
         hairId: CHARACTER_HAIR[0].id,
+        hairColor: "brown",
         skinId: CHARACTER_SKINS[0].id,
         bodyId: CHARACTER_BODIES[0].id,
         capeId: CHARACTER_CAPES[0].id,
@@ -131,14 +132,20 @@ export class CharacterManager {
     container.removeAll(true);
 
     const direction = character.direction;
+    const characterScale = 0.8;
 
     const head = CHARACTER_HEADS.find(
       (sprite) => sprite.id === character.customization.headId,
     );
 
-    const hair = CHARACTER_HAIR.find(
-      (sprite) => sprite.id === character.customization.hairId,
-    );
+    const hair =
+      character.customization.hairId === "none"
+        ? undefined
+        : CHARACTER_HAIR.find(
+            (sprite) =>
+              sprite.id ===
+              `${character.customization.hairColor}-${character.customization.hairId}`,
+          );
 
     const skin = CHARACTER_SKINS.find(
       (sprite) => sprite.id === character.customization.skinId,
@@ -180,7 +187,7 @@ export class CharacterManager {
       if (direction === "back") {
         image.setDisplaySize(cellSize * 0.82, cellSize / 2);
 
-        image.setPosition(2, cellSize * 0.2);
+        image.setPosition(-1, cellSize * 0.2);
       }
 
       if (direction === "left" || direction === "right") {
@@ -190,30 +197,35 @@ export class CharacterManager {
       }
 
       container.add(image);
+    }
 
-      // SKIN
-      if (skin) {
-        const skinImage = this.scene.add.image(0, 0, skin[direction]);
+    // SKIN
+    if (skin) {
+      const skinImage = this.scene.add.image(0, 0, skin[direction]);
 
-        skinImage.setOrigin(0.5, 0.5);
+      skinImage.setOrigin(0.5, 0.5);
 
-        if (direction === "front") {
-          skinImage.setDisplaySize(cellSize, cellSize / 2);
-          skinImage.setPosition(0, cellSize * 0.2);
-        }
-
-        if (direction === "back") {
-          skinImage.setDisplaySize(cellSize * 0.82, cellSize / 2);
-          skinImage.setPosition(2, cellSize * 0.2);
-        }
-
-        if (direction === "left" || direction === "right") {
-          skinImage.setDisplaySize(cellSize * 0.7, cellSize * 0.55);
-          skinImage.setPosition(0, cellSize * 0.15);
-        }
-
-        container.add(skinImage);
+      if (direction === "front") {
+        skinImage.setDisplaySize(cellSize, cellSize / 2);
+        skinImage.setPosition(0, cellSize * 0.2);
       }
+
+      if (direction === "back") {
+        skinImage.setDisplaySize(cellSize * 0.82, cellSize / 2);
+        skinImage.setPosition(-1.2, cellSize * 0.2);
+      }
+
+      if (direction === "left") {
+        skinImage.setDisplaySize(cellSize * 0.7, cellSize * 0.55);
+        skinImage.setPosition(0.7, cellSize * 0.001);
+      }
+
+      if (direction === "right") {
+        skinImage.setDisplaySize(cellSize * 0.7, cellSize * 0.55);
+        skinImage.setPosition(-0.7, cellSize * 0.001);
+      }
+
+      container.add(skinImage);
     }
 
     // CAPE TOP - FRONT
@@ -236,7 +248,7 @@ export class CharacterManager {
       if (direction === "back") {
         capeImage.setDisplaySize(cellSize * 0.82, cellSize / 2);
 
-        capeImage.setPosition(-1.25, cellSize * 0.2);
+        capeImage.setPosition(1.1, cellSize * 0.15);
       }
 
       if (direction === "left") {
@@ -261,24 +273,42 @@ export class CharacterManager {
       image.setOrigin(0.5, 0.5);
 
       if (direction === "front") {
-        image.setDisplaySize(cellSize, cellSize / 2);
-
+        image.setDisplaySize(
+          cellSize * characterScale,
+          (cellSize / 1.65) * characterScale,
+        );
         image.setPosition(0, -cellSize * 0.25);
       }
 
       if (direction === "back") {
-        image.setDisplaySize(cellSize, cellSize / 2);
+        image.setDisplaySize(
+          cellSize * characterScale,
+          (cellSize / 2.2) * characterScale,
+        );
 
-        image.setPosition(0.2, -cellSize * 0.16);
+        image.setPosition(-1, -cellSize * 0.16);
       }
 
       if (direction === "left" || direction === "right") {
         image.setDisplaySize(cellSize, cellSize / 2);
 
-        image.setPosition(2, -cellSize * 0.25);
+        image.setPosition(0, -cellSize * 0.3);
       }
 
-      container.add(image);
+      if (direction === "right") {
+        image.setDisplaySize(cellSize, cellSize / 2);
+
+        image.setPosition(0, -cellSize * 0.3);
+      }
+
+      if (direction === "left" || direction === "right") {
+        container.addAt(image, 0);
+      }
+      if (direction === "left" || direction === "right") {
+        container.addAt(image, 0);
+      } else {
+        container.add(image);
+      }
     }
 
     // HAIR
@@ -289,17 +319,22 @@ export class CharacterManager {
 
       if (direction === "front") {
         image.setDisplaySize(cellSize, cellSize / 2);
-        image.setPosition(0, -cellSize * 0.25);
+        image.setPosition(0, -cellSize * 0.35);
       }
 
       if (direction === "back") {
-        image.setDisplaySize(cellSize, cellSize / 2);
-        image.setPosition(0.2, -cellSize * 0.16);
+        image.setDisplaySize(cellSize, cellSize / 1.8);
+        image.setPosition(1.5, -cellSize * 0.25);
       }
 
-      if (direction === "left" || direction === "right") {
+      if (direction === "left") {
         image.setDisplaySize(cellSize, cellSize / 2);
-        image.setPosition(2, -cellSize * 0.25);
+        image.setPosition(0, -cellSize * 0.35);
+      }
+
+      if (direction === "right") {
+        image.setDisplaySize(cellSize, cellSize / 1.87);
+        image.setPosition(0, -cellSize * 0.35);
       }
 
       container.add(image);
@@ -492,11 +527,16 @@ export class CharacterManager {
     character.row = this.moveCurrentRow;
     character.column = this.moveCurrentColumn;
 
+    // Keep the direction from the movement preview
+    character.direction = this.previewDirection;
+
     this.updateCharacterPosition(character);
 
+    // Redraw using the final direction
     const characterContainer = this.characterGraphics.get(character.id);
 
     if (characterContainer) {
+      this.drawCharacterSprites(characterContainer, character);
       characterContainer.setVisible(true);
     }
 
