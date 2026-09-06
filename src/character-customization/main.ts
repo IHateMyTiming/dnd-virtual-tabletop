@@ -464,7 +464,11 @@ document.getElementById("create-character")!.addEventListener("click", () => {
     capeId: capes[selectedCape].id,
   };
 
-  console.log("Character customization:", customization);
+  const encodedCustomization = encodeURIComponent(
+    JSON.stringify(customization),
+  );
+
+  window.location.href = `/?character=${encodedCustomization}`;
 });
 
 document.getElementById("back-to-map")?.addEventListener("click", () => {

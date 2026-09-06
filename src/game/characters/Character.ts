@@ -7,6 +7,7 @@ export interface CharacterCustomization {
   hairColor: string;
   bodyId: string;
   capeId?: string;
+  accessoryIds?: string[];
 }
 
 export interface Character {

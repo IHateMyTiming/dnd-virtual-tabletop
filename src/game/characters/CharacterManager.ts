@@ -11,6 +11,7 @@ import {
   CHARACTER_SKINS,
   CHARACTER_BODIES,
   CHARACTER_CAPES,
+  CHARACTER_ACCESSORIES,
 } from "./CharacterSprites";
 
 interface CharacterAction {
@@ -72,7 +73,13 @@ export class CharacterManager {
     this.clearInteraction = clearInteraction;
   }
 
-  addCharacter(row: number, column: number, layer: number, name = "Character") {
+  addCharacter(
+    row: number,
+    column: number,
+    layer: number,
+    name = "Character",
+    customization?: CharacterCustomization,
+  ) {
     // Don't allow two characters on the same tile
     if (this.getCharacterAt(row, column, layer)) {
       return null;
@@ -89,13 +96,14 @@ export class CharacterManager {
 
       direction: "front",
 
-      customization: {
+      customization: customization ?? {
         headId: CHARACTER_HEADS[0].id,
-        hairId: CHARACTER_HAIR[0].id,
+        hairId: "curly",
         hairColor: "brown",
         skinId: CHARACTER_SKINS[0].id,
         bodyId: CHARACTER_BODIES[0].id,
         capeId: CHARACTER_CAPES[0].id,
+        accessoryIds: ["wizard-hat"],
       },
     };
 
@@ -159,182 +167,344 @@ export class CharacterManager {
       (sprite) => sprite.id === character.customization.capeId,
     );
 
-    // CAPE BOTTOM
-    if (cape) {
-      if (direction === "front") {
-        const capeBottom = this.scene.add.image(0, 0, cape.front.bottom);
+    const accessoryIds = character.customization.accessoryIds ?? [];
 
-        capeBottom.setOrigin(0.5, 0.5);
-        capeBottom.setDisplaySize(cellSize, cellSize / 2);
-        capeBottom.setPosition(0, cellSize * 0.25);
+    for (const accessoryId of accessoryIds) {
+      const accessory = CHARACTER_ACCESSORIES.find(
+        (item) => item.id === accessoryId,
+      );
 
-        container.add(capeBottom);
+      if (!accessory) {
+        continue;
       }
-    }
 
-    // BODY
-    if (body) {
-      const image = this.scene.add.image(0, 0, body[direction]);
+      const image = this.scene.add.image(0, 0, accessory[direction]);
 
       image.setOrigin(0.5, 0.5);
 
-      if (direction === "front") {
-        image.setDisplaySize(cellSize, cellSize / 2);
+      //Custom dimensions
+      const isBlackSkin = character.customization.skinId === "human-black";
+      const hairType = character.customization.hairId;
 
-        image.setPosition(0, cellSize * 0.2);
+      // CAPE BOTTOM
+      if (cape) {
+        if (direction === "front") {
+          const capeBottom = this.scene.add.image(0, 0, cape.front.bottom);
+
+          capeBottom.setOrigin(0.5, 0.5);
+          capeBottom.setDisplaySize(cellSize, cellSize / 2);
+          capeBottom.setPosition(0, cellSize * 0.25);
+
+          container.add(capeBottom);
+        }
       }
 
-      if (direction === "back") {
-        image.setDisplaySize(cellSize * 0.82, cellSize / 2);
+      // BODY
+      if (body) {
+        const image = this.scene.add.image(0, 0, body[direction]);
 
-        image.setPosition(-1, cellSize * 0.2);
-      }
+        image.setOrigin(0.5, 0.5);
 
-      if (direction === "left" || direction === "right") {
-        image.setDisplaySize(cellSize * 0.7, cellSize * 0.55);
+        if (direction === "front") {
+          image.setDisplaySize(cellSize, cellSize / 2);
 
-        image.setPosition(0, cellSize * 0.15);
-      }
+          image.setPosition(0, cellSize * 0.2);
+        }
 
-      container.add(image);
-    }
+        if (direction === "back") {
+          image.setDisplaySize(cellSize * 0.82, cellSize / 2);
 
-    // SKIN
-    if (skin) {
-      const skinImage = this.scene.add.image(0, 0, skin[direction]);
+          image.setPosition(-1, cellSize * 0.2);
+        }
 
-      skinImage.setOrigin(0.5, 0.5);
+        if (direction === "left" || direction === "right") {
+          image.setDisplaySize(cellSize * 0.7, cellSize * 0.55);
 
-      if (direction === "front") {
-        skinImage.setDisplaySize(cellSize, cellSize / 2);
-        skinImage.setPosition(0, cellSize * 0.2);
-      }
+          image.setPosition(0, cellSize * 0.15);
+        }
 
-      if (direction === "back") {
-        skinImage.setDisplaySize(cellSize * 0.82, cellSize / 2);
-        skinImage.setPosition(-1.2, cellSize * 0.2);
-      }
-
-      if (direction === "left") {
-        skinImage.setDisplaySize(cellSize * 0.7, cellSize * 0.55);
-        skinImage.setPosition(0.7, cellSize * 0.001);
-      }
-
-      if (direction === "right") {
-        skinImage.setDisplaySize(cellSize * 0.7, cellSize * 0.55);
-        skinImage.setPosition(-0.7, cellSize * 0.001);
-      }
-
-      container.add(skinImage);
-    }
-
-    // CAPE TOP - FRONT
-    if (cape && direction === "front") {
-      const capeTop = this.scene.add.image(0, 0, cape.front.top);
-
-      capeTop.setOrigin(0.5, 0.5);
-      capeTop.setDisplaySize(cellSize, cellSize / 4);
-      capeTop.setPosition(0, -cellSize * 0.05);
-
-      container.add(capeTop);
-    }
-
-    // CAPE - BACK / LEFT / RIGHT
-    if (cape && direction !== "front") {
-      const capeImage = this.scene.add.image(0, 0, cape[direction]);
-
-      capeImage.setOrigin(0.5, 0.5);
-
-      if (direction === "back") {
-        capeImage.setDisplaySize(cellSize * 0.82, cellSize / 2);
-
-        capeImage.setPosition(1.1, cellSize * 0.15);
-      }
-
-      if (direction === "left") {
-        capeImage.setDisplaySize(cellSize * 0.7, cellSize * 0.55);
-
-        capeImage.setPosition(5, cellSize * 0.15);
-      }
-
-      if (direction === "right") {
-        capeImage.setDisplaySize(cellSize * 0.7, cellSize * 0.55);
-
-        capeImage.setPosition(-5, cellSize * 0.15);
-      }
-
-      container.add(capeImage);
-    }
-
-    // HEAD
-    if (head) {
-      const image = this.scene.add.image(0, 0, head[direction]);
-
-      image.setOrigin(0.5, 0.5);
-
-      if (direction === "front") {
-        image.setDisplaySize(
-          cellSize * characterScale,
-          (cellSize / 1.65) * characterScale,
-        );
-        image.setPosition(0, -cellSize * 0.25);
-      }
-
-      if (direction === "back") {
-        image.setDisplaySize(
-          cellSize * characterScale,
-          (cellSize / 2.2) * characterScale,
-        );
-
-        image.setPosition(-1, -cellSize * 0.16);
-      }
-
-      if (direction === "left" || direction === "right") {
-        image.setDisplaySize(cellSize, cellSize / 2);
-
-        image.setPosition(0, -cellSize * 0.3);
-      }
-
-      if (direction === "right") {
-        image.setDisplaySize(cellSize, cellSize / 2);
-
-        image.setPosition(0, -cellSize * 0.3);
-      }
-
-      if (direction === "left" || direction === "right") {
-        container.addAt(image, 0);
-      }
-      if (direction === "left" || direction === "right") {
-        container.addAt(image, 0);
-      } else {
         container.add(image);
       }
-    }
 
-    // HAIR
-    if (hair) {
-      const image = this.scene.add.image(0, 0, hair[direction]);
+      // SKIN
+      if (skin) {
+        const skinImage = this.scene.add.image(0, 0, skin[direction]);
 
-      image.setOrigin(0.5, 0.5);
+        skinImage.setOrigin(0.5, 0.5);
+
+        if (direction === "front") {
+          if (isBlackSkin) {
+            skinImage.setDisplaySize(cellSize, cellSize / 2);
+            skinImage.setPosition(-1.5, cellSize * 0.05);
+          } else {
+            skinImage.setDisplaySize(cellSize, cellSize / 2);
+            skinImage.setPosition(0, cellSize * 0.2);
+          }
+        }
+        if (direction === "back") {
+          if (isBlackSkin) {
+            skinImage.setDisplaySize(cellSize * 0.8, cellSize / 3);
+            skinImage.setPosition(-1.2, cellSize * 0.162);
+          } else {
+            skinImage.setDisplaySize(cellSize * 0.82, cellSize / 2);
+            skinImage.setPosition(-1.2, cellSize * 0.2);
+          }
+        }
+
+        if (direction === "left") {
+          if (isBlackSkin) {
+            skinImage.setDisplaySize(cellSize * 0.63, cellSize * 0.5);
+            skinImage.setPosition(3.3, cellSize * 0.001);
+          } else {
+            skinImage.setDisplaySize(cellSize * 0.7, cellSize * 0.55);
+            skinImage.setPosition(0.7, cellSize * 0.001);
+          }
+        }
+
+        if (direction === "right") {
+          if (isBlackSkin) {
+            skinImage.setDisplaySize(cellSize * 0.63, cellSize * 0.5);
+            skinImage.setPosition(-3.3, cellSize * 0.001);
+          } else {
+            skinImage.setDisplaySize(cellSize * 0.7, cellSize * 0.55);
+            skinImage.setPosition(-0.7, cellSize * 0.001);
+          }
+        }
+
+        container.add(skinImage);
+      }
+
+      // CAPE TOP - FRONT
+      if (cape && direction === "front") {
+        const capeTop = this.scene.add.image(0, 0, cape.front.top);
+
+        capeTop.setOrigin(0.5, 0.5);
+        capeTop.setDisplaySize(cellSize, cellSize / 4);
+        capeTop.setPosition(0, -cellSize * 0.05);
+
+        container.add(capeTop);
+      }
+
+      // CAPE - BACK / LEFT / RIGHT
+      if (cape && direction !== "front") {
+        const capeImage = this.scene.add.image(0, 0, cape[direction]);
+
+        capeImage.setOrigin(0.5, 0.5);
+
+        if (direction === "back") {
+          capeImage.setDisplaySize(cellSize * 0.82, cellSize / 2);
+
+          capeImage.setPosition(1.1, cellSize * 0.15);
+        }
+
+        if (direction === "left") {
+          capeImage.setDisplaySize(cellSize * 0.7, cellSize * 0.55);
+
+          capeImage.setPosition(5, cellSize * 0.15);
+        }
+
+        if (direction === "right") {
+          capeImage.setDisplaySize(cellSize * 0.7, cellSize * 0.55);
+
+          capeImage.setPosition(-5, cellSize * 0.15);
+        }
+
+        container.add(capeImage);
+      }
+
+      // HEAD
+      if (head) {
+        const image = this.scene.add.image(0, 0, head[direction]);
+
+        image.setOrigin(0.5, 0.5);
+
+        if (direction === "front") {
+          if (isBlackSkin) {
+            image.setDisplaySize(cellSize, cellSize / 1.65);
+            image.setPosition(2, cellSize * -0.32);
+          } else {
+            image.setDisplaySize(
+              cellSize * characterScale,
+              (cellSize / 1.65) * characterScale,
+            );
+            image.setPosition(0, -cellSize * 0.25);
+          }
+        }
+
+        if (direction === "back") {
+          if (isBlackSkin) {
+            image.setDisplaySize(cellSize, cellSize / 2.2);
+            image.setPosition(0, cellSize * -0.2);
+          } else {
+            image.setDisplaySize(
+              cellSize * characterScale,
+              (cellSize / 2.2) * characterScale,
+            );
+
+            image.setPosition(-1, -cellSize * 0.16);
+          }
+        }
+
+        if (direction === "left") {
+          image.setDisplaySize(cellSize, cellSize / 2);
+
+          image.setPosition(0, -cellSize * 0.3);
+        }
+
+        if (direction === "right") {
+          image.setDisplaySize(cellSize, cellSize / 2);
+
+          image.setPosition(0, -cellSize * 0.3);
+        }
+
+        if (direction === "left" || direction === "right") {
+          container.addAt(image, 0);
+        }
+        if (direction === "left" || direction === "right") {
+          container.addAt(image, 0);
+        } else {
+          container.add(image);
+        }
+      }
+
+      // HAIR
+      if (hair) {
+        const image = this.scene.add.image(0, 0, hair[direction]);
+
+        image.setOrigin(0.5, 0.5);
+
+        if (direction === "front") {
+          if (hairType === "straight") {
+            image.setDisplaySize(cellSize * 1, cellSize * 0.5);
+            image.setPosition(0, cellSize * 0.35);
+          }
+          if (hairType === "curly") {
+            image.setDisplaySize(cellSize * 1, cellSize * 0.5);
+            image.setPosition(0, -cellSize * 0.35);
+          }
+          if (hairType === "wavy") {
+            image.setDisplaySize(cellSize * 1, cellSize * 0.5);
+            image.setPosition(0, -cellSize * 0.25);
+          }
+          if (hairType === "afro") {
+            image.setDisplaySize(cellSize * 1, cellSize * 0.5);
+            image.setPosition(0, -cellSize * 0.33);
+          }
+          if (hairType === "female-goated-hair") {
+            image.setDisplaySize(cellSize * 1, cellSize * 0.5);
+            image.setPosition(1, -cellSize * 0.33);
+          }
+          if (hairType === "female-straight") {
+            image.setDisplaySize(cellSize * 1, cellSize * 0.5);
+            image.setPosition(0, -cellSize * 0.22);
+          }
+        }
+
+        if (direction === "back") {
+          if (hairType === "straight") {
+            image.setDisplaySize(cellSize, cellSize / 1.8);
+            image.setPosition(1.5, -cellSize * 0.25);
+          }
+          if (hairType === "curly") {
+            image.setDisplaySize(cellSize, cellSize / 2.5);
+            image.setPosition(-0.6, -cellSize * 0.17);
+          }
+          if (hairType === "wavy") {
+            image.setDisplaySize(cellSize, cellSize / 2.5);
+            image.setPosition(-0.6, -cellSize * 0.17);
+          }
+          if (hairType === "afro") {
+            image.setDisplaySize(cellSize, cellSize / 2.5);
+            image.setPosition(1, -cellSize * 0.17);
+          }
+          if (hairType === "female-goated-hair") {
+            image.setDisplaySize(cellSize, cellSize / 2.5);
+            image.setPosition(1, -cellSize * 0.17);
+          }
+          if (hairType === "female-straight") {
+            image.setDisplaySize(cellSize, cellSize / 2.5);
+            image.setPosition(1, -cellSize * 0.17);
+          }
+        }
+
+        if (direction === "left") {
+          if (hairType === "straight") {
+            image.setDisplaySize(cellSize, cellSize / 2);
+            image.setPosition(0, -cellSize * 0.35);
+          }
+          if (hairType === "curly") {
+            image.setDisplaySize(cellSize, cellSize / 1.87);
+            image.setPosition(0, -cellSize * 0.35);
+          }
+          if (hairType === "wavy") {
+            image.setDisplaySize(cellSize, cellSize / 1.87);
+            image.setPosition(1, -cellSize * 0.3);
+          }
+          if (hairType === "afro") {
+            image.setDisplaySize(cellSize, cellSize / 1.87);
+            image.setPosition(2, -cellSize * 0.323);
+          }
+
+          if (hairType === "female-goated-hair") {
+            image.setDisplaySize(cellSize * 1.4, cellSize / 1.4);
+            image.setPosition(10, -cellSize * 0.34);
+          }
+          if (hairType === "female-straight") {
+            image.setDisplaySize(cellSize, cellSize / 1.87);
+            image.setPosition(2, -cellSize * 0.323);
+          }
+        }
+
+        if (direction === "right") {
+          if (hairType === "straight") {
+            image.setDisplaySize(cellSize, cellSize / 1.87);
+            image.setPosition(0, -cellSize * 0.35);
+          }
+          if (hairType === "curly") {
+            image.setDisplaySize(cellSize, cellSize / 1.87);
+            image.setPosition(0, -cellSize * 0.35);
+          }
+          if (hairType === "wavy") {
+            image.setDisplaySize(cellSize, cellSize / 1.87);
+            image.setPosition(-1.15, -cellSize * 0.33);
+          }
+          if (hairType === "afro") {
+            image.setDisplaySize(cellSize, cellSize / 1.87);
+            image.setPosition(-1.15, -cellSize * 0.323);
+          }
+          if (hairType === "female-goated-hair") {
+            image.setDisplaySize(cellSize * 1.4, cellSize / 1.4);
+            image.setPosition(-10, -cellSize * 0.34);
+          }
+          if (hairType === "female-straight") {
+            image.setDisplaySize(cellSize, cellSize / 1.87);
+            image.setPosition(-1.15, -cellSize * 0.323);
+          }
+        }
+
+        container.add(image);
+      }
+
+      // ACCESSORIES
 
       if (direction === "front") {
-        image.setDisplaySize(cellSize, cellSize / 2);
-        image.setPosition(0, -cellSize * 0.35);
+        image.setDisplaySize(cellSize * 1.35, cellSize / 1.45);
+        image.setPosition(2, -cellSize * 0.48);
       }
 
       if (direction === "back") {
-        image.setDisplaySize(cellSize, cellSize / 1.8);
-        image.setPosition(1.5, -cellSize * 0.25);
+        image.setDisplaySize(cellSize * 1.2, cellSize / 1.5);
+        image.setPosition(0, -cellSize * 0.3);
       }
 
       if (direction === "left") {
-        image.setDisplaySize(cellSize, cellSize / 2);
-        image.setPosition(0, -cellSize * 0.35);
+        image.setDisplaySize(cellSize * 1.3, cellSize / 1.6);
+        image.setPosition(5, -cellSize * 0.6);
       }
 
       if (direction === "right") {
-        image.setDisplaySize(cellSize, cellSize / 1.87);
-        image.setPosition(0, -cellSize * 0.35);
+        image.setDisplaySize(cellSize * 1.3, cellSize / 1.6);
+        image.setPosition(-5, -cellSize * 0.6);
       }
 
       container.add(image);

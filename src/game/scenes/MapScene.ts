@@ -1192,6 +1192,22 @@ export class MapScene extends Phaser.Scene {
     preloadCharacterAssets(this);
   }
 
+  private getCharacterCustomizationFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get("character");
+
+    if (!encoded) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(decodeURIComponent(encoded));
+    } catch (error) {
+      console.error("Failed to read character customization:", error);
+      return null;
+    }
+  }
+
   create() {
     this.addLayer();
 
@@ -1224,6 +1240,20 @@ export class MapScene extends Phaser.Scene {
       (row, column, layer) =>
         this.characterManager.getCharacterAt(row, column, layer) !== null,
     );
+
+    const customization = this.getCharacterCustomizationFromUrl();
+
+    if (customization) {
+      this.characterManager.addCharacter(
+        0,
+        0,
+        this.currentLayer,
+        "Character",
+        customization,
+      );
+
+      window.history.replaceState({}, "", "/");
+    }
 
     this.interactionManager = new InteractionManager(this);
     this.terrainManager = new TerrainManager(this, (layer) =>

@@ -22,6 +22,15 @@ export interface CharacterCape {
   right: string;
 }
 
+export interface CharacterAccessory {
+  id: string;
+  name: string;
+  front: string;
+  back: string;
+  left: string;
+  right: string;
+}
+
 // HEADS
 
 export const CHARACTER_HEADS: CharacterSpritePart[] = [
@@ -355,5 +364,18 @@ export const CHARACTER_CAPES: CharacterCape[] = [
     back: "character-cape-human-white-red-back",
     left: "character-cape-human-white-red-left",
     right: "character-cape-human-white-red-right",
+  },
+];
+
+//ACCESSORIES
+
+export const CHARACTER_ACCESSORIES: CharacterAccessory[] = [
+  {
+    id: "wizard-hat",
+    name: "Wizard Hat",
+    front: "character-accessory-wizard-hat-front",
+    back: "character-accessory-wizard-hat-back",
+    left: "character-accessory-wizard-hat-left",
+    right: "character-accessory-wizard-hat-right",
   },
 ];

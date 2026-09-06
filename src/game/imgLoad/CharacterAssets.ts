@@ -168,4 +168,28 @@ export function preloadCharacterAssets(scene: Phaser.Scene) {
     "character-cape-human-white-red-right",
     "assets/characters/capes/redCape/right.png",
   );
+
+  //ACCESSORIES
+
+  // ACCESSORIES
+
+  scene.load.image(
+    "character-accessory-wizard-hat-front",
+    "assets/characters/accessories/hat/front.png",
+  );
+
+  scene.load.image(
+    "character-accessory-wizard-hat-back",
+    "assets/characters/accessories/hat/back.png",
+  );
+
+  scene.load.image(
+    "character-accessory-wizard-hat-left",
+    "assets/characters/accessories/hat/left.png",
+  );
+
+  scene.load.image(
+    "character-accessory-wizard-hat-right",
+    "assets/characters/accessories/hat/right.png",
+  );
 }
