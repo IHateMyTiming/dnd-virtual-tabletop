@@ -94,11 +94,11 @@ export class CharacterManager {
       height: 1,
       layer,
 
-      direction: "front",
+      direction: "back",
 
       customization: customization ?? {
         headId: CHARACTER_HEADS[0].id,
-        hairId: "curly",
+        hairId: "none",
         hairColor: "brown",
         skinId: CHARACTER_SKINS[0].id,
         bodyId: CHARACTER_BODIES[0].id,
@@ -376,7 +376,7 @@ export class CharacterManager {
         if (direction === "front") {
           if (hairType === "straight") {
             image.setDisplaySize(cellSize * 1, cellSize * 0.5);
-            image.setPosition(0, cellSize * 0.35);
+            image.setPosition(0, -cellSize * 0.35);
           }
           if (hairType === "curly") {
             image.setDisplaySize(cellSize * 1, cellSize * 0.5);
@@ -494,7 +494,7 @@ export class CharacterManager {
 
       if (direction === "back") {
         image.setDisplaySize(cellSize * 1.2, cellSize / 1.5);
-        image.setPosition(0, -cellSize * 0.3);
+        image.setPosition(0, -cellSize * 0.5);
       }
 
       if (direction === "left") {

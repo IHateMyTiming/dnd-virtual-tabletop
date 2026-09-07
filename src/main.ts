@@ -3,7 +3,7 @@ import "./style.css";
 
 import { MapScene } from "./game/scenes/MapScene";
 
-import { setupTranslations } from "./game/translation/translation";
+import { setupTranslations } from "./translation/translation";
 
 setupTranslations();
 

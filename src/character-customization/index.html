@@ -3,16 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <title>Character Creation</title>
+    <title data-i18n="characterCustomization">Character Customization</title>
 
     <link rel="stylesheet" href="./style.css" />
   </head>
 
   <body>
     <div id="character-creator">
-      <h1>Character Creation</h1>
-
       <!-- CHARACTER PREVIEW -->
       <div id="character-preview">
         <img id="preview-cape-bottom" alt="" />
@@ -21,21 +18,22 @@
         <img id="preview-cape-top" alt="" />
         <img id="preview-head" alt="" />
         <img id="preview-hair" alt="" />
+        <img id="preview-accessory" alt="" />
       </div>
 
       <!-- COLOR -->
       <section class="customization-section">
-        <h2>Color</h2>
+        <h2 data-i18n="color">Color</h2>
 
         <div id="color-options" class="options"></div>
       </section>
 
       <!-- HAIR -->
       <section class="customization-section">
-        <h2>Hair</h2>
+        <h2 data-i18n="hair">Hair</h2>
 
         <div class="selector">
-          <button id="hair-previous">&lt;</button>
+          <button id="hair-previous" data-i18n="previous">&lt;</button>
 
           <div class="option-preview">
             <div id="hair-option-none" class="none-option">🚫</div>
@@ -43,45 +41,47 @@
             <span id="hair-option-name"></span>
           </div>
 
-          <button id="hair-next">&gt;</button>
+          <button id="hair-next" data-i18n="next">&gt;</button>
         </div>
       </section>
 
-      <!-- HAIR COLOR-->
-      <h2>Hair Color</h2>
+      <!-- HAIR COLOR -->
+      <section class="customization-section">
+        <h2 data-i18n="hairColor">Hair Color</h2>
 
-      <div class="selector">
-        <button id="hair-color-previous">&lt;</button>
+        <div class="selector">
+          <button id="hair-color-previous" data-i18n="previous">&lt;</button>
 
-        <div class="option-preview">
-          <span id="hair-color-name"></span>
+          <div class="option-preview">
+            <span id="hair-color-name"></span>
+          </div>
+
+          <button id="hair-color-next" data-i18n="next">&gt;</button>
         </div>
-
-        <button id="hair-color-next">&gt;</button>
-      </div>
+      </section>
 
       <!-- BODY -->
       <section class="customization-section">
-        <h2>Body</h2>
+        <h2 data-i18n="body">Body</h2>
 
         <div class="selector">
-          <button id="body-previous">&lt;</button>
+          <button id="body-previous" data-i18n="previous">&lt;</button>
 
           <div class="option-preview">
             <img id="body-option-image" alt="" />
             <span id="body-option-name"></span>
           </div>
 
-          <button id="body-next">&gt;</button>
+          <button id="body-next" data-i18n="next">&gt;</button>
         </div>
       </section>
 
       <!-- CAPE -->
       <section class="customization-section">
-        <h2>Cape</h2>
+        <h2 data-i18n="cape">Cape</h2>
 
         <div class="selector">
-          <button id="cape-previous">&lt;</button>
+          <button id="cape-previous" data-i18n="previous">&lt;</button>
 
           <div class="option-preview">
             <div id="cape-option-none" class="none-option">🚫</div>
@@ -89,14 +89,33 @@
             <span id="cape-option-name"></span>
           </div>
 
-          <button id="cape-next">&gt;</button>
+          <button id="cape-next" data-i18n="next">&gt;</button>
         </div>
       </section>
 
-      <button id="create-character">Create Character</button>
+      <!-- ACCESSORY -->
+      <section class="customization-section">
+        <h2 data-i18n="accessory">Accessory</h2>
+
+        <div class="selector">
+          <button id="accessory-previous" data-i18n="previous">&lt;</button>
+
+          <div class="option-preview">
+            <div id="accessory-option-none" class="none-option">🚫</div>
+            <img id="accessory-option-image" alt="" />
+            <span id="accessory-option-name"></span>
+          </div>
+
+          <button id="accessory-next" data-i18n="next">&gt;</button>
+        </div>
+      </section>
+
+      <button id="create-character" data-i18n="createCharacter">
+        Create Character
+      </button>
     </div>
 
-    <button id="back-to-map">Back to Map</button>
+    <button id="back-to-map" data-i18n="backToMap">Back to Map</button>
 
     <script type="module" src="./main.ts"></script>
   </body>

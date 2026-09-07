@@ -1,19 +1,37 @@
+import { translations } from "../translation/translation";
+
+type TranslationKey = keyof typeof translations.en;
+
+const savedLanguage = localStorage.getItem("language");
+
+const language =
+  savedLanguage === "pt" || savedLanguage === "en" ? savedLanguage : "en";
+
+const t = translations[language];
+
 interface HairOption {
   id: string;
-  name: string;
+  name: TranslationKey;
   type: string;
   none?: boolean;
 }
 
 interface BodyOption {
   id: string;
-  name: string;
+  name: TranslationKey;
   folder: string;
 }
 
 interface CapeOption {
   id: string;
-  name: string;
+  name: TranslationKey;
+  folder: string;
+  none?: boolean;
+}
+
+interface AccessoryOption {
+  id: string;
+  name: TranslationKey;
   folder: string;
   none?: boolean;
 }
@@ -26,44 +44,38 @@ const hairColors = ["brown", "black", "blonde", "red"] as const;
 const hairs: HairOption[] = [
   {
     id: "none",
-    name: "Bald",
+    name: "bald",
     type: "none",
     none: true,
   },
-
   {
     id: "straight",
-    name: "Straight",
+    name: "straight",
     type: "straight",
   },
-
   {
     id: "curly",
-    name: "Curly",
+    name: "curly",
     type: "curly",
   },
-
   {
     id: "wavy",
-    name: "Wavy",
+    name: "wavy",
     type: "wavy",
   },
-
   {
     id: "afro",
-    name: "Afro",
+    name: "afro",
     type: "afro",
   },
-
   {
     id: "female-straight",
-    name: "Female Straight",
+    name: "femaleStraight",
     type: "female-straight",
   },
-
   {
     id: "female-goated-hair",
-    name: "Female Goated Hair",
+    name: "femaleGoatedHair",
     type: "female-goated-hair",
   },
 ];
@@ -71,7 +83,7 @@ const hairs: HairOption[] = [
 const bodies: BodyOption[] = [
   {
     id: "human-green-tunic",
-    name: "Green Tunic",
+    name: "greenTunic",
     folder: "greenTunic",
   },
 ];
@@ -79,15 +91,29 @@ const bodies: BodyOption[] = [
 const capes: CapeOption[] = [
   {
     id: "none",
-    name: "No Cape",
+    name: "noCape",
     folder: "",
     none: true,
   },
 
   {
     id: "human-white-red",
-    name: "White & Red Cape",
+    name: "whiteRedCape",
     folder: "redCape",
+  },
+];
+
+const accessories: AccessoryOption[] = [
+  {
+    id: "none",
+    name: "noAccessory",
+    folder: "",
+    none: true,
+  },
+  {
+    id: "wizard-hat",
+    name: "wizardHat",
+    folder: "hat",
   },
 ];
 
@@ -98,6 +124,7 @@ let selectedHair = 0;
 let selectedHairColor = 0;
 let selectedBody = 0;
 let selectedCape = 0;
+let selectedAccessory = 0;
 
 // ELEMENTS
 
@@ -147,6 +174,32 @@ const previewCapeTop = document.getElementById(
 ) as HTMLImageElement;
 
 const previewHair = document.getElementById("preview-hair") as HTMLImageElement;
+const previewAccessory = document.getElementById(
+  "preview-accessory",
+) as HTMLImageElement;
+
+const accessoryImage = document.getElementById(
+  "accessory-option-image",
+) as HTMLImageElement;
+
+const accessoryName = document.getElementById("accessory-option-name")!;
+
+const accessoryNone = document.getElementById("accessory-option-none")!;
+
+const accessory = accessories[selectedAccessory];
+
+if (accessory.none) {
+  previewAccessory.style.display = "none";
+} else {
+  previewAccessory.style.display = "block";
+
+  previewAccessory.src = `/assets/characters/accessories/${accessory.folder}/front.png`;
+
+  previewAccessory.style.width = "120px";
+  previewAccessory.style.height = "auto";
+  previewAccessory.style.left = "100px";
+  previewAccessory.style.top = "45px";
+}
 
 // COLOR
 
@@ -162,8 +215,7 @@ function renderColorOptions(): void {
       button.classList.add("selected");
     }
 
-    button.textContent = color.charAt(0).toUpperCase() + color.slice(1);
-
+    button.textContent = t[color];
     button.addEventListener("click", () => {
       selectedColor = color;
 
@@ -258,7 +310,7 @@ const hairPreviewSettings = {
 function updateHair(): void {
   const hair = hairs[selectedHair];
 
-  hairName.textContent = hair.name;
+  hairName.textContent = t[hair.name];
 
   if (hair.none) {
     hairNone.style.display = "flex";
@@ -287,8 +339,7 @@ function updateHair(): void {
     previewHair.style.top = `${hairSettings.y}px`;
   }
 
-  hairColorName.textContent = hairColors[selectedHairColor];
-
+  hairColorName.textContent = t[hairColors[selectedHairColor]];
   updateCharacterPreview();
 }
 
@@ -297,7 +348,7 @@ function updateHair(): void {
 function updateBody(): void {
   const body = bodies[selectedBody];
 
-  bodyName.textContent = body.name;
+  hairName.textContent = t[body.name];
 
   bodyImage.src = `/assets/characters/bodies/${body.folder}/bodyFront.png`;
 
@@ -313,7 +364,7 @@ const capeImage = document.getElementById(
 function updateCape(): void {
   const cape = capes[selectedCape];
 
-  capeName.textContent = cape.name;
+  capeName.textContent = t[cape.name];
 
   if (cape.none) {
     capeNone.style.display = "flex";
@@ -323,6 +374,26 @@ function updateCape(): void {
     capeImage.style.display = "block";
 
     capeImage.src = `/assets/characters/capes/${cape.folder}/whole.png`;
+  }
+
+  updateCharacterPreview();
+}
+
+//ACCESSORIES
+
+function updateAccessory(): void {
+  const accessory = accessories[selectedAccessory];
+
+  accessoryName.textContent = t[accessory.name];
+
+  if (accessory.none) {
+    accessoryNone.style.display = "flex";
+    accessoryImage.style.display = "none";
+  } else {
+    accessoryNone.style.display = "none";
+    accessoryImage.style.display = "block";
+
+    accessoryImage.src = `/assets/characters/accessories/${accessory.folder}/front.png`;
   }
 
   updateCharacterPreview();
@@ -357,7 +428,6 @@ function updateCharacterPreview(): void {
   previewBody.src = `/assets/characters/bodies/${body.folder}/bodyFront.png`;
 
   // CAPE
-  // CAPE
   const cape = capes[selectedCape];
 
   if (cape.none) {
@@ -370,6 +440,24 @@ function updateCharacterPreview(): void {
     previewCapeBottom.src = `/assets/characters/capes/${cape.folder}/bottom.png`;
 
     previewCapeTop.src = `/assets/characters/capes/${cape.folder}/top.png`;
+  }
+
+  const accessory = accessories[selectedAccessory];
+
+  if (accessory.none) {
+    previewAccessory.style.display = "none";
+  } else {
+    previewAccessory.style.display = "block";
+
+    previewAccessory.src = `/assets/characters/accessories/${accessory.folder}/front.png`;
+
+    previewAccessory.style.width = "117px";
+    previewAccessory.style.height = "auto";
+    previewAccessory.style.left = "101px";
+    previewAccessory.style.top = "62px";
+
+    previewAccessory.style.position = "absolute";
+    previewAccessory.style.zIndex = "10";
   }
 }
 
@@ -452,6 +540,27 @@ document.getElementById("cape-next")!.addEventListener("click", () => {
   updateCape();
 });
 
+//ACCESSORIES
+document.getElementById("accessory-previous")!.addEventListener("click", () => {
+  selectedAccessory--;
+
+  if (selectedAccessory < 0) {
+    selectedAccessory = accessories.length - 1;
+  }
+
+  updateAccessory();
+});
+
+document.getElementById("accessory-next")!.addEventListener("click", () => {
+  selectedAccessory++;
+
+  if (selectedAccessory >= accessories.length) {
+    selectedAccessory = 0;
+  }
+
+  updateAccessory();
+});
+
 // CREATE CHARACTER
 
 document.getElementById("create-character")!.addEventListener("click", () => {
@@ -462,6 +571,9 @@ document.getElementById("create-character")!.addEventListener("click", () => {
     skinId: `human-${selectedColor}`,
     bodyId: bodies[selectedBody].id,
     capeId: capes[selectedCape].id,
+    accessoryIds: accessories[selectedAccessory].none
+      ? []
+      : [accessories[selectedAccessory].id],
   };
 
   const encodedCustomization = encodeURIComponent(
@@ -475,6 +587,14 @@ document.getElementById("back-to-map")?.addEventListener("click", () => {
   window.location.href = "/";
 });
 
+function translatePage(): void {
+  document.querySelectorAll<HTMLElement>("[data-i18n]").forEach((element) => {
+    const key = element.dataset.i18n as keyof typeof translations.en;
+
+    element.textContent = t[key];
+  });
+}
+
 // INITIALIZE
 
 renderColorOptions();
@@ -482,3 +602,4 @@ updateHair();
 updateBody();
 updateCape();
 updateCharacterPreview();
+translatePage();

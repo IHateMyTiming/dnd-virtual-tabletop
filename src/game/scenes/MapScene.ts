@@ -5,7 +5,10 @@ import type { MapObjectType } from "./MapObjects";
 import type { MapObject } from "./MapObjects";
 import type { Character } from "../characters/Character";
 import { InteractionManager } from "../input/InteractionManager";
-import { translations, getCurrentLanguage } from "../translation/translation";
+import {
+  translations,
+  getCurrentLanguage,
+} from "../../translation/translation";
 import { gridWidth, gridHeight, setGridSize, cellSize } from "./Grid";
 import { TerrainManager, type TerrainObject } from "./TerrainManager";
 import { TERRAIN_VARIANTS, type TerrainVariant } from "./TerrainObject";

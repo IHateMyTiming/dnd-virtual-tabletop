@@ -52,6 +52,49 @@ export const translations = {
       "Map width and height must be whole numbers of at least 5 and must end in 0 or 5.",
     confirmMapResize:
       "Changing the grid size will clear the current map. Any unsaved changes will be lost. Do you want to continue?",
+
+    //BUTTONS
+    saveMap: "Save Map",
+    loadMap: "Load Map",
+    customize: "Customize Character",
+
+    //CHARACTERS FEATURES
+    characterCustomization: "Character Customization",
+    head: "Head",
+    hair: "Hair",
+    hairColor: "Hair Color",
+    body: "Body",
+    cape: "Cape",
+    accessory: "Accessory",
+
+    previous: "Previous",
+    next: "Next",
+
+    createCharacter: "Create Character",
+    backToMap: "Back to Map",
+
+    bald: "Bald",
+    noCape: "No Cape",
+    noAccessory: "No Accessory",
+
+    straight: "Straight",
+    curly: "Curly",
+    wavy: "Wavy",
+    afro: "Afro",
+    femaleStraight: "Female Straight",
+    femaleGoatedHair: "Female Goated Hair",
+
+    white: "White",
+    black: "Black",
+    brown: "Brown",
+    blonde: "Blonde",
+    red: "Red",
+
+    greenTunic: "Green Tunic",
+    whiteRedCape: "White & Red Cape",
+    wizardHat: "Wizard Hat",
+
+    color: "Color",
   },
 
   pt: {
@@ -106,23 +149,74 @@ export const translations = {
       "A largura e a altura do mapa devem ser números inteiros de no mínimo 5 e devem terminar em 0 ou 5.",
     confirmMapResize:
       "Alterar o tamanho do mapa apagará o mapa atual. Quaisquer alterações não salvas serão perdidas. Deseja continuar?",
+
+    //BOTÕES
+    saveMap: "Salve o Mapa",
+    loadMap: "Carregue o Mapa",
+    customize: "Customise o Personagem",
+
+    // CARACTERISTICAS DE PERSONAGENS
+
+    characterCustomization: "Personalização do Personagem",
+    head: "Cabeça",
+    hair: "Cabelo",
+    hairColor: "Cor do Cabelo",
+    body: "Corpo",
+    cape: "Capa",
+    accessory: "Acessório",
+
+    previous: "Anterior",
+    next: "Próximo",
+
+    createCharacter: "Criar Personagem",
+    backToMap: "Voltar para o Mapa",
+
+    bald: "Careca",
+    noCape: "Sem Capa",
+    noAccessory: "Sem Acessório",
+
+    straight: "Liso",
+    curly: "Cacheado",
+    wavy: "Ondulado",
+    afro: "Afro",
+    femaleStraight: "Liso Feminino",
+    femaleGoatedHair: "Cabelo Feminino",
+
+    white: "Branco",
+    black: "Preto",
+    brown: "Castanho",
+    blonde: "Loiro",
+    red: "Ruivo",
+
+    greenTunic: "Túnica Verde",
+    whiteRedCape: "Capa Branca e Vermelha",
+    wizardHat: "Chapéu de Mago",
+
+    color: "Cor",
   },
 };
 
 export function setupTranslations() {
   const languageSelect = document.querySelector<HTMLSelectElement>("#language");
 
+  const savedLanguage = (localStorage.getItem("language") as Language) ?? "en";
+
   if (!languageSelect) {
     return;
   }
 
+  // Use saved language
+  languageSelect.value = savedLanguage;
+
   languageSelect.addEventListener("change", () => {
     const language = languageSelect.value as Language;
+
+    localStorage.setItem("language", language);
 
     translatePage(language);
   });
 
-  translatePage(languageSelect.value as Language);
+  translatePage(savedLanguage);
 }
 
 function translatePage(language: Language) {
