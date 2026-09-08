@@ -4,6 +4,7 @@ import { getAbilityModifier } from "../stats/Stats";
 import { DEFAULT_STARTING_STATS } from "../stats/StartingStats";
 import { CHARACTER_CLASSES } from "../classes/Classes";
 import type { CharacterClassId } from "../classes/Class";
+import type { CharacterResources } from "../abilities/Resource";
 
 export function createRulesCharacter(
   id: string,
@@ -20,6 +21,24 @@ export function createRulesCharacter(
   }
 
   const maxHp = characterClass.baseHp + getAbilityModifier(stats.constitution);
+  const resources: CharacterResources = {
+    spellSlots: {
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+      6: 0,
+    },
+    maxSpellSlots: {
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+      6: 0,
+    },
+  };
 
   return {
     id,
@@ -30,5 +49,6 @@ export function createRulesCharacter(
     stats: { ...stats },
     hp: maxHp,
     maxHp,
+    resources,
   };
 }

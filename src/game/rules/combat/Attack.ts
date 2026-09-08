@@ -7,20 +7,19 @@ import {
   type DamageResult,
 } from "./Damage";
 import { rollPercentage, succeedsPercentage } from "../dice/Dice";
+import type { ConditionState } from "../condition/ConditionState";
 
 export type AttackType = "melee" | "ranged";
 
 export interface AttackRequest {
   type: AttackType;
-
   attackerStats: CharacterStats;
   defenderStats: CharacterStats;
-
   distance: number;
   target: TargetLocation;
-
   damage: DamageExpression;
   armor: number;
+  attackerConditions: ConditionState[];
 }
 
 export interface AttackResult {
@@ -39,11 +38,13 @@ export function resolveAttack(attack: AttackRequest): AttackResult {
           attack.attackerStats,
           attack.distance,
           attack.target,
+          attack.attackerConditions,
         )
       : calculateMeleeAccuracy(
           attack.attackerStats,
           attack.defenderStats,
           attack.target,
+          attack.attackerConditions,
         );
 
   const roll = rollPercentage();

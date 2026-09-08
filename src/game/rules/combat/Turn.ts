@@ -1,5 +1,6 @@
 import type { CombatState } from "./CombatState";
 import type { Combatant } from "./Combatant";
+import { getConditionMovementMultiplier } from "../condition/ConditionMovement";
 
 export function startTurn(state: CombatState): CombatState {
   const currentIndex = state.currentTurnIndex;
@@ -15,7 +16,11 @@ export function startTurn(state: CombatState): CombatState {
             bonusActionAvailable: true,
             reactionAvailable: true,
 
-            movementRemaining: combatant.movement,
+            movementRemaining:
+              combatant.movement *
+              getConditionMovementMultiplier(
+                state.conditionManager.getConditions(combatant.id),
+              ),
           }
         : combatant,
     ),

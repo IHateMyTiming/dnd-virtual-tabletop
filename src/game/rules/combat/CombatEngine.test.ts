@@ -468,3 +468,151 @@ describe("CombatEngine", () => {
     expect(engine.getCurrentCombatant()?.movementRemaining).toBe(6);
   });
 });
+
+describe("Conditions", () => {
+  it("applies a condition to a combatant", () => {
+    const ranger = createCombatant("ranger", 16, 10);
+    const goblin = createCombatant("goblin", 10, 5);
+
+    const engine = new CombatEngine(createCombatState([ranger, goblin]));
+
+    const condition = engine.applyCondition("goblin", "poisoned", 3, 2);
+
+    expect(condition).toEqual({
+      id: "poisoned",
+      duration: 3,
+      stacks: 2,
+    });
+
+    expect(engine.hasCondition("goblin", "poisoned")).toBe(true);
+  });
+
+  it("gets conditions from a combatant", () => {
+    const ranger = createCombatant("ranger", 16, 10);
+    const goblin = createCombatant("goblin", 10, 5);
+
+    const engine = new CombatEngine(createCombatState([ranger, goblin]));
+
+    engine.applyCondition("goblin", "poisoned", 3);
+    engine.applyCondition("goblin", "slowed", 2);
+
+    expect(engine.getConditions("goblin")).toHaveLength(2);
+  });
+
+  it("removes a condition from a combatant", () => {
+    const ranger = createCombatant("ranger", 16, 10);
+    const goblin = createCombatant("goblin", 10, 5);
+
+    const engine = new CombatEngine(createCombatState([ranger, goblin]));
+
+    engine.applyCondition("goblin", "stunned", 1);
+
+    expect(engine.removeCondition("goblin", "stunned")).toBe(true);
+
+    expect(engine.hasCondition("goblin", "stunned")).toBe(false);
+  });
+  it("stunned prevents movement", () => {
+    const ranger = createCombatant("ranger", 16, 10);
+    const goblin = createCombatant("goblin", 10, 5);
+
+    const engine = new CombatEngine(createCombatState([ranger, goblin]));
+
+    engine.applyCondition("ranger", "stunned", 2);
+
+    expect(engine.move({ x: 4, y: 6 }, "walk")).toBe(false);
+  });
+  it("rooted prevents movement", () => {
+    const ranger = createCombatant("ranger", 16, 10);
+    const goblin = createCombatant("goblin", 10, 5);
+
+    const engine = new CombatEngine(createCombatState([ranger, goblin]));
+
+    engine.applyCondition("ranger", "rooted", 2);
+
+    expect(engine.move({ x: 4, y: 6 }, "walk")).toBe(false);
+  });
+  it("freezed prevents special movement", () => {
+    const ranger = createCombatant("ranger", 16, 10);
+    const goblin = createCombatant("goblin", 10, 5);
+
+    const engine = new CombatEngine(createCombatState([ranger, goblin]));
+
+    engine.applyCondition("ranger", "freezed", 2);
+
+    expect(engine.move({ x: 4, y: 6 }, "jump")).toBe(false);
+  });
+  it("freezed still allows normal walking", () => {
+    const ranger = createCombatant("ranger", 16, 10);
+    const goblin = createCombatant("goblin", 10, 5);
+
+    const engine = new CombatEngine(createCombatState([ranger, goblin]));
+
+    engine.applyCondition("ranger", "freezed", 2);
+
+    expect(engine.move({ x: 3, y: 4 }, "walk")).toBe(true);
+  });
+  it("processes condition duration when a new round starts", () => {
+    const ranger = createCombatant("ranger", 16, 10);
+    const goblin = createCombatant("goblin", 10, 5);
+
+    const engine = new CombatEngine(createCombatState([ranger, goblin]));
+
+    engine.startCombat();
+
+    engine.applyCondition("ranger", "poisoned", 2);
+
+    engine.endTurn();
+    engine.endTurn();
+
+    expect(engine.getState().round).toBe(2);
+
+    expect(engine.getCondition("ranger", "poisoned")?.duration).toBe(1);
+  });
+  it("applies condition damage at the start of a new round", () => {
+    const ranger = createCombatant("ranger", 16, 10);
+    const goblin = createCombatant("goblin", 10, 5);
+
+    const engine = new CombatEngine(createCombatState([ranger, goblin]));
+
+    engine.startCombat();
+
+    engine.applyCondition("goblin", "bleeding", 2, 3);
+
+    expect(engine.getCurrentCombatant()?.id).toBe("ranger");
+
+    engine.endTurn();
+    engine.endTurn();
+
+    expect(engine.getState().round).toBe(2);
+
+    const updatedGoblin = engine
+      .getState()
+      .combatants.find((combatant) => combatant.id === "goblin");
+
+    expect(updatedGoblin?.hp).toBe(7);
+  });
+  it("slowed reduces movement at the start of the turn", () => {
+    const ranger = createCombatant("ranger", 16, 10);
+    const goblin = createCombatant("goblin", 10, 5);
+
+    const engine = new CombatEngine(createCombatState([ranger, goblin]));
+
+    engine.applyCondition("ranger", "slowed", 2);
+
+    engine.startCombat();
+
+    expect(engine.getCurrentCombatant()?.movementRemaining).toBe(3);
+  });
+  it("freezed reduces movement at the start of the turn", () => {
+    const ranger = createCombatant("ranger", 16, 10);
+    const goblin = createCombatant("goblin", 10, 5);
+
+    const engine = new CombatEngine(createCombatState([ranger, goblin]));
+
+    engine.applyCondition("ranger", "freezed", 2);
+
+    engine.startCombat();
+
+    expect(engine.getCurrentCombatant()?.movementRemaining).toBe(3);
+  });
+});

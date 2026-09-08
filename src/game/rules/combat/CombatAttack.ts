@@ -10,6 +10,7 @@ export interface CombatAttackRequest {
   distance: number;
   target: TargetLocation;
   damage: DamageExpression;
+  attackerConditions: ConditionState[];
 }
 
 export interface CombatAttackResult {

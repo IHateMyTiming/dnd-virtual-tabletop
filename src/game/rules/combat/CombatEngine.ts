@@ -4,12 +4,22 @@ import type { Combatant } from "./Combatant";
 import type { CombatActionType } from "./Action";
 import { resolveAttack } from "./Attack";
 import type { CombatAttackRequest, CombatAttackResult } from "./CombatAttack";
+import type { ConditionId } from "../condition/Condition";
+import type { ConditionState } from "../condition/ConditionState";
 import {
   calculateDistance,
   calculateMovementCost,
   type MovementType,
   type Position,
 } from "./Movement";
+import {
+  canMove,
+  canUseAction,
+  canUseBonusAction,
+  canUseReaction,
+  canUseSpecialMovement,
+} from "../condition/ConditionRestrictions";
+import { getConditionDamage } from "../condition/ConditionDamage";
 
 export class CombatEngine {
   private state: CombatState;
@@ -34,52 +44,62 @@ export class CombatEngine {
     this.state = startTurn(this.state);
   }
 
-  public endTurn(): void {
-    this.state = endTurn(this.state);
-    this.state = startTurn(this.state);
+  endTurn(): void {
+    const nextIndex = this.state.currentTurnIndex + 1;
+
+    if (nextIndex >= this.state.combatants.length) {
+      this.state.round += 1;
+      this.state.currentTurnIndex = 0;
+
+      this.processConditionDamage();
+      this.state.conditionManager.processRoundStart();
+
+      this.startTurn();
+      return;
+    }
+
+    this.state.currentTurnIndex = nextIndex;
+    this.startTurn();
   }
 
-  public useAction(type: CombatActionType): boolean {
-    const currentIndex = this.state.currentTurnIndex;
+  useAction(type: CombatActionType): boolean {
+    const current = this.getCurrentCombatant();
 
-    const combatant = this.state.combatants[currentIndex];
-
-    if (!combatant || !combatant.alive) {
+    if (!current || !current.alive) {
       return false;
     }
 
-    if (!this.isActionAvailable(type, combatant)) {
+    const conditions = this.state.conditionManager.getConditions(current.id);
+
+    if (type === "action" && !canUseAction(conditions)) {
       return false;
     }
 
-    this.state = {
-      ...this.state,
-      combatants: this.state.combatants.map((current, index) => {
-        if (index !== currentIndex) {
-          return current;
-        }
+    if (type === "bonus-action" && !canUseBonusAction(conditions)) {
+      return false;
+    }
 
-        switch (type) {
-          case "action":
-            return {
-              ...current,
-              actionAvailable: false,
-            };
+    if (type === "reaction" && !canUseReaction(conditions)) {
+      return false;
+    }
 
-          case "bonus-action":
-            return {
-              ...current,
-              bonusActionAvailable: false,
-            };
+    if (!this.isActionAvailable(type, current)) {
+      return false;
+    }
 
-          case "reaction":
-            return {
-              ...current,
-              reactionAvailable: false,
-            };
-        }
-      }),
-    };
+    switch (type) {
+      case "action":
+        current.actionAvailable = false;
+        break;
+
+      case "bonus-action":
+        current.bonusActionAvailable = false;
+        break;
+
+      case "reaction":
+        current.reactionAvailable = false;
+        break;
+    }
 
     return true;
   }
@@ -121,6 +141,10 @@ export class CombatEngine {
 
     const defender = this.state.combatants[defenderIndex];
 
+    const attackerConditions = this.state.conditionManager.getConditions(
+      attacker.id,
+    );
+
     if (!attacker.alive || !defender.alive) {
       return {
         success: false,
@@ -153,6 +177,7 @@ export class CombatEngine {
       target: request.target,
       damage: request.damage,
       armor: defender.armor,
+      attackerConditions,
     });
 
     this.state = {
@@ -209,40 +234,33 @@ export class CombatEngine {
     };
   }
 
-  public move(position: Position, type: MovementType = "walk"): boolean {
-    const currentIndex = this.state.currentTurnIndex;
+  move(position: Position, type: MovementType = "walk"): boolean {
+    const current = this.getCurrentCombatant();
 
-    const combatant = this.state.combatants[currentIndex];
-
-    if (!combatant || !combatant.alive) {
+    if (!current || !current.alive) {
       return false;
     }
 
-    const distance = calculateDistance(combatant.position, position);
+    const conditions = this.state.conditionManager.getConditions(current.id);
+
+    if (!canMove(conditions)) {
+      return false;
+    }
+
+    if (type !== "walk" && !canUseSpecialMovement(conditions)) {
+      return false;
+    }
+
+    const distance = calculateDistance(current.position, position);
 
     const movementCost = calculateMovementCost(distance, type);
 
-    if (movementCost > combatant.movementRemaining) {
+    if (movementCost > current.movementRemaining) {
       return false;
     }
 
-    this.state = {
-      ...this.state,
-
-      combatants: this.state.combatants.map((current, index) =>
-        index === currentIndex
-          ? {
-              ...current,
-
-              position: {
-                ...position,
-              },
-
-              movementRemaining: current.movementRemaining - movementCost,
-            }
-          : current,
-      ),
-    };
+    current.position = { ...position };
+    current.movementRemaining -= movementCost;
 
     return true;
   }
@@ -264,5 +282,74 @@ export class CombatEngine {
     }
 
     return calculateDistance(first.position, second.position);
+  }
+
+  applyCondition(
+    targetId: string,
+    conditionId: ConditionId,
+    duration: number,
+    stacks = 1,
+  ): ConditionState {
+    const target = this.state.combatants.find(
+      (combatant) => combatant.id === targetId,
+    );
+
+    if (!target || !target.alive) {
+      throw new Error("Cannot apply condition to an invalid combatant.");
+    }
+
+    return this.state.conditionManager.applyCondition(
+      targetId,
+      conditionId,
+      duration,
+      stacks,
+    );
+  }
+
+  removeCondition(targetId: string, conditionId: ConditionId): boolean {
+    return this.state.conditionManager.removeCondition(targetId, conditionId);
+  }
+
+  hasCondition(targetId: string, conditionId: ConditionId): boolean {
+    return this.state.conditionManager.hasCondition(targetId, conditionId);
+  }
+
+  getConditions(targetId: string): ConditionState[] {
+    return this.state.conditionManager.getConditions(targetId);
+  }
+
+  getCondition(
+    targetId: string,
+    conditionId: ConditionId,
+  ): ConditionState | undefined {
+    return this.state.conditionManager.getCondition(targetId, conditionId);
+  }
+
+  private processConditionDamage(): void {
+    const allConditions = this.state.conditionManager.getAllConditions();
+
+    for (const [targetId, conditions] of allConditions) {
+      const combatant = this.state.combatants.find(
+        (current) => current.id === targetId,
+      );
+
+      if (!combatant || !combatant.alive) {
+        continue;
+      }
+
+      for (const condition of conditions) {
+        const damage = getConditionDamage(condition);
+
+        if (!damage) {
+          continue;
+        }
+
+        combatant.hp = Math.max(0, combatant.hp - damage.totalDamage);
+
+        if (combatant.hp === 0) {
+          combatant.alive = false;
+        }
+      }
+    }
   }
 }

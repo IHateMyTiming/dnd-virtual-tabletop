@@ -1,4 +1,5 @@
 import type { Combatant } from "./Combatant";
+import { ConditionManager } from "../condition/ConditionManager";
 
 export interface CombatState {
   combatants: Combatant[];
@@ -14,6 +15,7 @@ export function createCombatState(combatants: Combatant[]): CombatState {
     combatants: orderedCombatants,
     round: 1,
     currentTurnIndex: 0,
+    conditionManager: new ConditionManager(),
   };
 }
 
@@ -55,4 +57,11 @@ export function startTurn(state: CombatState): CombatState {
         : combatant,
     ),
   };
+}
+
+export interface CombatState {
+  combatants: Combatant[];
+  round: number;
+  currentTurnIndex: number;
+  conditionManager: ConditionManager;
 }
