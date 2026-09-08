@@ -1,7 +1,8 @@
 import Phaser from "phaser";
 import "./style.css";
 
-import { MapScene } from "./game/scenes/MapScene";
+//import { MapScene } from "./game/scenes/MapScene";
+import { CombatTestScene } from "./game/CombatTestScene";
 
 import { setupTranslations } from "./translation/translation";
 
@@ -17,7 +18,8 @@ const config: Phaser.Types.Core.GameConfig = {
 
   parent: "game",
 
-  scene: MapScene,
+  //scene: MapScene,
+  scene: CombatTestScene,
 };
 
 document
