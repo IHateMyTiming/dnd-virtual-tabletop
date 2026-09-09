@@ -9,11 +9,16 @@ import {
   hasSpellSlot,
   type CharacterResources,
 } from "./Resource";
+import { validateAbilityTarget, type AbilityTarget } from "./AbilityTarget";
+import type { CombatState } from "../combat/CombatState";
 
 export interface AbilityUseRequest {
   ability: AbilityDefinition;
   state: AbilityState;
   resources: CharacterResources;
+  casterId: string;
+  target: AbilityTarget;
+  combatState: CombatState;
 }
 
 export interface AbilityUseResult {
@@ -25,7 +30,7 @@ export interface AbilityUseResult {
 }
 
 export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
-  const { ability, state, resources } = request;
+  const { ability, state, resources, casterId, target, combatState } = request;
 
   if (state.abilityId !== ability.id) {
     return {
@@ -53,6 +58,21 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
         reason: `Not enough level ${spellSlotLevel} spell slots.`,
       };
     }
+  }
+
+  const targetValidation = validateAbilityTarget(
+    ability,
+    casterId,
+    target,
+    combatState,
+  );
+
+  if (!targetValidation.valid) {
+    return {
+      success: false,
+      abilityId: ability.id,
+      reason: targetValidation.reason,
+    };
   }
 
   const updatedState = useAbility(ability, state);

@@ -31,6 +31,7 @@ export class ConditionManager {
     conditionId: ConditionId,
     duration: number,
     stacks = 1,
+    value?: number,
     sourceId?: string,
   ): ConditionState {
     const existingConditions = this.getConditions(targetId);
@@ -55,6 +56,7 @@ export class ConditionManager {
         ...existingCondition,
         stacks: updatedStacks,
         duration,
+        value,
         sourceId,
       };
 
@@ -71,8 +73,10 @@ export class ConditionManager {
       conditionId,
       duration,
       stacks,
+      value,
       sourceId,
     );
+
     const definition = getConditionDefinition(conditionId);
 
     if (!definition) {

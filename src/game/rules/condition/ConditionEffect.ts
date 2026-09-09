@@ -12,7 +12,11 @@ export type ConditionEffectType =
   | "damage-modifier"
   | "incoming-damage-modifier"
   | "healing-restriction"
-  | "spell-restriction";
+  | "spell-restriction"
+  | "incoming-damage-modifier"
+  | "armor-modifier"
+  | "magic-resistance-modifier"
+  | "forced-movement";
 
 export interface ConditionEffect {
   type: ConditionEffectType;

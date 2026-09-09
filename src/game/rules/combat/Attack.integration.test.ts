@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { resolveAttack } from "./Attack";
 import type { CharacterStats } from "../stats/Stats";
+import type { ConditionState } from "../condition/ConditionState";
 
 describe("Attack integration", () => {
   it("resolves a successful ranged attack", () => {
@@ -28,13 +29,20 @@ describe("Attack integration", () => {
       type: "ranged",
       attackerStats: ranger,
       defenderStats: goblin,
+
       distance: 25,
       target: "body",
+
       damage: {
         count: 1,
         sides: 8,
       },
+
       armor: 2,
+      magicResistance: 0,
+
+      attackerConditions: [],
+      defenderConditions: [],
     });
 
     expect(result.hit).toBe(true);
@@ -67,7 +75,6 @@ describe("Attack integration", () => {
       charisma: 8,
     };
 
-    // 90 is higher than the 65% chance to hit.
     vi.spyOn(Math, "random").mockReturnValue(0.9);
 
     const result = resolveAttack({
@@ -81,6 +88,10 @@ describe("Attack integration", () => {
         sides: 8,
       },
       armor: 2,
+      magicResistance: 0,
+
+      attackerConditions: [],
+      defenderConditions: [],
     });
 
     expect(result.hit).toBe(false);
@@ -109,11 +120,6 @@ describe("Attack integration", () => {
       charisma: 8,
     };
 
-    // Melee body:
-    // Attacker accuracy = 110%
-    // Target accuracy = 100%
-    // Goblin dodge = 10%
-    // Final = 99% after clamping.
     vi.spyOn(Math, "random").mockReturnValue(0.5);
 
     const result = resolveAttack({
@@ -127,6 +133,10 @@ describe("Attack integration", () => {
         sides: 10,
       },
       armor: 2,
+      magicResistance: 0,
+
+      attackerConditions: [],
+      defenderConditions: [],
     });
 
     expect(result.hit).toBe(true);

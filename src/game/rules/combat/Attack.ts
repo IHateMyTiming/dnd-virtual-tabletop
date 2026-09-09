@@ -12,14 +12,16 @@ import type { ConditionState } from "../condition/ConditionState";
 export type AttackType = "melee" | "ranged";
 
 export interface AttackRequest {
-  type: AttackType;
   attackerStats: CharacterStats;
   defenderStats: CharacterStats;
+  defenderConditions: ConditionState[];
+  attackerConditions: ConditionState[];
+  armor: number;
+  magicResistance: number;
   distance: number;
   target: TargetLocation;
   damage: DamageExpression;
-  armor: number;
-  attackerConditions: ConditionState[];
+  type: AttackType;
 }
 
 export interface AttackResult {
@@ -61,7 +63,9 @@ export function resolveAttack(attack: AttackRequest): AttackResult {
   const damage = resolveDamage(
     attack.damage,
     attack.armor,
+    attack.magicResistance,
     attack.defenderStats,
+    attack.defenderConditions,
   );
 
   return {

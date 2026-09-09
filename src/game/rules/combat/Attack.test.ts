@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveAttack } from "./Attack";
 import type { CharacterStats } from "../stats/Stats";
+import type { ConditionState } from "../condition/ConditionState";
 
 describe("Attack", () => {
   it("calculates ranged attack accuracy correctly", () => {
@@ -21,10 +22,8 @@ describe("Attack", () => {
       wisdom: 8,
       charisma: 8,
     };
-
     const result = resolveAttack({
       type: "ranged",
-
       attackerStats: ranger,
       defenderStats: goblin,
 
@@ -37,6 +36,10 @@ describe("Attack", () => {
       },
 
       armor: 2,
+      magicResistance: 0,
+
+      attackerConditions: [],
+      defenderConditions: [],
     });
 
     expect(result.chance).toBe(65);

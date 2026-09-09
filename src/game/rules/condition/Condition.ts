@@ -14,7 +14,12 @@ export type ConditionId =
   | "silenced"
   | "freezed"
   | "acid"
-  | "bleeding";
+  | "bleeding"
+  | "marked"
+  | "armor-penetration"
+  | "magic-penetration"
+  | "pulled"
+  | "pushed";
 
 export interface ConditionDefinition {
   id: ConditionId;
@@ -120,6 +125,36 @@ export const CONDITIONS: ConditionDefinition[] = [
     nameKey: "condition_bleeding",
     descriptionKey: "condition_bleeding_description",
     maxStacks: 5,
+  },
+  {
+    id: "marked",
+    nameKey: "condition_marked",
+    descriptionKey: "condition_marked_description",
+    maxStacks: 1,
+  },
+  {
+    id: "armor-penetration",
+    nameKey: "condition_armor_penetration",
+    descriptionKey: "condition_armor_penetration_description",
+    maxStacks: 1,
+  },
+  {
+    id: "magic-penetration",
+    nameKey: "condition_magic_penetration",
+    descriptionKey: "condition_magic_penetration_description",
+    maxStacks: 1,
+  },
+  {
+    id: "pulled",
+    nameKey: "condition_pulled",
+    descriptionKey: "condition_pulled_description",
+    maxStacks: 1,
+  },
+  {
+    id: "pushed",
+    nameKey: "condition_pushed",
+    descriptionKey: "condition_pushed_description",
+    maxStacks: 1,
   },
 ];
 

@@ -1,18 +1,33 @@
 import { describe, expect, it } from "vitest";
 import { CombatEngine } from "./CombatEngine";
 import { createCombatState } from "./CombatState";
-import type { Combatant } from "./Combatant";
+import type { Combatant, CombatantTeam } from "./Combatant";
 import { vi } from "vitest";
 import { calculateDistance, calculateMovementCost } from "./Movement";
+import { createCondition } from "../condition/ConditionState";
+import { canAttackTarget, canMoveTo } from "../condition/ConditionRestrictions";
+import { getFrightenedDamageMultiplier } from "../condition/ConditionFear";
+import { shouldWakeFromDamage } from "../condition/ConditionWake";
+import { getIncomingDamageMultiplier } from "../condition/ConditionDamageModifier";
+import { getConditionResistanceType } from "../condition/ConditionResistance";
+import {
+  createConditionResistance,
+  increaseConditionResistance,
+  rollConditionResistance,
+} from "./EffectResistance";
+import type { ConditionResistanceState } from "./EffectResistance";
 
 function createCombatant(
   id: string,
   dexterity: number,
   initiative: number,
+  team: CombatantTeam = "player",
+  position = { x: 0, y: 0 },
 ): Combatant {
   return {
     id,
     name: id,
+    team,
     stats: {
       strength: 10,
       dexterity,
@@ -24,10 +39,8 @@ function createCombatant(
     hp: 10,
     maxHp: 10,
     armor: 0,
-    position: {
-      x: 0,
-      y: 0,
-    },
+    magicResistance: 0,
+    position,
     movement: 6,
     movementRemaining: 6,
     actionAvailable: false,
@@ -614,5 +627,226 @@ describe("Conditions", () => {
     engine.startCombat();
 
     expect(engine.getCurrentCombatant()?.movementRemaining).toBe(3);
+  });
+  it("pulls a combatant toward the condition source", () => {
+    const source = createCombatant("source", 10, 10, "player", { x: 0, y: 0 });
+
+    const target = createCombatant("target", 10, 10, "enemy", { x: 10, y: 0 });
+
+    const state = createCombatState([source, target]);
+    const engine = new CombatEngine(state);
+
+    engine.applyCondition("target", "pulled", 1, 1, 3, "source");
+
+    const updatedTarget = engine
+      .getState()
+      .combatants.find((combatant) => combatant.id === "target");
+
+    expect(updatedTarget?.position).toEqual({
+      x: 7,
+      y: 0,
+    });
+  });
+  it("pushes a combatant away from the condition source", () => {
+    const source = createCombatant("source", 10, 10, "player", { x: 0, y: 0 });
+
+    const target = createCombatant("target", 10, 10, "enemy", { x: 10, y: 0 });
+
+    const state = createCombatState([source, target]);
+    const engine = new CombatEngine(state);
+
+    engine.applyCondition("target", "pushed", 1, 1, 3, "source");
+
+    const updatedTarget = engine
+      .getState()
+      .combatants.find((combatant) => combatant.id === "target");
+
+    expect(updatedTarget?.position).toEqual({
+      x: 13,
+      y: 0,
+    });
+  });
+  it("requires a source for pulled and pushed", () => {
+    const target = createCombatant("target", 10, 10, "enemy", { x: 10, y: 0 });
+
+    const state = createCombatState([target]);
+    const engine = new CombatEngine(state);
+
+    expect(() => engine.applyCondition("target", "pulled", 1, 1, 3)).toThrow(
+      "Forced movement conditions require a source.",
+    );
+  });
+  it("prevents a charmed character from attacking their charmer", () => {
+    const conditions = [createCondition("charmed", 2, 1, undefined, "charmer")];
+
+    expect(canAttackTarget("victim", "charmer", conditions)).toBe(false);
+  });
+  it("allows a charmed character to attack other targets", () => {
+    const conditions = [createCondition("charmed", 2, 1, undefined, "charmer")];
+
+    expect(canAttackTarget("victim", "other-target", conditions)).toBe(true);
+  });
+  it("allows attacking normally without charmed", () => {
+    expect(canAttackTarget("victim", "target", [])).toBe(true);
+  });
+  it("prevents a charmed character from moving away from their charmer", () => {
+    const charmer = createCombatant("charmer", 10, 10, "enemy", { x: 0, y: 0 });
+
+    const victim = createCombatant("victim", 10, 10, "player", { x: 5, y: 0 });
+
+    const conditions = [createCondition("charmed", 2, 1, undefined, "charmer")];
+
+    expect(
+      canMoveTo(victim.position, { x: 8, y: 0 }, conditions, [charmer, victim]),
+    ).toBe(false);
+  });
+  it("allows a charmed character to move toward their charmer", () => {
+    const charmer = createCombatant("charmer", 10, 10, "enemy", { x: 0, y: 0 });
+
+    const victim = createCombatant("victim", 10, 10, "player", { x: 5, y: 0 });
+
+    const conditions = [createCondition("charmed", 2, 1, undefined, "charmer")];
+
+    expect(
+      canMoveTo(victim.position, { x: 3, y: 0 }, conditions, [charmer, victim]),
+    ).toBe(true);
+  });
+  it("allows normal movement without charmed", () => {
+    const victim = createCombatant("victim", 10, 10, "player", { x: 5, y: 0 });
+
+    expect(canMoveTo(victim.position, { x: 8, y: 0 }, [], [victim])).toBe(true);
+  });
+  it("reduces damage against the source of fear", () => {
+    const conditions = [createCondition("frightened", 2, 1, 50, "dragon")];
+
+    expect(getFrightenedDamageMultiplier(conditions, "dragon")).toBe(0.5);
+  });
+  it("does not reduce damage against other targets", () => {
+    const conditions = [createCondition("frightened", 2, 1, 50, "dragon")];
+
+    expect(getFrightenedDamageMultiplier(conditions, "goblin")).toBe(1);
+  });
+  it("does not modify damage without frightened", () => {
+    expect(getFrightenedDamageMultiplier([], "dragon")).toBe(1);
+  });
+  it("prevents frightened movement toward the fear source", () => {
+    const combatants = [
+      createCombatant("dragon", 10, 10, "enemy", { x: 10, y: 0 }),
+    ];
+
+    const conditions = [
+      createCondition("frightened", 2, 1, undefined, "dragon"),
+    ];
+
+    expect(
+      canMoveTo({ x: 0, y: 0 }, { x: 5, y: 0 }, conditions, combatants),
+    ).toBe(false);
+  });
+  it("allows frightened movement away from the fear source", () => {
+    const combatants = [
+      createCombatant("dragon", 10, 10, "enemy", { x: 10, y: 0 }),
+    ];
+
+    const conditions = [
+      createCondition("frightened", 2, 1, undefined, "dragon"),
+    ];
+
+    expect(
+      canMoveTo({ x: 0, y: 0 }, { x: -5, y: 0 }, conditions, combatants),
+    ).toBe(true);
+  });
+  it("allows frightened sideways movement", () => {
+    const combatants = [
+      createCombatant("dragon", 10, 10, "enemy", { x: 10, y: 0 }),
+    ];
+
+    const conditions = [
+      createCondition("frightened", 2, 1, undefined, "dragon"),
+    ];
+
+    expect(
+      canMoveTo({ x: 0, y: 0 }, { x: 0, y: 5 }, conditions, combatants),
+    ).toBe(true);
+  });
+  it("wakes a sleeping target when it takes damage", () => {
+    const conditions = [createCondition("sleeping", 2)];
+
+    expect(shouldWakeFromDamage(conditions, 5)).toBe(true);
+  });
+  it("does not wake a sleeping target from zero damage", () => {
+    const conditions = [createCondition("sleeping", 2)];
+
+    expect(shouldWakeFromDamage(conditions, 0)).toBe(false);
+  });
+  it("does not wake a target that is not sleeping", () => {
+    const conditions = [createCondition("stunned", 2)];
+
+    expect(shouldWakeFromDamage(conditions, 5)).toBe(false);
+  });
+  it("increases incoming damage for petrified", () => {
+    const conditions = [createCondition("petrified", 2, 1, 50)];
+
+    expect(getIncomingDamageMultiplier(conditions)).toBe(1.5);
+  });
+  it("combines marked and petrified modifiers", () => {
+    const conditions = [
+      createCondition("marked", 2, 1, 25),
+      createCondition("petrified", 2, 1, 50),
+    ];
+
+    expect(getIncomingDamageMultiplier(conditions)).toBe(1.875);
+  });
+  it("uses charisma resistance for mental conditions", () => {
+    expect(getConditionResistanceType("frightened")).toBe("charisma");
+    expect(getConditionResistanceType("charmed")).toBe("charisma");
+    expect(getConditionResistanceType("cursed")).toBe("charisma");
+    expect(getConditionResistanceType("sleeping")).toBe("charisma");
+    expect(getConditionResistanceType("petrified")).toBe("charisma");
+    expect(getConditionResistanceType("marked")).toBe("charisma");
+    expect(getConditionResistanceType("pulled")).toBe("charisma");
+    expect(getConditionResistanceType("pushed")).toBe("charisma");
+  });
+  it("uses constitution resistance for other conditions", () => {
+    expect(getConditionResistanceType("stunned")).toBe("constitution");
+    expect(getConditionResistanceType("poisoned")).toBe("constitution");
+    expect(getConditionResistanceType("rooted")).toBe("constitution");
+    expect(getConditionResistanceType("silenced")).toBe("constitution");
+  });
+  it("creates condition resistance with zero resistance", () => {
+    const state = createConditionResistance("stunned");
+
+    expect(state.conditionId).toBe("stunned");
+    expect(state.resistance).toBe(0);
+  });
+  it("increases condition resistance", () => {
+    const state = createConditionResistance("stunned");
+
+    const updated = increaseConditionResistance(state, 20);
+
+    expect(updated.resistance).toBe(20);
+  });
+  it("caps condition resistance at 99", () => {
+    const state = createConditionResistance("stunned");
+
+    const updated = increaseConditionResistance(state, 150);
+
+    expect(updated.resistance).toBe(99);
+  });
+  it("resists when the roll is below resistance", () => {
+    const state: ConditionResistanceState = {
+      conditionId: "stunned",
+      resistance: 50,
+    };
+
+    expect(rollConditionResistance(state, () => 0.25)).toBe(true);
+  });
+
+  it("does not resist when the roll is above resistance", () => {
+    const state: ConditionResistanceState = {
+      conditionId: "stunned",
+      resistance: 50,
+    };
+
+    expect(rollConditionResistance(state, () => 0.75)).toBe(false);
   });
 });

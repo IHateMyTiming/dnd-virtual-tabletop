@@ -14,12 +14,16 @@ import {
 } from "./Movement";
 import {
   canMove,
+  canMoveTo,
+  canAttackTarget,
   canUseAction,
   canUseBonusAction,
   canUseReaction,
   canUseSpecialMovement,
 } from "../condition/ConditionRestrictions";
 import { getConditionDamage } from "../condition/ConditionDamage";
+import { calculateForcedMovement } from "../condition/ConditionForcedMovement";
+import { shouldWakeFromDamage } from "../condition/ConditionWake";
 
 export class CombatEngine {
   private state: CombatState;
@@ -145,6 +149,14 @@ export class CombatEngine {
       attacker.id,
     );
 
+    if (!canAttackTarget(attacker.id, defender.id, attackerConditions)) {
+      return {
+        success: false,
+        attackerId: request.attackerId,
+        defenderId: request.defenderId,
+      };
+    }
+
     if (!attacker.alive || !defender.alive) {
       return {
         success: false,
@@ -169,6 +181,10 @@ export class CombatEngine {
       };
     }
 
+    const defenderConditions = this.state.conditionManager.getConditions(
+      defender.id,
+    );
+
     const attack = resolveAttack({
       type: request.type,
       attackerStats: attacker.stats,
@@ -177,7 +193,9 @@ export class CombatEngine {
       target: request.target,
       damage: request.damage,
       armor: defender.armor,
+      magicResistance: defender.magicResistance,
       attackerConditions,
+      defenderConditions,
     });
 
     this.state = {
@@ -196,6 +214,15 @@ export class CombatEngine {
 
     if (attack.hit && attack.damage) {
       const hpAfter = Math.max(0, defender.hp - attack.damage.finalDamage);
+
+      const shouldWake = shouldWakeFromDamage(
+        defenderConditions,
+        attack.damage.finalDamage,
+      );
+
+      if (shouldWake) {
+        this.state.conditionManager.removeCondition(defender.id, "sleeping");
+      }
 
       this.state = {
         ...this.state,
@@ -247,6 +274,12 @@ export class CombatEngine {
       return false;
     }
 
+    if (
+      !canMoveTo(current.position, position, conditions, this.state.combatants)
+    ) {
+      return false;
+    }
+
     if (type !== "walk" && !canUseSpecialMovement(conditions)) {
       return false;
     }
@@ -289,6 +322,8 @@ export class CombatEngine {
     conditionId: ConditionId,
     duration: number,
     stacks = 1,
+    value?: number,
+    sourceId?: string,
   ): ConditionState {
     const target = this.state.combatants.find(
       (combatant) => combatant.id === targetId,
@@ -298,12 +333,36 @@ export class CombatEngine {
       throw new Error("Cannot apply condition to an invalid combatant.");
     }
 
-    return this.state.conditionManager.applyCondition(
+    const condition = this.state.conditionManager.applyCondition(
       targetId,
       conditionId,
       duration,
       stacks,
+      value,
+      sourceId,
     );
+
+    if (conditionId === "pulled" || conditionId === "pushed") {
+      if (!sourceId) {
+        throw new Error("Forced movement conditions require a source.");
+      }
+
+      const source = this.state.combatants.find(
+        (combatant) => combatant.id === sourceId,
+      );
+
+      if (!source) {
+        throw new Error("Forced movement source and target must exist.");
+      }
+
+      target.position = calculateForcedMovement(
+        target.position,
+        source.position,
+        condition,
+      );
+    }
+
+    return condition;
   }
 
   removeCondition(targetId: string, conditionId: ConditionId): boolean {

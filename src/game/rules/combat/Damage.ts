@@ -1,11 +1,17 @@
 import { rollDice } from "../dice/Dice";
 import type { CharacterStats } from "../stats/Stats";
-import { applyParry } from "./Parry";
+import { calculateParryReduction } from "./Parry";
+import type { ConditionState } from "../condition/ConditionState";
+import { getIncomingDamageMultiplier } from "../condition/ConditionDamageModifier";
+import { getEffectiveArmor } from "../condition/ConditionArmor";
+import { getEffectiveMagicResistance } from "../condition/ConditionMagicResistance";
 
+export type DamageType = "physical" | "magic";
 export interface DamageExpression {
   count: number;
   sides: number;
   modifier?: number;
+  type?: DamageType;
 }
 
 export interface DamageResult {
@@ -43,23 +49,49 @@ export function applyArmor(damage: number, armor: number): number {
 export function resolveDamage(
   expression: DamageExpression,
   armor: number,
+  magicResistance: number,
   defenderStats: CharacterStats,
+  defenderConditions: ConditionState[] = [],
 ): DamageResult {
   const rolled = rollDamage(expression);
 
-  const afterArmor = applyArmor(rolled.rawDamage, armor);
+  const damageType = expression.type ?? "physical";
 
-  const afterParry = applyParry(defenderStats, afterArmor);
+  let armorReduction = 0;
+  let afterDefense = rolled.rawDamage;
 
-  const armorReduction = rolled.rawDamage - afterArmor;
+  if (damageType === "physical") {
+    const effectiveArmor = getEffectiveArmor(armor, defenderConditions);
 
-  const parryReduction = afterArmor - afterParry;
+    armorReduction = Math.max(0, effectiveArmor);
+    afterDefense = Math.max(0, rolled.rawDamage - armorReduction);
+  } else {
+    const effectiveMagicResistance = getEffectiveMagicResistance(
+      magicResistance,
+      defenderConditions,
+    );
+
+    const magicResistanceReduction = Math.max(0, effectiveMagicResistance);
+
+    afterDefense = Math.max(0, rolled.rawDamage - magicResistanceReduction);
+  }
+
+  const parryReduction =
+    damageType === "physical"
+      ? calculateParryReduction(defenderStats, afterDefense)
+      : 0;
+
+  const afterParry = Math.max(0, afterDefense - parryReduction);
+
+  const damageMultiplier = getIncomingDamageMultiplier(defenderConditions);
+
+  const finalDamage = afterParry * damageMultiplier;
 
   return {
     ...rolled,
     armorReduction,
     parryReduction,
-    finalDamage: afterParry,
+    finalDamage,
   };
 }
 

@@ -1,5 +1,5 @@
 import type { CharacterStats } from "../stats/Stats";
-
+export type CombatantTeam = "player" | "enemy";
 export interface Combatant {
   id: string;
   name: string;
@@ -24,4 +24,6 @@ export interface Combatant {
   reactionAvailable: boolean;
 
   alive: boolean;
+  team: CombatantTeam;
+  magicResistance: number;
 }

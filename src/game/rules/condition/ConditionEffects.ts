@@ -153,5 +153,44 @@ export function getConditionEffects(
           type: "bonus-action-restriction",
         },
       ];
+    case "marked":
+      return [
+        {
+          type: "incoming-damage-modifier",
+          value: 1.25,
+        },
+      ];
+
+    case "armor-penetration":
+      return [
+        {
+          type: "armor-modifier",
+          value: -10,
+        },
+      ];
+
+    case "magic-penetration":
+      return [
+        {
+          type: "magic-resistance-modifier",
+          value: -10,
+        },
+      ];
+
+    case "pulled":
+      return [
+        {
+          type: "forced-movement",
+          value: -1,
+        },
+      ];
+
+    case "pushed":
+      return [
+        {
+          type: "forced-movement",
+          value: 1,
+        },
+      ];
   }
 }
