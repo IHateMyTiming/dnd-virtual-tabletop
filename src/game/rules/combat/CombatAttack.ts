@@ -1,7 +1,8 @@
 import type { CharacterStats } from "../stats/Stats";
 import type { TargetLocation } from "./TargetLocation";
-import type { DamageExpression, DamageResult } from "./Damage";
+import type { DamageExpression } from "./Damage";
 import type { AttackType, AttackResult } from "./Attack";
+import type { ConditionState } from "../condition/ConditionState";
 
 export interface CombatAttackRequest {
   attackerId: string;
@@ -11,6 +12,7 @@ export interface CombatAttackRequest {
   target: TargetLocation;
   damage: DamageExpression;
   attackerConditions: ConditionState[];
+  defenderConditions: ConditionState[];
 }
 
 export interface CombatAttackResult {

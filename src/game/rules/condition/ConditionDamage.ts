@@ -7,21 +7,19 @@ export interface ConditionDamage {
   totalDamage: number;
 }
 
-const CONDITION_DAMAGE_PER_STACK: Partial<Record<ConditionId, number>> = {
-  poisoned: 1,
-  burning: 1,
-  acid: 1,
-  bleeding: 1,
-};
-
 export function getConditionDamage(
   condition: ConditionState,
 ): ConditionDamage | undefined {
-  const damagePerStack = CONDITION_DAMAGE_PER_STACK[condition.id];
-
-  if (damagePerStack === undefined) {
+  if (
+    condition.id !== "poisoned" &&
+    condition.id !== "burning" &&
+    condition.id !== "acid" &&
+    condition.id !== "bleeding"
+  ) {
     return undefined;
   }
+
+  const damagePerStack = condition.value ?? 0;
 
   return {
     conditionId: condition.id,

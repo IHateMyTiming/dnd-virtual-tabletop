@@ -35,12 +35,12 @@ describe("Conditions", () => {
   });
 
   it("creates a condition with multiple stacks", () => {
-    const condition = createCondition("poisoned", 3, 2);
+    const condition = createCondition("poisoned", 2, 3, 1);
 
-    expect(condition).toEqual({
-      id: "poisoned",
-      duration: 3,
-      stacks: 2,
+    expect(getConditionDamage(condition)).toEqual({
+      conditionId: "poisoned",
+      damagePerStack: 1,
+      totalDamage: 3,
     });
   });
 
@@ -51,22 +51,22 @@ describe("Conditions", () => {
   });
 
   it("rejects less than one stack", () => {
-    expect(() => createCondition("poisoned", 3, 0)).toThrow(
+    expect(() => createCondition("poisoned", 2, 0, 1)).toThrow(
       "Condition stacks must be at least 1.",
     );
   });
 
   it("adds stacks", () => {
-    const condition = createCondition("poisoned", 3, 2);
+    const condition = createCondition("poisoned", 2, 3, 1);
 
     const updated = addConditionStacks(condition, 2);
 
-    expect(updated.stacks).toBe(4);
-    expect(updated.duration).toBe(3);
+    expect(updated.stacks).toBe(5);
+    expect(updated.duration).toBe(2);
   });
 
   it("rejects negative stack increase", () => {
-    const condition = createCondition("poisoned", 3, 2);
+    const condition = createCondition("poisoned", 2, 3, 1);
 
     expect(() => addConditionStacks(condition, -1)).toThrow(
       "Condition stack increase cannot be negative.",
@@ -190,7 +190,7 @@ describe("ConditionManager", () => {
     const manager = new ConditionManager();
 
     manager.applyCondition("ranger", "poisoned", 3);
-    manager.applyCondition("ranger", "burning", 2);
+    manager.applyCondition("ranger", "burning", 2, 1, 2);
 
     manager.clearConditions("ranger");
 
@@ -282,13 +282,12 @@ describe("Condition Restrictions", () => {
   it("reduces all condition durations at round start", () => {
     const manager = new ConditionManager();
 
-    manager.applyCondition("ranger", "poisoned", 3);
-    manager.applyCondition("ranger", "burning", 2);
+    manager.applyCondition("ranger", "poisoned", 2, 3, 1);
+    manager.applyCondition("ranger", "burning", 2, 1, 2);
 
     manager.processRoundStart();
 
-    expect(manager.getCondition("ranger", "poisoned")?.duration).toBe(2);
-
+    expect(manager.getCondition("ranger", "poisoned")?.duration).toBe(1);
     expect(manager.getCondition("ranger", "burning")?.duration).toBe(1);
   });
   it("removes conditions that expire at round start", () => {
@@ -307,7 +306,7 @@ describe("Condition Restrictions", () => {
 
 describe("Condition Damage", () => {
   it("calculates poisoned damage from stacks", () => {
-    const condition = createCondition("poisoned", 3, 3);
+    const condition = createCondition("poisoned", 2, 3, 1);
 
     const damage = getConditionDamage(condition);
 
@@ -319,7 +318,7 @@ describe("Condition Damage", () => {
   });
 
   it("calculates burning damage from stacks", () => {
-    const condition = createCondition("burning", 3, 2);
+    const condition = createCondition("burning", 2, 1, 2);
 
     const damage = getConditionDamage(condition);
 
@@ -327,19 +326,15 @@ describe("Condition Damage", () => {
   });
 
   it("calculates acid damage from stacks", () => {
-    const condition = createCondition("acid", 3, 4);
+    const condition = createCondition("acid", 2, 2, 2);
 
-    const damage = getConditionDamage(condition);
-
-    expect(damage?.totalDamage).toBe(4);
+    expect(getConditionDamage(condition)?.totalDamage).toBe(4);
   });
 
   it("calculates bleeding damage from stacks", () => {
-    const condition = createCondition("bleeding", 3, 5);
+    const condition = createCondition("bleeding", 2, 5, 1);
 
-    const damage = getConditionDamage(condition);
-
-    expect(damage?.totalDamage).toBe(5);
+    expect(getConditionDamage(condition)?.totalDamage).toBe(5);
   });
 
   it("returns undefined for conditions that do not deal damage", () => {
@@ -357,21 +352,21 @@ describe("Condition Movement", () => {
   });
 
   it("slowed reduces movement", () => {
-    const conditions = [createCondition("slowed", 2)];
+    const conditions = [createCondition("slowed", 2, 1, 50)];
 
     expect(getConditionMovementMultiplier(conditions)).toBe(0.5);
   });
 
   it("freezed reduces movement", () => {
-    const conditions = [createCondition("freezed", 2)];
+    const conditions = [createCondition("freezed", 2, 1, 50)];
 
     expect(getConditionMovementMultiplier(conditions)).toBe(0.5);
   });
 
   it("multiple movement modifiers multiply together", () => {
     const conditions = [
-      createCondition("slowed", 2),
-      createCondition("freezed", 2),
+      createCondition("slowed", 2, 1, 50),
+      createCondition("freezed", 2, 1, 50),
     ];
 
     expect(getConditionMovementMultiplier(conditions)).toBe(0.25);
@@ -380,33 +375,33 @@ describe("Condition Movement", () => {
 
 describe("Condition Accuracy", () => {
   it("blinded reduces ranged accuracy", () => {
-    const conditions = [createCondition("blinded", 2)];
+    const conditions = [createCondition("blinded", 2, 1, 50)];
 
     expect(getConditionAccuracyMultiplier(conditions, "ranged")).toBe(0.5);
   });
 
   it("blinded does not directly reduce melee accuracy", () => {
-    const conditions = [createCondition("blinded", 2)];
+    const conditions = [createCondition("blinded", 2, 1, 50)];
 
     expect(getConditionAccuracyMultiplier(conditions, "melee")).toBe(1);
   });
 
   it("conditions without accuracy effects do not modify accuracy", () => {
-    const conditions = [createCondition("poisoned", 2)];
+    const conditions = [createCondition("poisoned", 2, 3, 1)];
 
     expect(getConditionAccuracyMultiplier(conditions, "ranged")).toBe(1);
   });
 });
 
 describe("Condition Defense", () => {
-  it("blinded increases the defender dodge multiplier", () => {
-    const conditions = [createCondition("blinded", 2)];
+  it("blinded reduces the defender dodge multiplier", () => {
+    const conditions = [createCondition("blinded", 2, 1, 50)];
 
-    expect(getConditionDodgeMultiplier(conditions)).toBe(2);
+    expect(getConditionDodgeMultiplier(conditions)).toBe(0.5);
   });
 
   it("conditions without dodge effects do not modify dodge", () => {
-    const conditions = [createCondition("poisoned", 2)];
+    const conditions = [createCondition("poisoned", 2, 3, 1)];
 
     expect(getConditionDodgeMultiplier(conditions)).toBe(1);
   });

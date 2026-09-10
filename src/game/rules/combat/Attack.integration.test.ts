@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { resolveAttack } from "./Attack";
 import type { CharacterStats } from "../stats/Stats";
-import type { ConditionState } from "../condition/ConditionState";
+import { createCondition } from "../condition/ConditionState";
 
 describe("Attack integration", () => {
   it("resolves a successful ranged attack", () => {
@@ -26,21 +26,19 @@ describe("Attack integration", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.4);
 
     const result = resolveAttack({
+      attackerId: "ranger",
+      defenderId: "goblin",
       type: "ranged",
       attackerStats: ranger,
       defenderStats: goblin,
-
       distance: 25,
       target: "body",
-
       damage: {
         count: 1,
         sides: 8,
       },
-
       armor: 2,
       magicResistance: 0,
-
       attackerConditions: [],
       defenderConditions: [],
     });
@@ -78,6 +76,8 @@ describe("Attack integration", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.9);
 
     const result = resolveAttack({
+      attackerId: "ranger",
+      defenderId: "goblin",
       type: "ranged",
       attackerStats: ranger,
       defenderStats: goblin,
@@ -89,7 +89,6 @@ describe("Attack integration", () => {
       },
       armor: 2,
       magicResistance: 0,
-
       attackerConditions: [],
       defenderConditions: [],
     });
@@ -123,6 +122,8 @@ describe("Attack integration", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.5);
 
     const result = resolveAttack({
+      attackerId: "fighter",
+      defenderId: "goblin",
       type: "melee",
       attackerStats: fighter,
       defenderStats: goblin,
@@ -130,17 +131,63 @@ describe("Attack integration", () => {
       target: "body",
       damage: {
         count: 1,
-        sides: 10,
+        sides: 8,
       },
       armor: 2,
       magicResistance: 0,
-
       attackerConditions: [],
       defenderConditions: [],
     });
 
     expect(result.hit).toBe(true);
-    expect(result.chance).toBe(90);
+    expect(result.chance).toBeCloseTo(99);
+    vi.restoreAllMocks();
+  });
+
+  it("reduces damage when the attacker is frightened by the defender", () => {
+    const attacker: CharacterStats = {
+      strength: 10,
+      dexterity: 10,
+      constitution: 10,
+      intelligence: 10,
+      wisdom: 10,
+      charisma: 10,
+    };
+
+    const defender: CharacterStats = {
+      strength: 10,
+      dexterity: 10,
+      constitution: 10,
+      intelligence: 10,
+      wisdom: 10,
+      charisma: 10,
+    };
+
+    const frightened = createCondition("frightened", 2, 1, 50, "goblin");
+
+    vi.spyOn(Math, "random").mockReturnValue(0);
+
+    const result = resolveAttack({
+      attackerStats: attacker,
+      defenderStats: defender,
+      type: "melee",
+      distance: 1,
+      target: "body",
+      damage: {
+        count: 1,
+        sides: 10,
+      },
+      armor: 0,
+      magicResistance: 0,
+      attackerConditions: [frightened],
+      defenderConditions: [],
+      attackerId: "ranger",
+      defenderId: "goblin",
+    });
+
+    expect(result.hit).toBe(true);
+    expect(result.damage?.finalDamage).toBe(0.5);
+
     vi.restoreAllMocks();
   });
 });

@@ -84,8 +84,7 @@ export function resolveDamage(
   const afterParry = Math.max(0, afterDefense - parryReduction);
 
   const damageMultiplier = getIncomingDamageMultiplier(defenderConditions);
-
-  const finalDamage = afterParry * damageMultiplier;
+  const finalDamage = Math.round(afterParry * damageMultiplier);
 
   return {
     ...rolled,

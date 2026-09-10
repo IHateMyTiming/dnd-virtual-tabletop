@@ -5,6 +5,7 @@ import { getTargetAccuracy } from "./TargetLocation";
 import type { TargetLocation } from "./TargetLocation";
 import { getConditionDodgeMultiplier } from "../condition/ConditionDefense";
 import type { ConditionState } from "../condition/ConditionState";
+import { getConditionAccuracyMultiplier } from "../condition/ConditionAccuracy";
 
 export function calculateRangedAccuracy(
   attackerStats: CharacterStats,
@@ -12,13 +13,19 @@ export function calculateRangedAccuracy(
   target: TargetLocation,
   attackerConditions: ConditionState[] = [],
 ): number {
-  const rangeAccuracy = clampPercentage(
-    getRangeAccuracy(distance) + getDexterityModifier(attackerStats) * 5,
-  );
+  const rangeAccuracy =
+    getRangeAccuracy(distance) + getDexterityModifier(attackerStats) * 5;
 
   const targetAccuracy = getTargetAccuracy(target);
 
-  return clampPercentage((rangeAccuracy / 100) * (targetAccuracy / 100) * 100);
+  const conditionAccuracy = getConditionAccuracyMultiplier(
+    attackerConditions,
+    "ranged",
+  );
+
+  return clampPercentage(
+    (rangeAccuracy / 100) * (targetAccuracy / 100) * conditionAccuracy * 100,
+  );
 }
 
 export function calculateMeleeAccuracy(
@@ -26,21 +33,27 @@ export function calculateMeleeAccuracy(
   targetStats: CharacterStats,
   target: TargetLocation,
   attackerConditions: ConditionState[] = [],
+  defenderConditions: ConditionState[] = [],
 ): number {
-  const attackerAccuracy = clampPercentage(
-    100 + getDexterityModifier(attackerStats) * 5,
-  );
+  const attackerAccuracy = 100 + getDexterityModifier(attackerStats) * 5;
 
   const targetAccuracy = getTargetAccuracy(target);
 
   const baseEnemyDodge = 10 + getDexterityModifier(targetStats) * 5;
 
   const enemyDodge =
-    baseEnemyDodge * getConditionDodgeMultiplier(attackerConditions);
+    baseEnemyDodge * getConditionDodgeMultiplier(defenderConditions);
+
+  const conditionAccuracy = getConditionAccuracyMultiplier(
+    attackerConditions,
+    "melee",
+  );
+
   return clampPercentage(
     (attackerAccuracy / 100) *
       (targetAccuracy / 100) *
       ((100 - enemyDodge) / 100) *
+      conditionAccuracy *
       100,
   );
 }

@@ -20,3 +20,8 @@ export function getConditionResistanceType(
       return "constitution";
   }
 }
+
+export const CONDITION_RESISTANCE_CONFIG = {
+  abilityModifierPercentage: 5,
+  applicationResistanceIncrease: 10,
+} as const;

@@ -4,7 +4,11 @@ export function getIncomingDamageMultiplier(
   conditions: ConditionState[],
 ): number {
   return conditions.reduce((multiplier, condition) => {
-    if (condition.id !== "marked" && condition.id !== "petrified") {
+    if (
+      condition.id !== "marked" &&
+      condition.id !== "petrified" &&
+      condition.id !== "cursed"
+    ) {
       return multiplier;
     }
 

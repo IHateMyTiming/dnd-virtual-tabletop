@@ -15,6 +15,8 @@ export function canMove(conditions: ConditionState[]): boolean {
   if (hasCondition(conditions, "stunned")) return false;
   if (hasCondition(conditions, "rooted")) return false;
   if (hasCondition(conditions, "suppressed")) return false;
+  if (hasCondition(conditions, "petrified")) return false;
+  if (hasCondition(conditions, "sleeping")) return false;
 
   return true;
 }
@@ -63,7 +65,6 @@ export function canUseSpecialMovement(conditions: ConditionState[]): boolean {
 }
 
 export function canAttackTarget(
-  attackerId: string,
   targetId: string,
   conditions: ConditionState[],
 ): boolean {

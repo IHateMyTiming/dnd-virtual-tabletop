@@ -1,19 +1,15 @@
 import type { ConditionState } from "./ConditionState";
 
-const BLINDED_DODGE_MULTIPLIER = 2;
-
 export function getConditionDodgeMultiplier(
   conditions: ConditionState[],
 ): number {
-  let multiplier = 1;
-
-  for (const condition of conditions) {
+  return conditions.reduce((multiplier, condition) => {
     if (condition.id !== "blinded") {
-      continue;
+      return multiplier;
     }
 
-    multiplier *= BLINDED_DODGE_MULTIPLIER;
-  }
+    const percentage = condition.value ?? 100;
 
-  return multiplier;
+    return multiplier * (percentage / 100);
+  }, 1);
 }

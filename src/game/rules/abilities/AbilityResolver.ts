@@ -11,6 +11,14 @@ import {
 } from "./Resource";
 import { validateAbilityTarget, type AbilityTarget } from "./AbilityTarget";
 import type { CombatState } from "../combat/CombatState";
+import type { CombatEngine } from "../combat/CombatEngine";
+import { executeAbilityEffects } from "./AbilityEffectExecutor";
+import {
+  canUseAction,
+  canUseBonusAction,
+  canUseReaction,
+  canUseSpells,
+} from "../condition/ConditionRestrictions";
 
 export interface AbilityUseRequest {
   ability: AbilityDefinition;
@@ -19,6 +27,7 @@ export interface AbilityUseRequest {
   casterId: string;
   target: AbilityTarget;
   combatState: CombatState;
+  combatEngine: CombatEngine;
 }
 
 export interface AbilityUseResult {
@@ -30,7 +39,15 @@ export interface AbilityUseResult {
 }
 
 export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
-  const { ability, state, resources, casterId, target, combatState } = request;
+  const {
+    ability,
+    state,
+    resources,
+    casterId,
+    target,
+    combatState,
+    combatEngine,
+  } = request;
 
   if (state.abilityId !== ability.id) {
     return {
@@ -45,6 +62,43 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
       success: false,
       abilityId: ability.id,
       reason: "Ability is not available.",
+    };
+  }
+
+  const casterConditions = combatState.conditionManager.getConditions(casterId);
+
+  if (ability.isSpell && !canUseSpells(casterConditions)) {
+    return {
+      success: false,
+      abilityId: ability.id,
+      reason: "Caster cannot use spells.",
+    };
+  }
+
+  if (ability.actionType === "action" && !canUseAction(casterConditions)) {
+    return {
+      success: false,
+      abilityId: ability.id,
+      reason: "Caster cannot use an action.",
+    };
+  }
+
+  if (
+    ability.actionType === "bonus-action" &&
+    !canUseBonusAction(casterConditions)
+  ) {
+    return {
+      success: false,
+      abilityId: ability.id,
+      reason: "Caster cannot use a bonus action.",
+    };
+  }
+
+  if (ability.actionType === "reaction" && !canUseReaction(casterConditions)) {
+    return {
+      success: false,
+      abilityId: ability.id,
+      reason: "Caster cannot use a reaction.",
     };
   }
 
@@ -84,6 +138,15 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
 
     updatedResources = consumeSpellSlot(resources, spellSlotLevel, amount);
   }
+
+  executeAbilityEffects(
+    ability.effects,
+    {
+      casterId,
+      targetId: target.id,
+    },
+    combatEngine,
+  );
 
   return {
     success: true,

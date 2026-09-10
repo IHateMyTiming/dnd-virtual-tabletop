@@ -18,6 +18,8 @@ function createCombatant(id: string, initiative: number): Combatant {
     hp: 10,
     maxHp: 10,
     armor: 0,
+    team: "player",
+    magicResistance: 0,
     position: {
       x: 0,
       y: 0,

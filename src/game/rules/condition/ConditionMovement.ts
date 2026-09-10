@@ -1,24 +1,15 @@
 import type { ConditionState } from "./ConditionState";
 
-const CONDITION_MOVEMENT_MULTIPLIERS: Record<string, number> = {
-  slowed: 0.5,
-  freezed: 0.5,
-};
-
 export function getConditionMovementMultiplier(
   conditions: ConditionState[],
 ): number {
-  let multiplier = 1;
-
-  for (const condition of conditions) {
-    const conditionMultiplier = CONDITION_MOVEMENT_MULTIPLIERS[condition.id];
-
-    if (conditionMultiplier === undefined) {
-      continue;
+  return conditions.reduce((multiplier, condition) => {
+    if (condition.id !== "slowed" && condition.id !== "freezed") {
+      return multiplier;
     }
 
-    multiplier *= conditionMultiplier;
-  }
+    const percentage = condition.value ?? 100;
 
-  return multiplier;
+    return multiplier * (percentage / 100);
+  }, 1);
 }

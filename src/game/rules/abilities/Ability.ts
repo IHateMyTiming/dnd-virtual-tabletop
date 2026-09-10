@@ -28,4 +28,5 @@ export interface AbilityDefinition {
   recovery: AbilityRecovery;
   cooldown?: number;
   resourceCost?: AbilityResourceCost;
+  isSpell?: boolean;
 }

@@ -1,5 +1,5 @@
 import type { CombatState } from "./CombatState";
-import { startTurn, endTurn, getCurrentCombatant } from "./Turn";
+import { startTurn, getCurrentCombatant } from "./Turn";
 import type { Combatant } from "./Combatant";
 import type { CombatActionType } from "./Action";
 import { resolveAttack } from "./Attack";
@@ -24,12 +24,25 @@ import {
 import { getConditionDamage } from "../condition/ConditionDamage";
 import { calculateForcedMovement } from "../condition/ConditionForcedMovement";
 import { shouldWakeFromDamage } from "../condition/ConditionWake";
+import { getTotalConditionResistance } from "../condition/ConditionResistanceResolver";
 
+import {
+  increaseConditionResistance,
+  rollConditionResistance,
+} from "./EffectResistance";
+
+import { CONDITION_RESISTANCE_CONFIG } from "../condition/ConditionResistance";
+import { getOpportunityAttackers } from "./OpportunityAttack";
+import { resolveDamage, type DamageExpression } from "./Damage";
+import { isInMeleeRange } from "./Engagement";
+import { getConditionMovementMultiplier } from "../condition/ConditionMovement";
 export class CombatEngine {
   private state: CombatState;
+  private readonly random: () => number;
 
-  constructor(state: CombatState) {
+  constructor(state: CombatState, random: () => number = Math.random) {
     this.state = state;
+    this.random = random;
   }
 
   public getState(): CombatState {
@@ -125,15 +138,11 @@ export class CombatEngine {
   }
 
   public attack(request: CombatAttackRequest): CombatAttackResult {
-    const attackerIndex = this.state.combatants.findIndex(
+    const attacker = this.state.combatants.find(
       (combatant) => combatant.id === request.attackerId,
     );
 
-    const defenderIndex = this.state.combatants.findIndex(
-      (combatant) => combatant.id === request.defenderId,
-    );
-
-    if (attackerIndex === -1 || defenderIndex === -1) {
+    if (!attacker || this.getCurrentCombatant()?.id !== attacker.id) {
       return {
         success: false,
         attackerId: request.attackerId,
@@ -141,31 +150,9 @@ export class CombatEngine {
       };
     }
 
-    const attacker = this.state.combatants[attackerIndex];
+    const conditions = this.state.conditionManager.getConditions(attacker.id);
 
-    const defender = this.state.combatants[defenderIndex];
-
-    const attackerConditions = this.state.conditionManager.getConditions(
-      attacker.id,
-    );
-
-    if (!canAttackTarget(attacker.id, defender.id, attackerConditions)) {
-      return {
-        success: false,
-        attackerId: request.attackerId,
-        defenderId: request.defenderId,
-      };
-    }
-
-    if (!attacker.alive || !defender.alive) {
-      return {
-        success: false,
-        attackerId: request.attackerId,
-        defenderId: request.defenderId,
-      };
-    }
-
-    if (this.getCurrentCombatant()?.id !== attacker.id) {
+    if (!canUseAction(conditions)) {
       return {
         success: false,
         attackerId: request.attackerId,
@@ -181,84 +168,7 @@ export class CombatEngine {
       };
     }
 
-    const defenderConditions = this.state.conditionManager.getConditions(
-      defender.id,
-    );
-
-    const attack = resolveAttack({
-      type: request.type,
-      attackerStats: attacker.stats,
-      defenderStats: defender.stats,
-      distance: request.distance,
-      target: request.target,
-      damage: request.damage,
-      armor: defender.armor,
-      magicResistance: defender.magicResistance,
-      attackerConditions,
-      defenderConditions,
-    });
-
-    this.state = {
-      ...this.state,
-      combatants: this.state.combatants.map((combatant, index) =>
-        index === attackerIndex
-          ? {
-              ...combatant,
-              actionAvailable: false,
-            }
-          : combatant,
-      ),
-    };
-
-    const hpBefore = defender.hp;
-
-    if (attack.hit && attack.damage) {
-      const hpAfter = Math.max(0, defender.hp - attack.damage.finalDamage);
-
-      const shouldWake = shouldWakeFromDamage(
-        defenderConditions,
-        attack.damage.finalDamage,
-      );
-
-      if (shouldWake) {
-        this.state.conditionManager.removeCondition(defender.id, "sleeping");
-      }
-
-      this.state = {
-        ...this.state,
-        combatants: this.state.combatants.map((combatant, index) =>
-          index === defenderIndex
-            ? {
-                ...combatant,
-                hp: hpAfter,
-                alive: hpAfter > 0,
-              }
-            : combatant,
-        ),
-      };
-
-      return {
-        success: true,
-        attackerId: attacker.id,
-        defenderId: defender.id,
-        attack,
-        attackerStats: attacker.stats,
-        defenderStats: defender.stats,
-        defenderHpBefore: hpBefore,
-        defenderHpAfter: hpAfter,
-      };
-    }
-
-    return {
-      success: true,
-      attackerId: attacker.id,
-      defenderId: defender.id,
-      attack,
-      attackerStats: attacker.stats,
-      defenderStats: defender.stats,
-      defenderHpBefore: hpBefore,
-      defenderHpAfter: hpBefore,
-    };
+    return this.resolveCombatAttack(request, "action");
   }
 
   move(position: Position, type: MovementType = "walk"): boolean {
@@ -285,15 +195,65 @@ export class CombatEngine {
     }
 
     const distance = calculateDistance(current.position, position);
-
     const movementCost = calculateMovementCost(distance, type);
 
-    if (movementCost > current.movementRemaining) {
+    const movementMultiplier = getConditionMovementMultiplier(conditions);
+    const effectiveMovementRemaining =
+      current.movementRemaining * movementMultiplier;
+
+    const previousPosition = { ...current.position };
+
+    if (movementCost > effectiveMovementRemaining) {
       return false;
     }
 
+    // Only walking can trigger opportunity attacks.
+    const opportunityAttackers =
+      type === "walk"
+        ? getOpportunityAttackers(
+            current,
+            previousPosition,
+            position,
+            this.state.combatants,
+          )
+        : [];
+
     current.position = { ...position };
     current.movementRemaining -= movementCost;
+
+    for (const opportunityAttacker of opportunityAttackers) {
+      const defender = this.state.combatants.find(
+        (combatant) => combatant.id === current.id,
+      );
+
+      if (!defender || !defender.alive) {
+        break;
+      }
+
+      const attacker = this.state.combatants.find(
+        (combatant) => combatant.id === opportunityAttacker.id,
+      );
+
+      if (!attacker || !attacker.alive || !attacker.reactionAvailable) {
+        continue;
+      }
+
+      this.performOpportunityAttack(attacker, defender);
+    }
+
+    return true;
+  }
+
+  public teleport(targetId: string, position: Position): boolean {
+    const target = this.state.combatants.find(
+      (combatant) => combatant.id === targetId,
+    );
+
+    if (!target || !target.alive) {
+      return false;
+    }
+
+    target.position = { ...position };
 
     return true;
   }
@@ -317,20 +277,44 @@ export class CombatEngine {
     return calculateDistance(first.position, second.position);
   }
 
-  applyCondition(
+  public applyCondition(
     targetId: string,
     conditionId: ConditionId,
     duration: number,
     stacks = 1,
     value?: number,
     sourceId?: string,
-  ): ConditionState {
+  ): ConditionState | undefined {
     const target = this.state.combatants.find(
       (combatant) => combatant.id === targetId,
     );
 
     if (!target || !target.alive) {
       throw new Error("Cannot apply condition to an invalid combatant.");
+    }
+
+    const resistanceState = this.state.conditionManager.getConditionResistance(
+      targetId,
+      conditionId,
+    );
+
+    const totalResistance = getTotalConditionResistance(
+      target.stats,
+      conditionId,
+      resistanceState,
+    );
+
+    if (
+      resistanceState.resistance > 0 &&
+      rollConditionResistance(
+        {
+          ...resistanceState,
+          resistance: totalResistance,
+        },
+        this.random,
+      )
+    ) {
+      return undefined;
     }
 
     const condition = this.state.conditionManager.applyCondition(
@@ -340,6 +324,16 @@ export class CombatEngine {
       stacks,
       value,
       sourceId,
+    );
+
+    const updatedResistance = increaseConditionResistance(
+      resistanceState,
+      CONDITION_RESISTANCE_CONFIG.applicationResistanceIncrease,
+    );
+
+    this.state.conditionManager.setConditionResistance(
+      targetId,
+      updatedResistance,
     );
 
     if (conditionId === "pulled" || conditionId === "pushed") {
@@ -410,5 +404,241 @@ export class CombatEngine {
         }
       }
     }
+  }
+
+  public getOpportunityAttackersForMove(
+    position: Position,
+    type: MovementType = "walk",
+  ): Combatant[] {
+    const current = this.getCurrentCombatant();
+
+    if (!current || !current.alive || type !== "walk") {
+      return [];
+    }
+
+    return getOpportunityAttackers(
+      current,
+      current.position,
+      position,
+      this.state.combatants,
+    );
+  }
+
+  public damage(targetId: string, expression: DamageExpression): number {
+    const target = this.state.combatants.find(
+      (combatant) => combatant.id === targetId,
+    );
+
+    if (!target || !target.alive) {
+      return 0;
+    }
+
+    const conditions = this.state.conditionManager.getConditions(target.id);
+
+    const result = resolveDamage(
+      expression,
+      target.armor,
+      target.magicResistance,
+      target.stats,
+      conditions,
+    );
+
+    const hpBefore = target.hp;
+
+    target.hp = Math.max(0, target.hp - result.finalDamage);
+
+    if (target.hp === 0) {
+      target.alive = false;
+    }
+
+    if (shouldWakeFromDamage(conditions, result.finalDamage)) {
+      this.state.conditionManager.removeCondition(target.id, "sleeping");
+    }
+
+    return hpBefore - target.hp;
+  }
+
+  public heal(targetId: string, amount: number): number {
+    const target = this.state.combatants.find(
+      (combatant) => combatant.id === targetId,
+    );
+
+    if (!target || !target.alive || amount <= 0) {
+      return 0;
+    }
+
+    const conditions = this.state.conditionManager.getConditions(targetId);
+
+    // Cursed completely prevents healing.
+    if (conditions.some((condition) => condition.id === "cursed")) {
+      return 0;
+    }
+
+    // Bleeding reduces healing by 50%.
+    if (conditions.some((condition) => condition.id === "bleeding")) {
+      amount = Math.floor(amount * 0.5);
+    }
+
+    if (amount <= 0) {
+      return 0;
+    }
+
+    const hpBefore = target.hp;
+
+    target.hp = Math.min(target.maxHp, target.hp + amount);
+
+    return target.hp - hpBefore;
+  }
+
+  private performOpportunityAttack(
+    attacker: Combatant,
+    defender: Combatant,
+  ): CombatAttackResult {
+    const distance = calculateDistance(attacker.position, defender.position);
+
+    const request: CombatAttackRequest = {
+      attackerId: attacker.id,
+      defenderId: defender.id,
+      type: "melee",
+      distance,
+      target: "body",
+
+      // Temporary until equipment provides the weapon attack.
+      damage: {
+        count: 1,
+        sides: 8,
+        type: "physical",
+      },
+
+      attackerConditions: this.state.conditionManager.getConditions(
+        attacker.id,
+      ),
+
+      defenderConditions: this.state.conditionManager.getConditions(
+        defender.id,
+      ),
+    };
+
+    return this.resolveCombatAttack(request, "reaction");
+  }
+
+  private resolveCombatAttack(
+    request: CombatAttackRequest,
+    resource: "action" | "reaction",
+  ): CombatAttackResult {
+    const attackerIndex = this.state.combatants.findIndex(
+      (combatant) => combatant.id === request.attackerId,
+    );
+
+    const defenderIndex = this.state.combatants.findIndex(
+      (combatant) => combatant.id === request.defenderId,
+    );
+
+    if (attackerIndex === -1 || defenderIndex === -1) {
+      return {
+        success: false,
+        attackerId: request.attackerId,
+        defenderId: request.defenderId,
+      };
+    }
+
+    const attacker = this.state.combatants[attackerIndex];
+    const defender = this.state.combatants[defenderIndex];
+
+    if (!attacker.alive || !defender.alive) {
+      return {
+        success: false,
+        attackerId: request.attackerId,
+        defenderId: request.defenderId,
+      };
+    }
+
+    if (
+      request.type === "melee" &&
+      !isInMeleeRange(attacker.position, defender.position)
+    ) {
+      return {
+        success: false,
+        attackerId: request.attackerId,
+        defenderId: request.defenderId,
+      };
+    }
+
+    const attackerConditions = this.state.conditionManager.getConditions(
+      attacker.id,
+    );
+
+    if (!canAttackTarget(defender.id, attackerConditions)) {
+      return {
+        success: false,
+        attackerId: request.attackerId,
+        defenderId: request.defenderId,
+      };
+    }
+
+    const defenderConditions = this.state.conditionManager.getConditions(
+      defender.id,
+    );
+
+    const attack = resolveAttack({
+      attackerId: attacker.id,
+      defenderId: defender.id,
+      type: request.type,
+      attackerStats: attacker.stats,
+      defenderStats: defender.stats,
+      distance: request.distance,
+      target: request.target,
+      damage: request.damage,
+      armor: defender.armor,
+      magicResistance: defender.magicResistance,
+      attackerConditions,
+      defenderConditions,
+    });
+
+    if (resource === "action") {
+      attacker.actionAvailable = false;
+    } else {
+      attacker.reactionAvailable = false;
+    }
+
+    const hpBefore = defender.hp;
+
+    if (attack.hit && attack.damage) {
+      const hpAfter = Math.max(0, defender.hp - attack.damage.finalDamage);
+
+      const shouldWake = shouldWakeFromDamage(
+        defenderConditions,
+        attack.damage.finalDamage,
+      );
+
+      if (shouldWake) {
+        this.state.conditionManager.removeCondition(defender.id, "sleeping");
+      }
+
+      defender.hp = hpAfter;
+      defender.alive = hpAfter > 0;
+
+      return {
+        success: true,
+        attackerId: attacker.id,
+        defenderId: defender.id,
+        attack,
+        attackerStats: attacker.stats,
+        defenderStats: defender.stats,
+        defenderHpBefore: hpBefore,
+        defenderHpAfter: hpAfter,
+      };
+    }
+
+    return {
+      success: true,
+      attackerId: attacker.id,
+      defenderId: defender.id,
+      attack,
+      attackerStats: attacker.stats,
+      defenderStats: defender.stats,
+      defenderHpBefore: hpBefore,
+      defenderHpAfter: hpBefore,
+    };
   }
 }

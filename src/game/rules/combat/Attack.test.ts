@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolveAttack } from "./Attack";
 import type { CharacterStats } from "../stats/Stats";
-import type { ConditionState } from "../condition/ConditionState";
 
 describe("Attack", () => {
   it("calculates ranged attack accuracy correctly", () => {
@@ -37,6 +36,8 @@ describe("Attack", () => {
 
       armor: 2,
       magicResistance: 0,
+      attackerId: "attacker",
+      defenderId: "defender",
 
       attackerConditions: [],
       defenderConditions: [],

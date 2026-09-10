@@ -12,7 +12,7 @@ const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
 
   width: 960,
-  height: 720,
+  height: 1200,
 
   backgroundColor: "#1e1e1e",
 

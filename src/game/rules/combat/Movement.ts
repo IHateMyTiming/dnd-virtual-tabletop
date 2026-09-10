@@ -29,3 +29,8 @@ export function calculateMovementCost(
 
   return distance * MOVEMENT_COST_MULTIPLIER[type];
 }
+
+export interface Position {
+  x: number;
+  y: number;
+}

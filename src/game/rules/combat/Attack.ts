@@ -8,10 +8,13 @@ import {
 } from "./Damage";
 import { rollPercentage, succeedsPercentage } from "../dice/Dice";
 import type { ConditionState } from "../condition/ConditionState";
+import { getFrightenedDamageMultiplier } from "../condition/ConditionFear";
 
 export type AttackType = "melee" | "ranged";
 
 export interface AttackRequest {
+  attackerId: string;
+  defenderId: string;
   attackerStats: CharacterStats;
   defenderStats: CharacterStats;
   defenderConditions: ConditionState[];
@@ -47,6 +50,7 @@ export function resolveAttack(attack: AttackRequest): AttackResult {
           attack.defenderStats,
           attack.target,
           attack.attackerConditions,
+          attack.defenderConditions,
         );
 
   const roll = rollPercentage();
@@ -68,10 +72,20 @@ export function resolveAttack(attack: AttackRequest): AttackResult {
     attack.defenderConditions,
   );
 
+  const frightenedMultiplier = getFrightenedDamageMultiplier(
+    attack.attackerConditions,
+    attack.defenderId,
+  );
+
+  const finalDamage = damage.finalDamage * frightenedMultiplier;
+
   return {
     hit: true,
     chance,
     roll,
-    damage,
+    damage: {
+      ...damage,
+      finalDamage,
+    },
   };
 }

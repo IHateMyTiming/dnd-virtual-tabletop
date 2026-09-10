@@ -1,23 +1,16 @@
-import type { AttackType } from "../combat/Attack";
 import type { ConditionState } from "./ConditionState";
-
-const BLINDED_ACCURACY_MULTIPLIER = 0.5;
 
 export function getConditionAccuracyMultiplier(
   conditions: ConditionState[],
-  attackType: AttackType,
+  attackType: "melee" | "ranged",
 ): number {
-  let multiplier = 1;
-
-  for (const condition of conditions) {
-    if (condition.id !== "blinded") {
-      continue;
+  return conditions.reduce((multiplier, condition) => {
+    if (condition.id !== "blinded" || attackType !== "ranged") {
+      return multiplier;
     }
 
-    if (attackType === "ranged") {
-      multiplier *= BLINDED_ACCURACY_MULTIPLIER;
-    }
-  }
+    const percentage = condition.value ?? 100;
 
-  return multiplier;
+    return multiplier * (percentage / 100);
+  }, 1);
 }

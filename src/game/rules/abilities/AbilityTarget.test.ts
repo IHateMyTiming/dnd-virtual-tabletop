@@ -36,6 +36,7 @@ function createCombatant(overrides: Partial<Combatant> = {}): Combatant {
     hp: 10,
     maxHp: 10,
     armor: 0,
+    magicResistance: 0,
     position: {
       x: 0,
       y: 0,

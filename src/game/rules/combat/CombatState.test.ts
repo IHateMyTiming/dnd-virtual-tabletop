@@ -19,6 +19,8 @@ const ranger: Combatant = {
   maxHp: 21,
   initiative: 10,
   armor: 2,
+  team: "player",
+  magicResistance: 0,
 
   position: {
     x: 3,
@@ -50,6 +52,8 @@ const goblin: Combatant = {
   maxHp: 10,
   initiative: 10,
   armor: 2,
+  team: "enemy",
+  magicResistance: 0,
 
   position: {
     x: 11,

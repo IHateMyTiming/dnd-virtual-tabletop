@@ -5,9 +5,12 @@ import {
   reduceConditionDuration,
 } from "./ConditionState";
 import type { ConditionState } from "./ConditionState";
+import type { ConditionResistanceState } from "../combat/EffectResistance";
+import { createConditionResistance } from "../combat/EffectResistance";
 
 export class ConditionManager {
   private conditions: Map<string, ConditionState[]> = new Map();
+  private resistances: Map<string, ConditionResistanceState[]> = new Map();
 
   getConditions(targetId: string): ConditionState[] {
     return [...(this.conditions.get(targetId) ?? [])];
@@ -178,5 +181,37 @@ export class ConditionManager {
         [...conditions],
       ]),
     );
+  }
+
+  getConditionResistance(
+    targetId: string,
+    conditionId: ConditionId,
+  ): ConditionResistanceState {
+    const existing = this.resistances
+      .get(targetId)
+      ?.find((state) => state.conditionId === conditionId);
+
+    if (existing) {
+      return { ...existing };
+    }
+
+    return createConditionResistance(conditionId);
+  }
+
+  public setConditionResistance(
+    targetId: string,
+    state: ConditionResistanceState,
+  ): void {
+    const existing = this.resistances.get(targetId) ?? [];
+
+    const updated = existing.some(
+      (current) => current.conditionId === state.conditionId,
+    )
+      ? existing.map((current) =>
+          current.conditionId === state.conditionId ? state : current,
+        )
+      : [...existing, state];
+
+    this.resistances.set(targetId, updated);
   }
 }

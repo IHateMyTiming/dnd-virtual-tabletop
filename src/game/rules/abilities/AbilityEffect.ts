@@ -1,3 +1,6 @@
+import type { DamageExpression } from "../combat/Damage";
+import type { ConditionId } from "../condition/Condition";
+
 export type AbilityEffectType =
   | "damage"
   | "heal"
@@ -9,20 +12,10 @@ export type AbilityEffectType =
 
 export interface AbilityEffect {
   type: AbilityEffectType;
-
   value?: number;
-
-  damage?: {
-    count: number;
-    sides: number;
-    modifier?: number;
-  };
-
-  conditionId?: string;
-
+  damage?: DamageExpression;
+  conditionId?: ConditionId;
   duration?: number;
-
   stacks?: number;
-
   distance?: number;
 }

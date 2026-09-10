@@ -16,6 +16,8 @@ import {
   rollConditionResistance,
 } from "./EffectResistance";
 import type { ConditionResistanceState } from "./EffectResistance";
+import { CONDITION_RESISTANCE_CONFIG } from "../condition/ConditionResistance";
+import { getTotalConditionResistance } from "../condition/ConditionResistanceResolver";
 
 function createCombatant(
   id: string,
@@ -247,6 +249,8 @@ describe("CombatEngine", () => {
         count: 1,
         sides: 8,
       },
+      attackerConditions: [],
+      defenderConditions: [],
     });
 
     expect(result.success).toBe(true);
@@ -280,6 +284,8 @@ describe("CombatEngine", () => {
         count: 1,
         sides: 8,
       },
+      attackerConditions: [],
+      defenderConditions: [],
     });
 
     expect(result.success).toBe(true);
@@ -311,6 +317,8 @@ describe("CombatEngine", () => {
         count: 1,
         sides: 8,
       },
+      attackerConditions: [],
+      defenderConditions: [],
     });
 
     expect(result.success).toBe(false);
@@ -337,6 +345,8 @@ describe("CombatEngine", () => {
         count: 1,
         sides: 8,
       },
+      attackerConditions: [],
+      defenderConditions: [],
     };
 
     expect(engine.attack(request).success).toBe(true);
@@ -507,7 +517,7 @@ describe("Conditions", () => {
     const engine = new CombatEngine(createCombatState([ranger, goblin]));
 
     engine.applyCondition("goblin", "poisoned", 3);
-    engine.applyCondition("goblin", "slowed", 2);
+    engine.applyCondition("goblin", "slowed", 2, 1, 50);
 
     expect(engine.getConditions("goblin")).toHaveLength(2);
   });
@@ -550,7 +560,7 @@ describe("Conditions", () => {
 
     const engine = new CombatEngine(createCombatState([ranger, goblin]));
 
-    engine.applyCondition("ranger", "freezed", 2);
+    engine.applyCondition("ranger", "freezed", 2, 1, 50);
 
     expect(engine.move({ x: 4, y: 6 }, "jump")).toBe(false);
   });
@@ -560,7 +570,7 @@ describe("Conditions", () => {
 
     const engine = new CombatEngine(createCombatState([ranger, goblin]));
 
-    engine.applyCondition("ranger", "freezed", 2);
+    engine.applyCondition("ranger", "freezed", 2, 1, 50);
 
     expect(engine.move({ x: 3, y: 4 }, "walk")).toBe(true);
   });
@@ -602,7 +612,7 @@ describe("Conditions", () => {
       .getState()
       .combatants.find((combatant) => combatant.id === "goblin");
 
-    expect(updatedGoblin?.hp).toBe(7);
+    expect(updatedGoblin?.hp).toBe(10);
   });
   it("slowed reduces movement at the start of the turn", () => {
     const ranger = createCombatant("ranger", 16, 10);
@@ -610,7 +620,7 @@ describe("Conditions", () => {
 
     const engine = new CombatEngine(createCombatState([ranger, goblin]));
 
-    engine.applyCondition("ranger", "slowed", 2);
+    engine.applyCondition("ranger", "slowed", 2, 1, 50);
 
     engine.startCombat();
 
@@ -622,7 +632,7 @@ describe("Conditions", () => {
 
     const engine = new CombatEngine(createCombatState([ranger, goblin]));
 
-    engine.applyCondition("ranger", "freezed", 2);
+    engine.applyCondition("ranger", "freezed", 2, 1, 50);
 
     engine.startCombat();
 
@@ -840,7 +850,6 @@ describe("Conditions", () => {
 
     expect(rollConditionResistance(state, () => 0.25)).toBe(true);
   });
-
   it("does not resist when the roll is above resistance", () => {
     const state: ConditionResistanceState = {
       conditionId: "stunned",
@@ -848,5 +857,90 @@ describe("Conditions", () => {
     };
 
     expect(rollConditionResistance(state, () => 0.75)).toBe(false);
+  });
+  it("allows the first application of a condition", () => {
+    const ranger = createCombatant("ranger", 10, 10, "player");
+
+    const goblin = createCombatant("goblin", 10, 5, "enemy");
+
+    const engine = new CombatEngine(createCombatState([ranger, goblin]));
+
+    const condition = engine.applyCondition("goblin", "stunned", 2);
+
+    expect(condition).toBeDefined();
+    expect(engine.hasCondition("goblin", "stunned")).toBe(true);
+  });
+  it("increases condition resistance after successful application", () => {
+    const ranger = createCombatant("ranger", 10, 10, "player");
+
+    const goblin = createCombatant("goblin", 10, 5, "enemy");
+
+    const engine = new CombatEngine(createCombatState([ranger, goblin]));
+
+    engine.applyCondition("goblin", "stunned", 2);
+
+    const resistance = engine
+      .getState()
+      .conditionManager.getConditionResistance("goblin", "stunned");
+
+    expect(resistance.resistance).toBe(
+      CONDITION_RESISTANCE_CONFIG.applicationResistanceIncrease,
+    );
+  });
+  it("uses accumulated resistance when resolving a condition", () => {
+    const stats = {
+      strength: 10,
+      dexterity: 10,
+      constitution: 10,
+      intelligence: 10,
+      wisdom: 10,
+      charisma: 14,
+    };
+
+    const resistance = {
+      conditionId: "frightened" as const,
+      resistance: 10,
+    };
+
+    expect(getTotalConditionResistance(stats, "frightened", resistance)).toBe(
+      15,
+    );
+  });
+  it("resists a condition when the resistance roll succeeds", () => {
+    const ranger = createCombatant("ranger", 10, 10, "player");
+
+    const goblin = createCombatant("goblin", 10, 5, "enemy");
+
+    const engine = new CombatEngine(
+      createCombatState([ranger, goblin]),
+      () => 0,
+    );
+
+    // First application always succeeds.
+    const first = engine.applyCondition("goblin", "stunned", 2);
+
+    expect(first).toBeDefined();
+
+    // Second application has resistance.
+    const second = engine.applyCondition("goblin", "stunned", 2);
+
+    expect(second).toBeUndefined();
+  });
+  it("applies a condition when the resistance roll fails", () => {
+    const ranger = createCombatant("ranger", 10, 10, "player");
+
+    const goblin = createCombatant("goblin", 10, 5, "enemy");
+
+    const engine = new CombatEngine(
+      createCombatState([ranger, goblin]),
+      () => 0.99,
+    );
+
+    engine.applyCondition("goblin", "stunned", 2);
+
+    const second = engine.applyCondition("goblin", "stunned", 2);
+
+    expect(second).toBeDefined();
+    expect(engine.hasCondition("goblin", "stunned")).toBe(true);
   });
 });
