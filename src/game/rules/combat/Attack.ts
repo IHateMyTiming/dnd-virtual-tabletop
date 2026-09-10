@@ -1,16 +1,18 @@
 import type { CharacterStats } from "../stats/Stats";
 import type { TargetLocation } from "./TargetLocation";
-import { calculateMeleeAccuracy, calculateRangedAccuracy } from "./Accuracy";
+
 import {
-  resolveDamage,
-  type DamageExpression,
-  type DamageResult,
-} from "./Damage";
+  calculateMeleeAccuracy,
+  calculateSpellAccuracy,
+  calculateRangedAccuracy,
+} from "./Accuracy";
+
+import { rollDamage, type DamageExpression, type DamageResult } from "./Damage";
+
 import { rollPercentage, succeedsPercentage } from "../dice/Dice";
 import type { ConditionState } from "../condition/ConditionState";
-import { getFrightenedDamageMultiplier } from "../condition/ConditionFear";
 
-export type AttackType = "melee" | "ranged";
+export type AttackType = "melee" | "ranged" | "spell";
 
 export interface AttackRequest {
   attackerId: string;
@@ -25,15 +27,17 @@ export interface AttackRequest {
   target: TargetLocation;
   damage: DamageExpression;
   type: AttackType;
+  patternBonus?: number;
 }
 
 export interface AttackResult {
   hit: boolean;
-
   chance: number;
   roll: number;
+}
 
-  damage?: DamageResult;
+export interface AttackDamageResult {
+  damage: DamageResult;
 }
 
 export function resolveAttack(attack: AttackRequest): AttackResult {
@@ -45,47 +49,27 @@ export function resolveAttack(attack: AttackRequest): AttackResult {
           attack.target,
           attack.attackerConditions,
         )
-      : calculateMeleeAccuracy(
-          attack.attackerStats,
-          attack.defenderStats,
-          attack.target,
-          attack.attackerConditions,
-          attack.defenderConditions,
-        );
+      : attack.type === "melee"
+        ? calculateMeleeAccuracy(
+            attack.attackerStats,
+            attack.target,
+            attack.attackerConditions,
+            attack.patternBonus ?? 0,
+          )
+        : calculateSpellAccuracy(attack.attackerStats, attack.defenderStats);
 
   const roll = rollPercentage();
   const hit = succeedsPercentage(chance, roll);
 
-  if (!hit) {
-    return {
-      hit: false,
-      chance,
-      roll,
-    };
-  }
-
-  const damage = resolveDamage(
-    attack.damage,
-    attack.armor,
-    attack.magicResistance,
-    attack.defenderStats,
-    attack.defenderConditions,
-  );
-
-  const frightenedMultiplier = getFrightenedDamageMultiplier(
-    attack.attackerConditions,
-    attack.defenderId,
-  );
-
-  const finalDamage = damage.finalDamage * frightenedMultiplier;
-
   return {
-    hit: true,
+    hit,
     chance,
     roll,
-    damage: {
-      ...damage,
-      finalDamage,
-    },
+  };
+}
+
+export function rollAttackDamage(attack: AttackRequest): AttackDamageResult {
+  return {
+    damage: rollDamage(attack.damage),
   };
 }

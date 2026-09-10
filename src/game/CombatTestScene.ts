@@ -18,6 +18,8 @@ import { createEmptyResources } from "./rules/abilities/Resource";
 
 export class CombatTestScene extends Phaser.Scene {
   private ranger!: Phaser.GameObjects.Arc;
+  //private ranger2!: Phaser.GameObjects.Arc;
+
   private goblin!: Phaser.GameObjects.Arc;
 
   private combatEngine!: CombatEngine;
@@ -32,6 +34,7 @@ export class CombatTestScene extends Phaser.Scene {
 
   private rangerDefenseText!: Phaser.GameObjects.Text;
   private goblinDefenseText!: Phaser.GameObjects.Text;
+  private rangerPatternText!: Phaser.GameObjects.Text;
   private attributeTargetText!: Phaser.GameObjects.Text;
   private attributeSelectorText!: Phaser.GameObjects.Text;
   private attributeValueText!: Phaser.GameObjects.Text;
@@ -41,6 +44,7 @@ export class CombatTestScene extends Phaser.Scene {
 
   private turnText!: Phaser.GameObjects.Text;
   private resourcesText!: Phaser.GameObjects.Text;
+  private defenseText!: Phaser.GameObjects.Text;
 
   private conditionTargetText!: Phaser.GameObjects.Text;
   private conditionSelectorText!: Phaser.GameObjects.Text;
@@ -109,6 +113,7 @@ export class CombatTestScene extends Phaser.Scene {
     this.createCharacters();
     this.createInterface();
 
+    this.updateCharacterPositions();
     this.updateInterface();
 
     this.setCombatLog([
@@ -170,6 +175,36 @@ export class CombatTestScene extends Phaser.Scene {
       alive: true,
     };
 
+    //const ranger2: Combatant = {
+    //  id: "ranger2",
+    //  name: "Ranger2",
+    //  team: "player",
+
+    //  stats: this.rangerStats,
+
+    //  hp: 21,
+    //  maxHp: 21,
+
+    //  armor: 0,
+    //  magicResistance: 0,
+
+    //  position: {
+    //    x: 4,
+    //    y: 6,
+    // },
+
+    //  movement: 6,
+    //  movementRemaining: 6,
+
+    //  actionAvailable: false,
+    //  bonusActionAvailable: false,
+    //  reactionAvailable: false,
+
+    //  initiative: 10,
+
+    //  alive: true,
+    // };
+
     const goblin: Combatant = {
       id: "goblin",
       name: "Goblin",
@@ -184,7 +219,7 @@ export class CombatTestScene extends Phaser.Scene {
       magicResistance: 0,
 
       position: {
-        x: 11,
+        x: 4,
         y: 6,
       },
 
@@ -201,6 +236,7 @@ export class CombatTestScene extends Phaser.Scene {
     };
 
     const state = createCombatState([ranger, goblin]);
+    //const state = createCombatState([ranger, ranger2, goblin]);
 
     this.combatEngine = new CombatEngine(state);
 
@@ -209,9 +245,11 @@ export class CombatTestScene extends Phaser.Scene {
 
   private createCharacters(): void {
     const ranger = this.getCombatant("ranger");
+    //const ranger2 = this.getCombatant("ranger2");
     const goblin = this.getCombatant("goblin");
 
     if (!ranger || !goblin) {
+      //if (!ranger || !ranger2 || !goblin) {
       return;
     }
 
@@ -221,6 +259,13 @@ export class CombatTestScene extends Phaser.Scene {
       16,
       0xff3333,
     );
+
+    //this.ranger2 = this.add.circle(
+    //  ranger2.position.x * cellSize + cellSize / 2,
+    //  ranger2.position.y * cellSize + cellSize / 2,
+    //  16,
+    //  0xff3333,
+    //);
 
     this.goblin = this.add.circle(
       goblin.position.x * cellSize + cellSize / 2,
@@ -268,29 +313,34 @@ export class CombatTestScene extends Phaser.Scene {
       color: "#ffffff",
     });
     this.rangerDefenseText = this.add.text(panelX + 15, 126, "", {
+      fontSize: "9px",
+      color: "#ffffff",
+    });
+    this.goblinDefenseText = this.add.text(panelX + 15, 158, "", {
+      fontSize: "9px",
+      color: "#ffffff",
+    });
+    this.rangerPatternText = this.add.text(panelX + 15, 178, "", {
+      fontSize: "9px",
+      color: "#ffffff",
+      wordWrap: { width: 210 },
+    });
+    this.turnText = this.add.text(panelX + 15, 198, "", {
       fontSize: "11px",
       color: "#ffffff",
     });
-    this.goblinDefenseText = this.add.text(panelX + 15, 144, "", {
-      fontSize: "11px",
-      color: "#ffffff",
-    });
-    this.turnText = this.add.text(panelX + 15, 164, "", {
-      fontSize: "11px",
-      color: "#ffffff",
-    });
-    this.resourcesText = this.add.text(panelX + 15, 148, "", {
+    this.resourcesText = this.add.text(panelX + 15, 202, "", {
       fontSize: "10px",
       color: "#ffffff",
       wordWrap: { width: 210 },
     });
 
-    this.rangerStatusText = this.add.text(panelX + 15, 178, "", {
+    this.rangerStatusText = this.add.text(panelX + 15, 232, "", {
       fontSize: "10px",
       color: "#ff9999",
       wordWrap: { width: 210 },
     });
-    this.goblinStatusText = this.add.text(panelX + 15, 214, "", {
+    this.goblinStatusText = this.add.text(panelX + 15, 268, "", {
       fontSize: "10px",
       color: "#9999ff",
       wordWrap: { width: 210 },
@@ -325,6 +375,20 @@ export class CombatTestScene extends Phaser.Scene {
     );
     this.createButton(panelX + 120, 371, 150, 28, "JUMP 2m", 0x5c4a28, () =>
       this.performJump(),
+    );
+
+    this.defenseText = this.add.text(panelX + 15, 380, "", {
+      fontSize: "10px",
+      color: "#ffcc66",
+      wordWrap: { width: 210 },
+    });
+
+    this.createButton(panelX + 72, 410, 100, 26, "DODGE", 0x285c35, () =>
+      this.chooseDefense("dodge"),
+    );
+
+    this.createButton(panelX + 178, 410, 100, 26, "PARRY", 0x5c4a28, () =>
+      this.chooseDefense("parry"),
     );
 
     this.add.text(panelX + 15, 405, "ABILITIES", {
@@ -499,6 +563,7 @@ export class CombatTestScene extends Phaser.Scene {
       return;
     }
 
+    //const defenderId = attacker.team === "player" ? "ranger2" : "ranger";
     const defenderId = attacker.team === "player" ? "goblin" : "ranger";
 
     const distance =
@@ -620,7 +685,7 @@ export class CombatTestScene extends Phaser.Scene {
       return;
     }
 
-    const damage = attack.damage;
+    const damage = result.damage;
 
     if (!damage) {
       this.setCombatLog([
@@ -628,8 +693,11 @@ export class CombatTestScene extends Phaser.Scene {
         "",
         "Attack hit, but no damage result was returned.",
       ]);
+      this.updateInterface();
       return;
     }
+
+    const defender = this.getCombatant(result.defenderId);
 
     this.setCombatLog([
       title,
@@ -640,27 +708,71 @@ export class CombatTestScene extends Phaser.Scene {
       "",
       "HIT!",
       "",
-      `Raw damage: ${damage.rawDamage}`,
-      `Armor: -${damage.armorReduction}`,
-      `Parry: -${damage.parryReduction}`,
-      `Final damage: ${damage.finalDamage}`,
+      `Incoming damage: ${damage.rawDamage}`,
       "",
-      `HP: ${result.defenderHpAfter}/${result.defenderHpBefore}`,
+      `Defender: ${defender?.name ?? result.defenderId}`,
+      "Choose DODGE or PARRY.",
+      defender
+        ? `Dodge: ${getDefenseStats(defender.stats).physicalDodge}% | Parry: ${getDefenseStats(defender.stats).parry}%`
+        : "",
     ]);
 
     this.updateInterface();
+  }
+
+  private chooseDefense(choice: "dodge" | "parry"): void {
+    const result = this.combatEngine.resolveDefense(choice);
+
+    if (!result.success) {
+      this.setCombatLog([
+        "Defense failed.",
+        "",
+        choice === "parry"
+          ? "Parry requires an available Reaction."
+          : "There is no pending attack to defend against.",
+      ]);
+      this.updateInterface();
+      return;
+    }
+
+    const defender = this.getCombatant(result.defenderId);
+    const damage = result.damage;
+
+    this.setCombatLog([
+      `${defender?.name ?? result.defenderId} defends`,
+      "",
+      result.dodged
+        ? "DODGE — attack avoided!"
+        : result.parried
+          ? "PARRY — damage reduced!"
+          : "NO DEFENSE",
+      "",
+      `Incoming damage: ${damage?.rawDamage ?? 0}`,
+      result.parried ? "Parry reduction: applied" : "",
+      `Final damage: ${damage?.finalDamage ?? 0}`,
+      "",
+      `HP: ${result.defenderHpAfter ?? "?"}/${result.defenderHpBefore ?? "?"}`,
+      result.defenderHpAfter === 0 ? "" : "",
+    ]);
 
     if (result.defenderHpAfter === 0) {
       this.setCombatLog([
-        title,
+        `${defender?.name ?? result.defenderId} defends`,
         "",
-        "HIT!",
+        result.dodged
+          ? "DODGE — attack avoided!"
+          : result.parried
+            ? "PARRY — damage reduced!"
+            : "NO DEFENSE",
         "",
-        `FINAL DAMAGE: ${damage.finalDamage}`,
+        `Final damage: ${damage?.finalDamage ?? 0}`,
         "",
         "💀 TARGET DEFEATED",
       ]);
     }
+
+    this.updateCharacterPositions();
+    this.updateInterface();
   }
 
   private performMove(): void {
@@ -671,14 +783,13 @@ export class CombatTestScene extends Phaser.Scene {
     }
 
     const targetId = current.team === "player" ? "goblin" : "ranger";
-
     const target = this.getCombatant(targetId);
 
     if (!target) {
       return;
     }
 
-    const direction = Math.sign(target.position.x - current.position.x);
+    const direction = Math.sign(current.position.x - target.position.x);
 
     const newPosition = {
       x: current.position.x + direction * 3,
@@ -691,23 +802,68 @@ export class CombatTestScene extends Phaser.Scene {
       this.setCombatLog([
         `${current.name} cannot move.`,
         "",
-        "Not enough movement or movement is restricted.",
+        "MOVE FAILED — check console.",
       ]);
+
       return;
     }
 
+    const combatResult = this.combatEngine.getLastCombatResult();
+
+    // AOO hit — movement is waiting for Dodge/Parry.
+    if (combatResult?.status === "awaiting-defense") {
+      this.updateInterface();
+
+      this.setCombatLog([
+        "ATTACK OF OPPORTUNITY!",
+        "",
+        `${target.name} attacks ${current.name}.`,
+        "",
+        "HIT!",
+        "",
+        `Incoming damage: ${combatResult.damage?.rawDamage ?? 0}`,
+        "",
+        "Choose DODGE or PARRY.",
+      ]);
+
+      return;
+    }
+
+    // AOO happened but missed.
+    if (combatResult?.status === "resolved") {
+      this.updateCharacterPositions();
+      this.updateInterface();
+
+      this.setCombatLog([
+        "ATTACK OF OPPORTUNITY!",
+        "",
+        `${target.name} attacks ${current.name}.`,
+        "",
+        combatResult.attack?.hit ? "HIT!" : "MISS!",
+        "",
+        combatResult.attack
+          ? `Hit chance: ${combatResult.attack.chance.toFixed(1)}%`
+          : "",
+        combatResult.attack
+          ? `Roll: ${combatResult.attack.roll.toFixed(1)}`
+          : "",
+        "",
+        `${current.name} moves 3m.`,
+        "",
+        `Movement remaining: ${current.movementRemaining}m`,
+      ]);
+
+      return;
+    }
+
+    // No AOO — normal movement.
     this.updateCharacterPositions();
     this.updateInterface();
 
     this.setCombatLog([
       `${current.name} moves 3m.`,
       "",
-      `Movement remaining: ${
-        this.combatEngine.getCurrentCombatant()?.movementRemaining
-      }m`,
-      "",
-      "Walking can trigger Attack of Opportunity",
-      "when leaving melee range.",
+      `Movement remaining: ${current.movementRemaining}m`,
     ]);
   }
 
@@ -765,6 +921,7 @@ export class CombatTestScene extends Phaser.Scene {
       descriptionKey: "debug_magic_damage_description",
       actionType: "action",
       targetType: "enemy",
+      attackType: "spell",
       range: 50,
       isSpell: true,
 
@@ -793,18 +950,57 @@ export class CombatTestScene extends Phaser.Scene {
       return;
     }
 
-    this.updateInterface();
-
     const target = this.getCombatant(targetId);
+    const attack = result.attackResult?.attack;
+
+    if (!attack) {
+      this.setCombatLog([
+        `${caster.name} uses MAGIC DAMAGE`,
+        "",
+        `Target: ${target?.name ?? targetId}`,
+        "",
+        "No attack result.",
+      ]);
+      this.updateInterface();
+      return;
+    }
+
+    if (!attack.hit) {
+      this.setCombatLog([
+        `${caster.name} uses MAGIC DAMAGE`,
+        "",
+        `Target: ${target?.name ?? targetId}`,
+        "",
+        `Hit chance: ${attack.chance.toFixed(1)}%`,
+        `Roll: ${attack.roll.toFixed(1)}`,
+        "",
+        "MISS!",
+      ]);
+      this.updateInterface();
+      return;
+    }
+
+    const damage = result.attackResult?.damage;
 
     this.setCombatLog([
       `${caster.name} uses MAGIC DAMAGE`,
       "",
       `Target: ${target?.name ?? targetId}`,
       "",
-      "Ability executed successfully.",
-      `Target HP: ${target?.hp ?? "?"}/${target?.maxHp ?? "?"}`,
+      `Spell hit chance: ${attack.chance.toFixed(1)}%`,
+      `Roll: ${attack.roll.toFixed(1)}`,
+      "",
+      "HIT!",
+      "",
+      `Incoming magic damage: ${damage?.rawDamage ?? 0}`,
+      "",
+      "Choose DODGE or PARRY.",
+      target
+        ? `Spell Dodge: ${getDefenseStats(target.stats).spellDodge}% | Parry: ${getDefenseStats(target.stats).parry}%`
+        : "",
     ]);
+
+    this.updateInterface();
   }
 
   private useHealAbility(): void {
@@ -869,6 +1065,7 @@ export class CombatTestScene extends Phaser.Scene {
       nameKey: "debug_poison",
       descriptionKey: "debug_poison_description",
       actionType: "action",
+      attackType: "spell",
       targetType: "enemy",
       range: 50,
       isSpell: true,
@@ -1071,18 +1268,38 @@ export class CombatTestScene extends Phaser.Scene {
     this.rangerMovementText.setText(this.getRangerMovementText());
 
     this.goblinMovementText.setText(this.getGoblinMovementText());
-
     this.rangerDefenseText.setText(this.getRangerDefenseText());
     this.goblinDefenseText.setText(this.getGoblinDefenseText());
+    this.rangerPatternText.setText(this.getRangerPatternText());
 
     this.turnText.setText(this.getTurnText());
 
     this.resourcesText.setText(this.getActionResourceText());
+    this.defenseText.setText(this.getDefensePromptText());
 
     this.rangerStatusText.setText(this.getConditionText("ranger"));
 
     this.goblinStatusText.setText(this.getConditionText("goblin"));
     this.updateConditionControls();
+  }
+
+  private getRangerPatternText(): string {
+    const ranger = this.getCombatant("ranger");
+
+    if (!ranger) {
+      return "Ranger Pattern: ?";
+    }
+
+    const state = this.combatEngine.getState();
+    const knowledge = state.patternKnowledge.ranger?.find(
+      (pattern) => pattern.targetId === "goblin",
+    );
+
+    if (!knowledge) {
+      return "Ranger → Goblin Pattern: 0/5 (0%)";
+    }
+
+    return `Ranger → Goblin Pattern: ${knowledge.attacksObserved}/5 (${knowledge.bonus}%)`;
   }
 
   private getRangerHpText(): string {
@@ -1132,7 +1349,8 @@ export class CombatTestScene extends Phaser.Scene {
       return "Ranger Dodge: ?";
     }
 
-    return `Ranger Dodge: ${getDefenseStats(ranger.stats).physicalDodge}%`;
+    const defense = getDefenseStats(ranger.stats);
+    return `Ranger Dodge: ${defense.physicalDodge}% | Spell: ${defense.spellDodge}%\nParry: ${defense.parry}% | Effect Res: ${defense.effectResistance}% | Mental Res: ${defense.mentalResistance}%`;
   }
 
   private getGoblinDefenseText(): string {
@@ -1142,7 +1360,8 @@ export class CombatTestScene extends Phaser.Scene {
       return "Goblin Dodge: ?";
     }
 
-    return `Goblin Dodge: ${getDefenseStats(goblin.stats).physicalDodge}%`;
+    const defense = getDefenseStats(goblin.stats);
+    return `Goblin Dodge: ${defense.physicalDodge}% | Spell: ${defense.spellDodge}%\nParry: ${defense.parry}% | Effect Res: ${defense.effectResistance}% | Mental Res: ${defense.mentalResistance}%`;
   }
 
   private toggleAttributeTarget(): void {
@@ -1222,6 +1441,20 @@ export class CombatTestScene extends Phaser.Scene {
     ].join(" | ");
   }
 
+  private getDefensePromptText(): string {
+    const pending = (this.combatEngine as any).pendingDefense as {
+      defenderId: string;
+    } | null;
+
+    if (!pending) {
+      return "";
+    }
+
+    const defender = this.getCombatant(pending.defenderId);
+
+    return defender ? `DEFENSE: ${defender.name} — choose Dodge or Parry` : "";
+  }
+
   private getConditionText(combatantId: string): string {
     const combatant = this.getCombatant(combatantId);
 
@@ -1264,6 +1497,13 @@ export class CombatTestScene extends Phaser.Scene {
         ranger.position.y * cellSize + cellSize / 2,
       );
     }
+
+    //if (ranger2) {
+    //  this.ranger2.setPosition(
+    //    ranger2.position.x * cellSize + cellSize / 2,
+    //    ranger2.position.y * cellSize + cellSize / 2,
+    //  );
+    //}
 
     if (goblin) {
       this.goblin.setPosition(

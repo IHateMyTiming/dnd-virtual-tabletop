@@ -19,6 +19,10 @@ import {
   canUseReaction,
   canUseSpells,
 } from "../condition/ConditionRestrictions";
+import type {
+  CombatAttackRequest,
+  CombatAttackResult,
+} from "../combat/CombatAttack";
 
 export interface AbilityUseRequest {
   ability: AbilityDefinition;
@@ -36,6 +40,7 @@ export interface AbilityUseResult {
   abilityState?: AbilityState;
   resources?: CharacterResources;
   reason?: string;
+  attackResult?: CombatAttackResult;
 }
 
 export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
@@ -66,6 +71,9 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
   }
 
   const casterConditions = combatState.conditionManager.getConditions(casterId);
+  const defenderConditions = combatState.conditionManager.getConditions(
+    target.id,
+  );
 
   if (ability.isSpell && !canUseSpells(casterConditions)) {
     return {
@@ -139,19 +147,59 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
     updatedResources = consumeSpellSlot(resources, spellSlotLevel, amount);
   }
 
-  executeAbilityEffects(
-    ability.effects,
-    {
-      casterId,
-      targetId: target.id,
-    },
-    combatEngine,
-  );
+  let attackResult;
+
+  if (ability.attackType) {
+    const damageEffect = ability.effects.find(
+      (effect) => effect.type === "damage",
+    );
+
+    if (!damageEffect?.damage) {
+      return {
+        success: false,
+        abilityId: ability.id,
+        reason: "Attack ability requires a damage effect.",
+      };
+    }
+
+    const distance = combatEngine.getDistanceBetween(casterId, target.id) ?? 0;
+
+    const attackRequest: CombatAttackRequest = {
+      attackerId: casterId,
+      defenderId: target.id,
+      type: ability.attackType,
+      distance,
+      target: "body",
+      damage: damageEffect.damage,
+      attackerConditions: casterConditions,
+      defenderConditions,
+    };
+
+    attackResult = combatEngine.attack(attackRequest);
+
+    if (!attackResult.success) {
+      return {
+        success: false,
+        abilityId: ability.id,
+        reason: "Attack could not be executed.",
+      };
+    }
+  } else {
+    executeAbilityEffects(
+      ability.effects,
+      {
+        casterId,
+        targetId: target.id,
+      },
+      combatEngine,
+    );
+  }
 
   return {
     success: true,
     abilityId: ability.id,
     abilityState: updatedState,
     resources: updatedResources,
+    attackResult,
   };
 }

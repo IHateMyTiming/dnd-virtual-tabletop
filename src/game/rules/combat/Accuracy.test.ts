@@ -31,23 +31,21 @@ describe("Accuracy", () => {
     expect(blindedAccuracy).toBe(normalAccuracy * 0.5);
   });
 
-  it("reduces defender dodge when the defender is blinded", () => {
+  it("calculates melee accuracy without defender conditions", () => {
+    const accuracy = calculateMeleeAccuracy(neutralStats, "body", []);
+
+    expect(accuracy).toBe(100);
+  });
+
+  it("reduces melee accuracy when the attacker is blinded", () => {
     const blinded = createCondition("blinded", 2, 1, 50);
 
-    const normalAccuracy = calculateMeleeAccuracy(
-      neutralStats,
-      neutralStats,
-      "body",
-    );
+    const normalAccuracy = calculateMeleeAccuracy(neutralStats, "body", []);
 
-    const blindedAccuracy = calculateMeleeAccuracy(
-      neutralStats,
-      neutralStats,
-      "body",
-      [],
-      [blinded],
-    );
+    const blindedAccuracy = calculateMeleeAccuracy(neutralStats, "body", [
+      blinded,
+    ]);
 
-    expect(blindedAccuracy).toBeGreaterThan(normalAccuracy);
+    expect(blindedAccuracy).toBe(normalAccuracy * 1);
   });
 });

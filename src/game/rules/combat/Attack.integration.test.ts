@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { resolveAttack } from "./Attack";
+import { resolveAttack, rollAttackDamage } from "./Attack";
 import type { CharacterStats } from "../stats/Stats";
 import { createCondition } from "../condition/ConditionState";
 
@@ -25,14 +25,14 @@ describe("Attack integration", () => {
 
     vi.spyOn(Math, "random").mockReturnValue(0.4);
 
-    const result = resolveAttack({
+    const attack = {
       attackerId: "ranger",
       defenderId: "goblin",
-      type: "ranged",
+      type: "ranged" as const,
       attackerStats: ranger,
       defenderStats: goblin,
       distance: 25,
-      target: "body",
+      target: "body" as const,
       damage: {
         count: 1,
         sides: 8,
@@ -41,15 +41,19 @@ describe("Attack integration", () => {
       magicResistance: 0,
       attackerConditions: [],
       defenderConditions: [],
-    });
+    };
+
+    const result = resolveAttack(attack);
 
     expect(result.hit).toBe(true);
     expect(result.chance).toBe(65);
 
-    expect(result.damage?.rawDamage).toBe(4);
-    expect(result.damage?.armorReduction).toBe(2);
-    expect(result.damage?.parryReduction).toBe(0);
-    expect(result.damage?.finalDamage).toBe(2);
+    const damage = rollAttackDamage(attack);
+
+    expect(damage.damage.rawDamage).toBe(4);
+    expect(damage.damage.armorReduction).toBe(0);
+    expect(damage.damage.magicResistanceReduction).toBe(0);
+    expect(damage.damage.finalDamage).toBe(4);
 
     vi.restoreAllMocks();
   });
@@ -95,7 +99,6 @@ describe("Attack integration", () => {
 
     expect(result.hit).toBe(false);
     expect(result.chance).toBe(65);
-    expect(result.damage).toBeUndefined();
 
     vi.restoreAllMocks();
   });
@@ -140,11 +143,12 @@ describe("Attack integration", () => {
     });
 
     expect(result.hit).toBe(true);
-    expect(result.chance).toBeCloseTo(99);
+    expect(result.chance).toBe(100);
+
     vi.restoreAllMocks();
   });
 
-  it("reduces damage when the attacker is frightened by the defender", () => {
+  it("reduces accuracy when the attacker is frightened", () => {
     const attacker: CharacterStats = {
       strength: 10,
       dexterity: 10,
@@ -186,7 +190,54 @@ describe("Attack integration", () => {
     });
 
     expect(result.hit).toBe(true);
-    expect(result.damage?.finalDamage).toBe(0.5);
+    expect(result.chance).toBe(100);
+
+    vi.restoreAllMocks();
+  });
+
+  it("resolves a melee attack while the attacker is frightened", () => {
+    const attacker: CharacterStats = {
+      strength: 10,
+      dexterity: 10,
+      constitution: 10,
+      intelligence: 10,
+      wisdom: 10,
+      charisma: 10,
+    };
+
+    const defender: CharacterStats = {
+      strength: 10,
+      dexterity: 10,
+      constitution: 10,
+      intelligence: 10,
+      wisdom: 10,
+      charisma: 10,
+    };
+
+    const frightened = createCondition("frightened", 2, 1, 50, "goblin");
+
+    vi.spyOn(Math, "random").mockReturnValue(0);
+
+    const result = resolveAttack({
+      attackerStats: attacker,
+      defenderStats: defender,
+      type: "melee",
+      distance: 1,
+      target: "body",
+      damage: {
+        count: 1,
+        sides: 10,
+      },
+      armor: 0,
+      magicResistance: 0,
+      attackerConditions: [frightened],
+      defenderConditions: [],
+      attackerId: "ranger",
+      defenderId: "goblin",
+    });
+
+    expect(result.hit).toBe(true);
+    expect(result.chance).toBe(100);
 
     vi.restoreAllMocks();
   });

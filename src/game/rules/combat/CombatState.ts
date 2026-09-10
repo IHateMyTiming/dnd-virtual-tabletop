@@ -1,11 +1,13 @@
 import type { Combatant } from "./Combatant";
 import { ConditionManager } from "../condition/ConditionManager";
+import type { PatternKnowledge } from "../combat/PatternKnowledge";
 
 export interface CombatState {
   combatants: Combatant[];
-
   round: number;
   currentTurnIndex: number;
+  conditionManager: ConditionManager;
+  patternKnowledge: Record<string, PatternKnowledge[]>;
 }
 
 export function createCombatState(combatants: Combatant[]): CombatState {
@@ -16,6 +18,7 @@ export function createCombatState(combatants: Combatant[]): CombatState {
     round: 1,
     currentTurnIndex: 0,
     conditionManager: new ConditionManager(),
+    patternKnowledge: {},
   };
 }
 
@@ -57,11 +60,4 @@ export function startTurn(state: CombatState): CombatState {
         : combatant,
     ),
   };
-}
-
-export interface CombatState {
-  combatants: Combatant[];
-  round: number;
-  currentTurnIndex: number;
-  conditionManager: ConditionManager;
 }

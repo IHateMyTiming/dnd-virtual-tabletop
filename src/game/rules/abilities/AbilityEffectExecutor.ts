@@ -1,9 +1,13 @@
 import type { CombatEngine } from "../combat/CombatEngine";
 import type { AbilityEffect } from "./AbilityEffect";
+import type { AttackType } from "../combat/Attack";
+import type { TargetLocation } from "../combat/TargetLocation";
 
 export interface AbilityEffectContext {
   casterId: string;
   targetId: string;
+  attackType?: AttackType;
+  targetLocation?: TargetLocation;
 }
 
 export function executeAbilityEffects(

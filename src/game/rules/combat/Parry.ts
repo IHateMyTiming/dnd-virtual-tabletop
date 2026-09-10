@@ -1,15 +1,20 @@
 import type { CharacterStats } from "../stats/Stats";
-import { getStrengthModifier } from "../stats/Stats";
+
+export function getParryReductionPercentage(strength: number): number {
+  if (strength <= 8) return 10;
+  if (strength <= 12) return 15;
+  if (strength <= 15) return 20;
+  if (strength <= 17) return 30;
+  return 50;
+}
 
 export function calculateParryReduction(
   stats: CharacterStats,
   incomingDamage: number,
 ): number {
-  const strengthModifier = getStrengthModifier(stats);
+  const percentage = getParryReductionPercentage(stats.strength);
 
-  const reduction = Math.max(0, strengthModifier * 2);
-
-  return Math.min(reduction, incomingDamage);
+  return Math.min(incomingDamage, incomingDamage * (percentage / 100));
 }
 
 export function applyParry(

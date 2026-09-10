@@ -49,7 +49,7 @@ describe("OpportunityAttack", () => {
     ).toEqual([enemy]);
   });
 
-  it("ignores enemies without a reaction", () => {
+  it("finds enemies regardless of reaction availability", () => {
     const movingCombatant = createCombatant("player", "player", { x: 0, y: 0 });
 
     const enemy = createCombatant("enemy", "enemy", { x: 1, y: 0 }, false);
@@ -59,7 +59,7 @@ describe("OpportunityAttack", () => {
         movingCombatant,
         enemy,
       ]),
-    ).toEqual([]);
+    ).toEqual([enemy]);
   });
 
   it("ignores allies", () => {

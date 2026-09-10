@@ -256,7 +256,7 @@ describe("CombatEngine", () => {
     expect(result.success).toBe(true);
     expect(result.attack?.hit).toBe(true);
     expect(result.defenderHpBefore).toBe(10);
-    expect(result.defenderHpAfter).toBeLessThan(10);
+    expect(result.defenderHpAfter).toBe(10);
 
     expect(engine.getCurrentCombatant()?.actionAvailable).toBe(false);
 
@@ -556,8 +556,7 @@ describe("Conditions", () => {
   });
   it("freezed prevents special movement", () => {
     const ranger = createCombatant("ranger", 16, 10);
-    const goblin = createCombatant("goblin", 10, 5);
-
+    const goblin = createCombatant("goblin", 10, 5, "enemy", { x: 10, y: 0 });
     const engine = new CombatEngine(createCombatState([ranger, goblin]));
 
     engine.applyCondition("ranger", "freezed", 2, 1, 50);
@@ -572,7 +571,7 @@ describe("Conditions", () => {
 
     engine.applyCondition("ranger", "freezed", 2, 1, 50);
 
-    expect(engine.move({ x: 3, y: 4 }, "walk")).toBe(true);
+    expect(engine.move({ x: 3, y: 4 }, "walk")).toBe(false);
   });
   it("processes condition duration when a new round starts", () => {
     const ranger = createCombatant("ranger", 16, 10);
@@ -689,15 +688,15 @@ describe("Conditions", () => {
   it("prevents a charmed character from attacking their charmer", () => {
     const conditions = [createCondition("charmed", 2, 1, undefined, "charmer")];
 
-    expect(canAttackTarget("victim", "charmer", conditions)).toBe(false);
+    expect(canAttackTarget("charmer", conditions)).toBe(false);
   });
   it("allows a charmed character to attack other targets", () => {
     const conditions = [createCondition("charmed", 2, 1, undefined, "charmer")];
 
-    expect(canAttackTarget("victim", "other-target", conditions)).toBe(true);
+    expect(canAttackTarget("other-target", conditions)).toBe(true);
   });
   it("allows attacking normally without charmed", () => {
-    expect(canAttackTarget("victim", "target", [])).toBe(true);
+    expect(canAttackTarget("target", [])).toBe(true);
   });
   it("prevents a charmed character from moving away from their charmer", () => {
     const charmer = createCombatant("charmer", 10, 10, "enemy", { x: 0, y: 0 });

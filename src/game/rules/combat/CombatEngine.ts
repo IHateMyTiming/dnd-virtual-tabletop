@@ -2,7 +2,12 @@ import type { CombatState } from "./CombatState";
 import { startTurn, getCurrentCombatant } from "./Turn";
 import type { Combatant } from "./Combatant";
 import type { CombatActionType } from "./Action";
-import { resolveAttack } from "./Attack";
+import {
+  resolveAttack,
+  rollAttackDamage,
+  type AttackResult,
+  type AttackType,
+} from "./Attack";
 import type { CombatAttackRequest, CombatAttackResult } from "./CombatAttack";
 import type { ConditionId } from "../condition/Condition";
 import type { ConditionState } from "../condition/ConditionState";
@@ -25,7 +30,7 @@ import { getConditionDamage } from "../condition/ConditionDamage";
 import { calculateForcedMovement } from "../condition/ConditionForcedMovement";
 import { shouldWakeFromDamage } from "../condition/ConditionWake";
 import { getTotalConditionResistance } from "../condition/ConditionResistanceResolver";
-
+import type { DamageResult } from "./Damage";
 import {
   increaseConditionResistance,
   rollConditionResistance,
@@ -36,14 +41,44 @@ import { getOpportunityAttackers } from "./OpportunityAttack";
 import { resolveDamage, type DamageExpression } from "./Damage";
 import { isInMeleeRange } from "./Engagement";
 import { getConditionMovementMultiplier } from "../condition/ConditionMovement";
+import { recordObservedAttack } from "../combat/PatternKnowledgeManager";
+import type { CharacterStats } from "../stats/Stats";
+import type { DefenseChoice } from "./Defense";
+import { succeedsPercentage } from "../dice/Dice";
+import { getDefenseStats } from "./Defense";
+import { applyParry } from "./Parry";
+import { getEffectiveArmor } from "../condition/ConditionArmor";
+import { getEffectiveMagicResistance } from "../condition/ConditionMagicResistance";
+import { getIncomingDamageMultiplier } from "../condition/ConditionDamageModifier";
+import { getConditionDodgeMultiplier } from "../condition/ConditionDefense";
+
+interface PendingDefense {
+  attackerId: string;
+  defenderId: string;
+  attack: AttackResult;
+  damage: DamageResult;
+  attackerStats: CharacterStats;
+  defenderStats: CharacterStats;
+  defenderHpBefore: number;
+  type: AttackType;
+}
+
 export class CombatEngine {
   private state: CombatState;
   private readonly random: () => number;
+  private pendingDefense: PendingDefense | null = null;
+  private lastCombatResult: CombatAttackResult | null = null;
 
   constructor(state: CombatState, random: () => number = Math.random) {
     this.state = state;
     this.random = random;
   }
+
+  private pendingMovement: {
+    combatantId: string;
+    position: Position;
+    movementCost: number;
+  } | null = null;
 
   public getState(): CombatState {
     return this.state;
@@ -51,6 +86,10 @@ export class CombatEngine {
 
   public getCurrentCombatant(): Combatant | undefined {
     return getCurrentCombatant(this.state);
+  }
+
+  public getPendingDefense(): PendingDefense | null {
+    return this.pendingDefense;
   }
 
   public startCombat(): void {
@@ -171,6 +210,10 @@ export class CombatEngine {
     return this.resolveCombatAttack(request, "action");
   }
 
+  public getLastCombatResult(): CombatAttackResult | null {
+    return this.lastCombatResult;
+  }
+
   move(position: Position, type: MovementType = "walk"): boolean {
     const current = this.getCurrentCombatant();
 
@@ -218,9 +261,6 @@ export class CombatEngine {
           )
         : [];
 
-    current.position = { ...position };
-    current.movementRemaining -= movementCost;
-
     for (const opportunityAttacker of opportunityAttackers) {
       const defender = this.state.combatants.find(
         (combatant) => combatant.id === current.id,
@@ -234,12 +274,30 @@ export class CombatEngine {
         (combatant) => combatant.id === opportunityAttacker.id,
       );
 
-      if (!attacker || !attacker.alive || !attacker.reactionAvailable) {
+      if (!attacker || !attacker.alive) {
         continue;
       }
 
-      this.performOpportunityAttack(attacker, defender);
+      const aooResult = this.performOpportunityAttack(attacker, defender);
+
+      this.lastCombatResult = aooResult;
     }
+
+    // If the AOO hit, the defender must choose
+    // Dodge or Parry before movement continues.
+    if (this.pendingDefense) {
+      this.pendingMovement = {
+        combatantId: current.id,
+        position: { ...position },
+        movementCost,
+      };
+
+      return true;
+    }
+
+    // No defense is required, so movement happens immediately.
+    current.position = { ...position };
+    current.movementRemaining -= movementCost;
 
     return true;
   }
@@ -305,7 +363,7 @@ export class CombatEngine {
     );
 
     if (
-      resistanceState.resistance > 0 &&
+      totalResistance > 0 &&
       rollConditionResistance(
         {
           ...resistanceState,
@@ -519,12 +577,12 @@ export class CombatEngine {
       ),
     };
 
-    return this.resolveCombatAttack(request, "reaction");
+    return this.resolveCombatAttack(request, "opportunity");
   }
 
   private resolveCombatAttack(
     request: CombatAttackRequest,
-    resource: "action" | "reaction",
+    resource: "action" | "reaction" | "opportunity",
   ): CombatAttackResult {
     const attackerIndex = this.state.combatants.findIndex(
       (combatant) => combatant.id === request.attackerId,
@@ -580,6 +638,17 @@ export class CombatEngine {
       defender.id,
     );
 
+    this.state.patternKnowledge = recordObservedAttack(
+      this.state.patternKnowledge,
+      defender.id,
+      attacker.id,
+      defender.stats.intelligence,
+    );
+
+    const patternKnowledge = this.state.patternKnowledge[defender.id]?.find(
+      (knowledge) => knowledge.targetId === attacker.id,
+    );
+
     const attack = resolveAttack({
       attackerId: attacker.id,
       defenderId: defender.id,
@@ -593,52 +662,233 @@ export class CombatEngine {
       magicResistance: defender.magicResistance,
       attackerConditions,
       defenderConditions,
+      patternBonus: patternKnowledge?.bonus ?? 0,
     });
 
     if (resource === "action") {
       attacker.actionAvailable = false;
-    } else {
+    } else if (resource === "reaction") {
       attacker.reactionAvailable = false;
     }
 
     const hpBefore = defender.hp;
 
-    if (attack.hit && attack.damage) {
-      const hpAfter = Math.max(0, defender.hp - attack.damage.finalDamage);
-
-      const shouldWake = shouldWakeFromDamage(
-        defenderConditions,
-        attack.damage.finalDamage,
-      );
-
-      if (shouldWake) {
-        this.state.conditionManager.removeCondition(defender.id, "sleeping");
-      }
-
-      defender.hp = hpAfter;
-      defender.alive = hpAfter > 0;
-
+    if (!attack.hit) {
       return {
         success: true,
+        status: "resolved",
         attackerId: attacker.id,
         defenderId: defender.id,
         attack,
         attackerStats: attacker.stats,
         defenderStats: defender.stats,
         defenderHpBefore: hpBefore,
-        defenderHpAfter: hpAfter,
+        defenderHpAfter: hpBefore,
       };
     }
 
-    return {
-      success: true,
+    const attackDamage = rollAttackDamage({
+      attackerId: attacker.id,
+      defenderId: defender.id,
+      type: request.type,
+      attackerStats: attacker.stats,
+      defenderStats: defender.stats,
+      distance: request.distance,
+      target: request.target,
+      damage: request.damage,
+      armor: defender.armor,
+      magicResistance: defender.magicResistance,
+      attackerConditions,
+      defenderConditions,
+      patternBonus: patternKnowledge?.bonus ?? 0,
+    });
+
+    this.pendingDefense = {
       attackerId: attacker.id,
       defenderId: defender.id,
       attack,
+      damage: attackDamage.damage,
+      attackerStats: attacker.stats,
+      defenderStats: defender.stats,
+      defenderHpBefore: hpBefore,
+      type: request.type,
+    };
+
+    return {
+      success: true,
+      status: "awaiting-defense",
+      attackerId: attacker.id,
+      defenderId: defender.id,
+      attack,
+      damage: attackDamage.damage,
       attackerStats: attacker.stats,
       defenderStats: defender.stats,
       defenderHpBefore: hpBefore,
       defenderHpAfter: hpBefore,
+    };
+  }
+
+  public resolveDefense(choice: DefenseChoice): CombatAttackResult {
+    const pending = this.pendingDefense;
+
+    if (!pending) {
+      return {
+        success: false,
+        attackerId: "",
+        defenderId: "",
+      };
+    }
+
+    const defender = this.state.combatants.find(
+      (combatant) => combatant.id === pending.defenderId,
+    );
+
+    if (!defender || !defender.alive) {
+      this.pendingDefense = null;
+
+      if (this.pendingMovement) {
+        const movingCombatant = this.state.combatants.find(
+          (combatant) => combatant.id === this.pendingMovement!.combatantId,
+        );
+
+        if (movingCombatant && movingCombatant.alive) {
+          movingCombatant.position = {
+            ...this.pendingMovement.position,
+          };
+
+          movingCombatant.movementRemaining -=
+            this.pendingMovement.movementCost;
+        }
+
+        this.pendingMovement = null;
+      }
+
+      return {
+        success: false,
+        attackerId: pending.attackerId,
+        defenderId: pending.defenderId,
+      };
+    }
+
+    const defenderConditions = this.state.conditionManager.getConditions(
+      defender.id,
+    );
+
+    const hpBefore = defender.hp;
+
+    let finalDamage = pending.damage.rawDamage;
+    let dodged = false;
+    let parried = false;
+
+    if (choice === "dodge") {
+      const defenseStats = getDefenseStats(defender.stats);
+
+      const baseDodge =
+        pending.type === "spell"
+          ? defenseStats.spellDodge
+          : defenseStats.physicalDodge;
+
+      const dodgeChance = Math.max(
+        0,
+        Math.min(
+          100,
+          baseDodge * getConditionDodgeMultiplier(defenderConditions),
+        ),
+      );
+
+      const dodgeRoll = this.random() * 100;
+
+      dodged = succeedsPercentage(dodgeChance, dodgeRoll);
+
+      if (dodged) {
+        finalDamage = 0;
+      }
+    }
+
+    if (choice === "parry") {
+      if (!defender.reactionAvailable) {
+        return {
+          success: false,
+          attackerId: pending.attackerId,
+          defenderId: pending.defenderId,
+        };
+      }
+
+      defender.reactionAvailable = false;
+      parried = true;
+
+      finalDamage = applyParry(defender.stats, finalDamage);
+    }
+
+    if (!dodged) {
+      if (pending.type === "spell") {
+        const effectiveMagicResistance = getEffectiveMagicResistance(
+          defender.magicResistance,
+          defenderConditions,
+        );
+
+        finalDamage = Math.max(
+          0,
+          finalDamage - Math.max(0, effectiveMagicResistance),
+        );
+      } else {
+        const effectiveArmor = getEffectiveArmor(
+          defender.armor,
+          defenderConditions,
+        );
+
+        finalDamage = Math.max(0, finalDamage - Math.max(0, effectiveArmor));
+      }
+
+      const damageMultiplier = getIncomingDamageMultiplier(defenderConditions);
+
+      finalDamage = Math.max(0, finalDamage * damageMultiplier);
+    }
+
+    const shouldWake = shouldWakeFromDamage(defenderConditions, finalDamage);
+
+    if (shouldWake) {
+      this.state.conditionManager.removeCondition(defender.id, "sleeping");
+    }
+
+    defender.hp = Math.max(0, defender.hp - finalDamage);
+
+    defender.alive = defender.hp > 0;
+
+    this.pendingDefense = null;
+
+    if (this.pendingMovement) {
+      const movingCombatant = this.state.combatants.find(
+        (combatant) => combatant.id === this.pendingMovement!.combatantId,
+      );
+
+      if (movingCombatant && movingCombatant.alive) {
+        movingCombatant.position = {
+          ...this.pendingMovement.position,
+        };
+
+        movingCombatant.movementRemaining -= this.pendingMovement.movementCost;
+      }
+
+      this.pendingMovement = null;
+    }
+
+    return {
+      success: true,
+      status: "resolved",
+      attackerId: pending.attackerId,
+      defenderId: pending.defenderId,
+      attack: pending.attack,
+      damage: {
+        ...pending.damage,
+        finalDamage,
+      },
+      parried,
+      dodged,
+      attackerStats: pending.attackerStats,
+      defenderStats: pending.defenderStats,
+      defenderHpBefore: hpBefore,
+      defenderHpAfter: defender.hp,
     };
   }
 }

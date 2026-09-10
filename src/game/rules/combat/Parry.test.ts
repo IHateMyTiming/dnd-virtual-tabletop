@@ -3,7 +3,7 @@ import { calculateParryReduction, applyParry } from "./Parry";
 import type { CharacterStats } from "../stats/Stats";
 
 describe("Parry", () => {
-  it("reduces damage based on strength modifier", () => {
+  it("reduces damage based on strength", () => {
     const stats: CharacterStats = {
       strength: 16,
       dexterity: 10,
@@ -13,12 +13,12 @@ describe("Parry", () => {
       charisma: 10,
     };
 
-    // STR 16 = +2 modifier
-    // +2 modifier × 2 = 4 reduction
-    expect(calculateParryReduction(stats, 10)).toBe(4);
+    // STR 16 = 30% Parry reduction
+    // 30% of 10 damage = 3 reduction
+    expect(calculateParryReduction(stats, 10)).toBe(3);
   });
 
-  it("does not reduce damage when strength modifier is negative", () => {
+  it("still provides parry reduction at strength 8", () => {
     const stats: CharacterStats = {
       strength: 8,
       dexterity: 10,
@@ -28,7 +28,8 @@ describe("Parry", () => {
       charisma: 10,
     };
 
-    expect(calculateParryReduction(stats, 10)).toBe(0);
+    // STR 8 = 10% Parry reduction
+    expect(calculateParryReduction(stats, 10)).toBe(1);
   });
 
   it("cannot reduce damage below zero", () => {
@@ -41,7 +42,9 @@ describe("Parry", () => {
       charisma: 10,
     };
 
-    expect(applyParry(stats, 2)).toBe(0);
+    // STR 18 = 50% reduction
+    // 50% of 2 = 1, so 1 damage remains.
+    expect(applyParry(stats, 2)).toBe(1);
   });
 
   it("applies the parry reduction correctly", () => {
@@ -54,6 +57,8 @@ describe("Parry", () => {
       charisma: 10,
     };
 
-    expect(applyParry(stats, 10)).toBe(6);
+    // STR 16 = 30% reduction
+    // 10 - 3 = 7
+    expect(applyParry(stats, 10)).toBe(7);
   });
 });
