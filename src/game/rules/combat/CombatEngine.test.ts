@@ -57,35 +57,27 @@ describe("Movement", () => {
   it("calculates horizontal distance", () => {
     expect(calculateDistance({ x: 0, y: 0 }, { x: 10, y: 0 })).toBe(10);
   });
-
   it("calculates vertical distance", () => {
     expect(calculateDistance({ x: 0, y: 0 }, { x: 0, y: 15 })).toBe(15);
   });
-
   it("calculates diagonal distance", () => {
     expect(calculateDistance({ x: 0, y: 0 }, { x: 3, y: 4 })).toBe(5);
   });
-
   it("returns zero for the same position", () => {
     expect(calculateDistance({ x: 5, y: 5 }, { x: 5, y: 5 })).toBe(0);
   });
-
   it("walking costs one movement per meter", () => {
     expect(calculateMovementCost(5, "walk")).toBe(5);
   });
-
   it("jumping costs twice the distance", () => {
     expect(calculateMovementCost(5, "jump")).toBe(10);
   });
-
   it("climbing costs twice the distance", () => {
     expect(calculateMovementCost(3, "climb")).toBe(6);
   });
-
   it("swimming costs twice the distance", () => {
     expect(calculateMovementCost(4, "swim")).toBe(8);
   });
-
   it("rejects negative movement distance", () => {
     expect(() => calculateMovementCost(-1, "walk")).toThrow();
   });
@@ -110,7 +102,6 @@ describe("CombatEngine", () => {
     expect(current?.bonusActionAvailable).toBe(true);
     expect(current?.reactionAvailable).toBe(true);
   });
-
   it("moves to the next combatant", () => {
     const ranger = createCombatant("ranger", 15, 10);
 
@@ -125,7 +116,6 @@ describe("CombatEngine", () => {
 
     expect(engine.getState().round).toBe(1);
   });
-
   it("starts a new round after the last combatant", () => {
     const ranger = createCombatant("ranger", 15, 10);
 
@@ -142,7 +132,6 @@ describe("CombatEngine", () => {
 
     expect(engine.getState().round).toBe(2);
   });
-
   it("consumes an action", () => {
     const ranger = createCombatant("ranger", 15, 10);
 
@@ -156,7 +145,6 @@ describe("CombatEngine", () => {
 
     expect(engine.getCurrentCombatant()?.actionAvailable).toBe(false);
   });
-
   it("cannot use the same action twice in one turn", () => {
     const ranger = createCombatant("ranger", 15, 10);
 
@@ -170,7 +158,6 @@ describe("CombatEngine", () => {
 
     expect(engine.useAction("action")).toBe(false);
   });
-
   it("consumes a bonus action", () => {
     const ranger = createCombatant("ranger", 15, 10);
 
@@ -184,7 +171,6 @@ describe("CombatEngine", () => {
 
     expect(engine.getCurrentCombatant()?.bonusActionAvailable).toBe(false);
   });
-
   it("consumes a reaction", () => {
     const ranger = createCombatant("ranger", 15, 10);
 
@@ -198,7 +184,6 @@ describe("CombatEngine", () => {
 
     expect(engine.getCurrentCombatant()?.reactionAvailable).toBe(false);
   });
-
   it("restores action resources on the next turn", () => {
     const ranger = createCombatant("ranger", 15, 10);
 
@@ -221,7 +206,6 @@ describe("CombatEngine", () => {
     expect(current?.bonusActionAvailable).toBe(true);
     expect(current?.reactionAvailable).toBe(true);
   });
-
   it("performs an attack and reduces defender HP", () => {
     const ranger = createCombatant("ranger", 15, 10);
 
@@ -262,7 +246,6 @@ describe("CombatEngine", () => {
 
     vi.restoreAllMocks();
   });
-
   it("consumes the action even when the attack misses", () => {
     const ranger = createCombatant("ranger", 15, 10);
 
@@ -295,7 +278,6 @@ describe("CombatEngine", () => {
 
     vi.restoreAllMocks();
   });
-
   it("does not allow a combatant to attack outside their turn", () => {
     const ranger = createCombatant("ranger", 15, 10);
 
@@ -323,7 +305,6 @@ describe("CombatEngine", () => {
 
     expect(result.success).toBe(false);
   });
-
   it("does not allow a second attack after using the action", () => {
     const ranger = createCombatant("ranger", 15, 10);
 
@@ -355,7 +336,6 @@ describe("CombatEngine", () => {
 
     vi.restoreAllMocks();
   });
-
   it("moves the current combatant", () => {
     const ranger = createCombatant("ranger", 15, 10);
 
@@ -377,7 +357,6 @@ describe("CombatEngine", () => {
       y: 4,
     });
   });
-
   it("calculates distance between combatants", () => {
     const ranger = createCombatant("ranger", 15, 10);
 
@@ -397,7 +376,6 @@ describe("CombatEngine", () => {
 
     expect(engine.getDistanceBetween("ranger", "goblin")).toBe(5);
   });
-
   it("consumes movement when moving", () => {
     const ranger = createCombatant("ranger", 15, 10);
 
@@ -423,7 +401,6 @@ describe("CombatEngine", () => {
 
     expect(current?.movementRemaining).toBe(1);
   });
-
   it("jumping consumes twice the distance", () => {
     const ranger = createCombatant("ranger", 15, 10);
 
@@ -445,7 +422,6 @@ describe("CombatEngine", () => {
 
     expect(engine.getCurrentCombatant()?.movementRemaining).toBe(2);
   });
-
   it("cannot move farther than remaining movement", () => {
     const ranger = createCombatant("ranger", 15, 10);
 
@@ -469,7 +445,6 @@ describe("CombatEngine", () => {
 
     expect(engine.getCurrentCombatant()?.movementRemaining).toBe(6);
   });
-
   it("restores movement at the start of the next turn", () => {
     const ranger = createCombatant("ranger", 15, 10);
 
@@ -490,6 +465,43 @@ describe("CombatEngine", () => {
 
     expect(engine.getCurrentCombatant()?.movementRemaining).toBe(6);
   });
+  it("allows an opportunity attack even when the attacker has no reaction", () => {
+    const ranger = createCombatant("ranger", 15, 10, "player", { x: 0, y: 0 });
+    const goblin = createCombatant("goblin", 10, 5, "enemy", { x: 1, y: 0 });
+
+    const engine = new CombatEngine(createCombatState([ranger, goblin]));
+
+    engine.startCombat();
+
+    // The goblin has no Reaction available.
+    goblin.reactionAvailable = false;
+
+    // Ranger moves out of melee range.
+    const result = engine.move({ x: 4, y: 0 }, "walk");
+
+    expect(result).toBe(true);
+
+    const combatResult = engine.getLastCombatResult();
+
+    expect(combatResult?.status).toBe("awaiting-defense");
+    expect(combatResult?.attackerId).toBe("goblin");
+    expect(combatResult?.defenderId).toBe("ranger");
+  });
+  it("consumes reaction when defending with parry", () => {
+    const ranger = createCombatant("ranger", 10, 10, "player", { x: 0, y: 0 });
+
+    const goblin = createCombatant("goblin", 10, 5, "enemy", { x: 1, y: 0 });
+
+    const engine = new CombatEngine(createCombatState([ranger, goblin]));
+
+    engine.startCombat();
+
+    // Ranger starts with a Reaction.
+    expect(engine.getCurrentCombatant()?.reactionAvailable).toBe(true);
+
+    // Goblin attacks Ranger.
+    vi.spyOn(Math, "random").mockReturnValueOnce(0); // attack hits
+  });
 });
 
 describe("Conditions", () => {
@@ -509,7 +521,6 @@ describe("Conditions", () => {
 
     expect(engine.hasCondition("goblin", "poisoned")).toBe(true);
   });
-
   it("gets conditions from a combatant", () => {
     const ranger = createCombatant("ranger", 16, 10);
     const goblin = createCombatant("goblin", 10, 5);
@@ -521,7 +532,6 @@ describe("Conditions", () => {
 
     expect(engine.getConditions("goblin")).toHaveLength(2);
   });
-
   it("removes a condition from a combatant", () => {
     const ranger = createCombatant("ranger", 16, 10);
     const goblin = createCombatant("goblin", 10, 5);

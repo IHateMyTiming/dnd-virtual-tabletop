@@ -9,31 +9,53 @@ import {
 
 import { rollDamage, type DamageExpression, type DamageResult } from "./Damage";
 
-import { rollPercentage, succeedsPercentage } from "../dice/Dice";
 import type { ConditionState } from "../condition/ConditionState";
+
+import {
+  getAttackAdvantageState,
+  resolveAdvantage,
+  type AdvantageState,
+} from "./Advantage";
+
+import type { AttackOutcome } from "./Advantage";
 
 export type AttackType = "melee" | "ranged" | "spell";
 
 export interface AttackRequest {
   attackerId: string;
   defenderId: string;
+
   attackerStats: CharacterStats;
   defenderStats: CharacterStats;
+
   defenderConditions: ConditionState[];
   attackerConditions: ConditionState[];
+
   armor: number;
   magicResistance: number;
+
   distance: number;
   target: TargetLocation;
+
   damage: DamageExpression;
   type: AttackType;
+
   patternBonus?: number;
 }
 
 export interface AttackResult {
   hit: boolean;
   chance: number;
-  roll: number;
+
+  rolls: number[];
+  outcomes: AttackOutcome[];
+
+  selectedRoll: number;
+  selectedOutcome: AttackOutcome;
+
+  advantageState: AdvantageState;
+
+  criticalHit: boolean;
 }
 
 export interface AttackDamageResult {
@@ -58,13 +80,28 @@ export function resolveAttack(attack: AttackRequest): AttackResult {
           )
         : calculateSpellAccuracy(attack.attackerStats, attack.defenderStats);
 
-  const roll = rollPercentage();
-  const hit = succeedsPercentage(chance, roll);
+  const critThreshold = chance * 0.1;
+
+  const advantageState = getAttackAdvantageState(
+    attack.attackerConditions,
+    attack.defenderConditions,
+  );
+
+  const result = resolveAdvantage(advantageState, chance, critThreshold);
 
   return {
-    hit,
+    hit: result.selectedOutcome !== "miss",
     chance,
-    roll,
+
+    rolls: result.rolls,
+    outcomes: result.outcomes,
+
+    selectedRoll: result.selectedRoll,
+    selectedOutcome: result.selectedOutcome,
+
+    advantageState,
+
+    criticalHit: result.selectedOutcome === "critical",
   };
 }
 

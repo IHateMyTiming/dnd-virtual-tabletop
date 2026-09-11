@@ -582,7 +582,7 @@ export class CombatEngine {
 
   private resolveCombatAttack(
     request: CombatAttackRequest,
-    resource: "action" | "reaction" | "opportunity",
+    resource: "action" | "opportunity",
   ): CombatAttackResult {
     const attackerIndex = this.state.combatants.findIndex(
       (combatant) => combatant.id === request.attackerId,
@@ -667,8 +667,6 @@ export class CombatEngine {
 
     if (resource === "action") {
       attacker.actionAvailable = false;
-    } else if (resource === "reaction") {
-      attacker.reactionAvailable = false;
     }
 
     const hpBefore = defender.hp;

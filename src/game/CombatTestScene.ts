@@ -87,7 +87,7 @@ export class CombatTestScene extends Phaser.Scene {
 
   private readonly rangerStats: CharacterStats = {
     strength: 10,
-    dexterity: 16,
+    dexterity: 9,
     constitution: 13,
     intelligence: 12,
     wisdom: 14,
@@ -96,7 +96,7 @@ export class CombatTestScene extends Phaser.Scene {
 
   private readonly goblinStats: CharacterStats = {
     strength: 10,
-    dexterity: 10,
+    dexterity: 18,
     constitution: 10,
     intelligence: 8,
     wisdom: 8,
@@ -159,7 +159,7 @@ export class CombatTestScene extends Phaser.Scene {
       magicResistance: 0,
 
       position: {
-        x: 3,
+        x: 0,
         y: 6,
       },
 
@@ -219,7 +219,7 @@ export class CombatTestScene extends Phaser.Scene {
       magicResistance: 0,
 
       position: {
-        x: 4,
+        x: 14,
         y: 6,
       },
 
@@ -676,7 +676,12 @@ export class CombatTestScene extends Phaser.Scene {
         "",
         `Distance: ${distance.toFixed(1)}m`,
         `Hit chance: ${attack.chance.toFixed(1)}%`,
-        `Roll: ${attack.roll.toFixed(1)}`,
+        `Advantage: ${attack.advantageState}`,
+        `Roll 1: ${attack.rolls[0].toFixed(1)} → ${attack.outcomes[0].toUpperCase()}`,
+        attack.rolls.length > 1
+          ? `Roll 2: ${attack.rolls[1].toFixed(1)} → ${attack.outcomes[1].toUpperCase()}`
+          : "",
+        `Chosen: ${attack.selectedRoll.toFixed(1)} → ${attack.selectedOutcome.toUpperCase()}`,
         "",
         "MISS!",
       ]);
@@ -704,9 +709,14 @@ export class CombatTestScene extends Phaser.Scene {
       "",
       `Distance: ${distance.toFixed(1)}m`,
       `Hit chance: ${attack.chance.toFixed(1)}%`,
-      `Roll: ${attack.roll.toFixed(1)}`,
+      `Advantage: ${attack.advantageState}`,
+      `Roll 1: ${attack.rolls[0].toFixed(1)} → ${attack.outcomes[0].toUpperCase()}`,
+      attack.rolls.length > 1
+        ? `Roll 2: ${attack.rolls[1].toFixed(1)} → ${attack.outcomes[1].toUpperCase()}`
+        : "",
+      `Chosen: ${attack.selectedRoll.toFixed(1)} → ${attack.selectedOutcome.toUpperCase()}`,
       "",
-      "HIT!",
+      attack.criticalHit ? "CRITICAL HIT!" : "HIT!",
       "",
       `Incoming damage: ${damage.rawDamage}`,
       "",
@@ -845,7 +855,16 @@ export class CombatTestScene extends Phaser.Scene {
           ? `Hit chance: ${combatResult.attack.chance.toFixed(1)}%`
           : "",
         combatResult.attack
-          ? `Roll: ${combatResult.attack.roll.toFixed(1)}`
+          ? `Advantage: ${combatResult.attack.advantageState}`
+          : "",
+        combatResult.attack
+          ? `Roll 1: ${combatResult.attack.rolls[0].toFixed(1)} → ${combatResult.attack.outcomes[0].toUpperCase()}`
+          : "",
+        combatResult.attack && combatResult.attack.rolls.length > 1
+          ? `Roll 2: ${combatResult.attack.rolls[1].toFixed(1)} → ${combatResult.attack.outcomes[1].toUpperCase()}`
+          : "",
+        combatResult.attack
+          ? `Chosen: ${combatResult.attack.selectedRoll.toFixed(1)} → ${combatResult.attack.selectedOutcome.toUpperCase()}`
           : "",
         "",
         `${current.name} moves 3m.`,
@@ -972,7 +991,12 @@ export class CombatTestScene extends Phaser.Scene {
         `Target: ${target?.name ?? targetId}`,
         "",
         `Hit chance: ${attack.chance.toFixed(1)}%`,
-        `Roll: ${attack.roll.toFixed(1)}`,
+        `Advantage: ${attack.advantageState}`,
+        `Roll 1: ${attack.rolls[0].toFixed(1)} → ${attack.outcomes[0].toUpperCase()}`,
+        attack.rolls.length > 1
+          ? `Roll 2: ${attack.rolls[1].toFixed(1)} → ${attack.outcomes[1].toUpperCase()}`
+          : "",
+        `Chosen: ${attack.selectedRoll.toFixed(1)} → ${attack.selectedOutcome.toUpperCase()}`,
         "",
         "MISS!",
       ]);
@@ -988,7 +1012,12 @@ export class CombatTestScene extends Phaser.Scene {
       `Target: ${target?.name ?? targetId}`,
       "",
       `Spell hit chance: ${attack.chance.toFixed(1)}%`,
-      `Roll: ${attack.roll.toFixed(1)}`,
+      `Advantage: ${attack.advantageState}`,
+      `Roll 1: ${attack.rolls[0].toFixed(1)} → ${attack.outcomes[0].toUpperCase()}`,
+      attack.rolls.length > 1
+        ? `Roll 2: ${attack.rolls[1].toFixed(1)} → ${attack.outcomes[1].toUpperCase()}`
+        : "",
+      `Chosen: ${attack.selectedRoll.toFixed(1)} → ${attack.selectedOutcome.toUpperCase()}`,
       "",
       "HIT!",
       "",
