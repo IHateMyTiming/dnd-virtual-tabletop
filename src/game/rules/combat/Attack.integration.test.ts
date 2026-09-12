@@ -41,6 +41,9 @@ describe("Attack integration", () => {
       magicResistance: 0,
       attackerConditions: [],
       defenderConditions: [],
+
+      attackerModifiers: [],
+      attackerLevel: 1,
     };
 
     const result = resolveAttack(attack);
@@ -95,6 +98,8 @@ describe("Attack integration", () => {
       magicResistance: 0,
       attackerConditions: [],
       defenderConditions: [],
+      attackerModifiers: [],
+      attackerLevel: 1,
     });
 
     expect(result.hit).toBe(false);
@@ -140,6 +145,8 @@ describe("Attack integration", () => {
       magicResistance: 0,
       attackerConditions: [],
       defenderConditions: [],
+      attackerModifiers: [],
+      attackerLevel: 1,
     });
 
     expect(result.hit).toBe(true);
@@ -174,19 +181,28 @@ describe("Attack integration", () => {
     const result = resolveAttack({
       attackerStats: attacker,
       defenderStats: defender,
+
       type: "melee",
       distance: 1,
       target: "body",
+
       damage: {
         count: 1,
         sides: 10,
       },
+
       armor: 0,
       magicResistance: 0,
+
       attackerConditions: [frightened],
       defenderConditions: [],
+
+      attackerModifiers: [],
+
       attackerId: "ranger",
       defenderId: "goblin",
+
+      attackerLevel: 1,
     });
 
     expect(result.hit).toBe(true);
@@ -234,6 +250,8 @@ describe("Attack integration", () => {
       defenderConditions: [],
       attackerId: "ranger",
       defenderId: "goblin",
+      attackerModifiers: [],
+      attackerLevel: 1,
     });
 
     expect(result.hit).toBe(true);

@@ -14,6 +14,7 @@ export interface CombatAttackRequest {
   damage: DamageExpression;
   attackerConditions: ConditionState[];
   defenderConditions: ConditionState[];
+  attackerLevel: number;
 }
 
 export interface CombatAttackResult {

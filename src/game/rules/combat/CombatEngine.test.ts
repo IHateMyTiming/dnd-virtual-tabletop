@@ -30,6 +30,8 @@ function createCombatant(
     id,
     name: id,
     team,
+    level: 1,
+
     stats: {
       strength: 10,
       dexterity,
@@ -50,6 +52,7 @@ function createCombatant(
     reactionAvailable: false,
     alive: true,
     initiative,
+    modifiers: [],
   };
 }
 
@@ -235,6 +238,7 @@ describe("CombatEngine", () => {
       },
       attackerConditions: [],
       defenderConditions: [],
+      attackerLevel: 1,
     });
 
     expect(result.success).toBe(true);
@@ -269,6 +273,7 @@ describe("CombatEngine", () => {
       },
       attackerConditions: [],
       defenderConditions: [],
+      attackerLevel: 1,
     });
 
     expect(result.success).toBe(true);
@@ -301,6 +306,7 @@ describe("CombatEngine", () => {
       },
       attackerConditions: [],
       defenderConditions: [],
+      attackerLevel: 1,
     });
 
     expect(result.success).toBe(false);
@@ -328,6 +334,7 @@ describe("CombatEngine", () => {
       },
       attackerConditions: [],
       defenderConditions: [],
+      attackerLevel: 1,
     };
 
     expect(engine.attack(request).success).toBe(true);
@@ -951,5 +958,621 @@ describe("Conditions", () => {
 
     expect(second).toBeDefined();
     expect(engine.hasCondition("goblin", "stunned")).toBe(true);
+  });
+});
+
+describe("Combat modifiers", () => {
+  it("applies an accuracy modifier to an attack", () => {
+    const attacker = createCombatant("attacker", 10, 2);
+
+    const defender = createCombatant("defender", 10, 1, "enemy", {
+      x: 1,
+      y: 0,
+    });
+
+    const state = createCombatState([attacker, defender]);
+    const engine = new CombatEngine(state, () => 0.5);
+
+    engine.addModifier("attacker", {
+      behavior: "accuracy",
+      operation: "add",
+      trigger: "attack",
+      value: 10,
+      amount: 1,
+    });
+
+    engine.startCombat();
+
+    const result = engine.attack({
+      attackerId: "attacker",
+      defenderId: "defender",
+      type: "melee",
+      distance: 1,
+      target: "body",
+      damage: {
+        count: 1,
+        sides: 6,
+        type: "physical",
+      },
+      attackerLevel: 1,
+      attackerConditions: [],
+      defenderConditions: [],
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.attack).toBeDefined();
+
+    const updatedAttacker = engine
+      .getState()
+      .combatants.find((c) => c.id === "attacker");
+
+    expect(updatedAttacker?.modifiers).toHaveLength(0);
+  });
+  it("consumes an attack modifier even when the attack misses", () => {
+    const attacker = createCombatant("attacker", 10, 2);
+
+    const defender = createCombatant("defender", 10, 1, "enemy", {
+      x: 1,
+      y: 0,
+    });
+
+    const state = createCombatState([attacker, defender]);
+
+    // Force the attack roll to be above any realistic accuracy value.
+    vi.spyOn(Math, "random").mockReturnValue(0.9999);
+
+    const engine = new CombatEngine(state);
+    engine.addModifier("attacker", {
+      behavior: "damage",
+      operation: "add-dice",
+      trigger: "attack",
+      diceCount: 1,
+      diceSides: 6,
+      amount: 1,
+    });
+
+    engine.startCombat();
+
+    const result = engine.attack({
+      attackerId: "attacker",
+      defenderId: "defender",
+      type: "melee",
+      distance: 1,
+      target: "head",
+      damage: {
+        count: 1,
+        sides: 6,
+        type: "physical",
+      },
+      attackerLevel: 1,
+      attackerConditions: [],
+      defenderConditions: [],
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.attack).toBeDefined();
+    expect(result.attack?.hit).toBe(false);
+
+    const updatedAttacker = engine
+      .getState()
+      .combatants.find((c) => c.id === "attacker");
+
+    expect(updatedAttacker?.modifiers).toHaveLength(0);
+  });
+  it("consumes an attack modifier one charge at a time", () => {
+    const attacker = createCombatant("attacker", 10, 2);
+
+    const defender = createCombatant("defender", 10, 1, "enemy", {
+      x: 1,
+      y: 0,
+    });
+
+    const state = createCombatState([attacker, defender]);
+
+    // Roll low enough that the attacks hit.
+    const engine = new CombatEngine(state, () => 0.01);
+
+    engine.addModifier("attacker", {
+      behavior: "accuracy",
+      operation: "add",
+      trigger: "attack",
+      value: 10,
+      amount: 3,
+    });
+
+    engine.startCombat();
+
+    const getModifiers = () =>
+      engine.getState().combatants.find((c) => c.id === "attacker")
+        ?.modifiers ?? [];
+
+    expect(getModifiers()).toHaveLength(1);
+    expect(getModifiers()[0].amount).toBe(3);
+
+    // ─────────────────────────────
+    // First attack
+    // ─────────────────────────────
+
+    const first = engine.attack({
+      attackerId: "attacker",
+      defenderId: "defender",
+      type: "melee",
+      distance: 1,
+      target: "body",
+      damage: {
+        count: 1,
+        sides: 6,
+        type: "physical",
+      },
+      attackerLevel: 1,
+      attackerConditions: [],
+      defenderConditions: [],
+    });
+
+    expect(first.success).toBe(true);
+    expect(first.attack).toBeDefined();
+    expect(getModifiers()[0].amount).toBe(2);
+
+    engine.resolveDefense("dodge");
+
+    // Attacker → defender
+    engine.endTurn();
+
+    // Defender → attacker
+    engine.endTurn();
+
+    // ─────────────────────────────
+    // Second attack
+    // ─────────────────────────────
+
+    const second = engine.attack({
+      attackerId: "attacker",
+      defenderId: "defender",
+      type: "melee",
+      distance: 1,
+      target: "body",
+      damage: {
+        count: 1,
+        sides: 6,
+        type: "physical",
+      },
+      attackerLevel: 1,
+      attackerConditions: [],
+      defenderConditions: [],
+    });
+
+    expect(second.success).toBe(true);
+    expect(second.attack).toBeDefined();
+    expect(getModifiers()[0].amount).toBe(1);
+
+    engine.resolveDefense("dodge");
+
+    // Attacker → defender
+    engine.endTurn();
+
+    // Defender → attacker
+    engine.endTurn();
+
+    // ─────────────────────────────
+    // Third attack
+    // ─────────────────────────────
+
+    const third = engine.attack({
+      attackerId: "attacker",
+      defenderId: "defender",
+      type: "melee",
+      distance: 1,
+      target: "body",
+      damage: {
+        count: 1,
+        sides: 6,
+        type: "physical",
+      },
+      attackerLevel: 1,
+      attackerConditions: [],
+      defenderConditions: [],
+    });
+
+    expect(third.success).toBe(true);
+    expect(third.attack).toBeDefined();
+    expect(getModifiers()).toHaveLength(0);
+  });
+  it("applies extra damage dice from an attack modifier", () => {
+    const attacker = createCombatant("attacker", 10, 2);
+
+    const defender = createCombatant("defender", 10, 1, "enemy", {
+      x: 1,
+      y: 0,
+    });
+
+    const state = createCombatState([attacker, defender]);
+    const engine = new CombatEngine(state, () => 0.5);
+
+    engine.addModifier("attacker", {
+      behavior: "damage",
+      operation: "add-dice",
+      trigger: "attack",
+      diceCount: 1,
+      diceSides: 6,
+      amount: 1,
+    });
+
+    engine.startCombat();
+
+    const result = engine.attack({
+      attackerId: "attacker",
+      defenderId: "defender",
+      type: "melee",
+      distance: 1,
+      target: "body",
+      damage: {
+        count: 1,
+        sides: 6,
+        type: "physical",
+      },
+      attackerLevel: 1,
+      attackerConditions: [],
+      defenderConditions: [],
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.damage).toBeDefined();
+
+    // Base 1d6 + modifier 1d6.
+    expect(result.damage?.rolls).toHaveLength(2);
+
+    const updatedAttacker = engine
+      .getState()
+      .combatants.find((c) => c.id === "attacker");
+
+    expect(updatedAttacker?.modifiers).toHaveLength(0);
+  });
+  it("applies a flat damage modifier to an attack", () => {
+    const attacker = createCombatant("attacker", 10, 2);
+
+    const defender = createCombatant("defender", 10, 1, "enemy", {
+      x: 1,
+      y: 0,
+    });
+
+    const state = createCombatState([attacker, defender]);
+    const engine = new CombatEngine(state, () => 0.5);
+
+    engine.addModifier("attacker", {
+      behavior: "damage",
+      operation: "add",
+      trigger: "attack",
+      value: 5,
+      amount: 1,
+    });
+
+    engine.startCombat();
+
+    const result = engine.attack({
+      attackerId: "attacker",
+      defenderId: "defender",
+      type: "melee",
+      distance: 1,
+      target: "body",
+      damage: {
+        count: 1,
+        sides: 6,
+        type: "physical",
+      },
+      attackerLevel: 1,
+      attackerConditions: [],
+      defenderConditions: [],
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.damage).toBeDefined();
+
+    expect(result.damage?.modifier).toBe(5);
+
+    const updatedAttacker = engine
+      .getState()
+      .combatants.find((c) => c.id === "attacker");
+
+    expect(updatedAttacker?.modifiers).toHaveLength(0);
+  });
+  it("does not consume a spell modifier on a melee attack", () => {
+    const attacker = createCombatant("attacker", 10, 2);
+
+    const defender = createCombatant("defender", 10, 1, "enemy", {
+      x: 1,
+      y: 0,
+    });
+
+    const state = createCombatState([attacker, defender]);
+    const engine = new CombatEngine(state, () => 0.5);
+
+    engine.addModifier("attacker", {
+      behavior: "damage",
+      operation: "add",
+      trigger: "spell",
+      value: 10,
+      amount: 1,
+    });
+
+    engine.startCombat();
+
+    const result = engine.attack({
+      attackerId: "attacker",
+      defenderId: "defender",
+      type: "melee",
+      distance: 1,
+      target: "body",
+      damage: {
+        count: 1,
+        sides: 6,
+        type: "physical",
+      },
+      attackerLevel: 1,
+      attackerConditions: [],
+      defenderConditions: [],
+    });
+
+    expect(result.success).toBe(true);
+
+    const updatedAttacker = engine
+      .getState()
+      .combatants.find((c) => c.id === "attacker");
+
+    // Spell modifier remains untouched.
+    expect(updatedAttacker?.modifiers).toHaveLength(1);
+    expect(updatedAttacker?.modifiers[0].amount).toBe(1);
+  });
+  it("consumes a spell modifier on a spell attack", () => {
+    const attacker = createCombatant("attacker", 10, 2);
+
+    const defender = createCombatant("defender", 10, 1, "enemy", {
+      x: 1,
+      y: 0,
+    });
+
+    const state = createCombatState([attacker, defender]);
+    const engine = new CombatEngine(state, () => 0.5);
+
+    engine.addModifier("attacker", {
+      behavior: "damage",
+      operation: "add",
+      trigger: "spell",
+      value: 10,
+      amount: 1,
+    });
+
+    engine.startCombat();
+
+    const result = engine.attack({
+      attackerId: "attacker",
+      defenderId: "defender",
+      type: "spell",
+      distance: 1,
+      target: "body",
+      damage: {
+        count: 1,
+        sides: 6,
+        type: "magic",
+      },
+      attackerLevel: 1,
+      attackerConditions: [],
+      defenderConditions: [],
+    });
+
+    expect(result.success).toBe(true);
+
+    const updatedAttacker = engine
+      .getState()
+      .combatants.find((c) => c.id === "attacker");
+
+    expect(updatedAttacker?.modifiers).toHaveLength(0);
+  });
+  it("applies advantage from a roll modifier and consumes it", () => {
+    const attacker = createCombatant("attacker", 10, 2);
+
+    const defender = createCombatant("defender", 10, 1, "enemy", {
+      x: 1,
+      y: 0,
+    });
+
+    const state = createCombatState([attacker, defender]);
+    const engine = new CombatEngine(state, () => 0.5);
+
+    engine.addModifier("attacker", {
+      behavior: "attack-roll",
+      operation: "advantage",
+      trigger: "roll",
+      amount: 1,
+    });
+
+    engine.startCombat();
+
+    const result = engine.attack({
+      attackerId: "attacker",
+      defenderId: "defender",
+      type: "melee",
+      distance: 1,
+      target: "body",
+      damage: {
+        count: 1,
+        sides: 6,
+        type: "physical",
+      },
+      attackerLevel: 1,
+      attackerConditions: [],
+      defenderConditions: [],
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.attack).toBeDefined();
+    expect(result.attack?.advantageState).toBe("advantage");
+
+    const updatedAttacker = engine
+      .getState()
+      .combatants.find((c) => c.id === "attacker");
+
+    expect(updatedAttacker?.modifiers).toHaveLength(0);
+  });
+  it("allows multiple modifiers to coexist", () => {
+    const attacker = createCombatant("attacker", 10, 2);
+
+    const defender = createCombatant("defender", 10, 1, "enemy", {
+      x: 1,
+      y: 0,
+    });
+
+    const state = createCombatState([attacker, defender]);
+    const engine = new CombatEngine(state, () => 0.5);
+
+    engine.addModifier("attacker", {
+      behavior: "accuracy",
+      operation: "add",
+      trigger: "attack",
+      value: 10,
+      amount: 1,
+    });
+
+    engine.addModifier("attacker", {
+      behavior: "damage",
+      operation: "add-dice",
+      trigger: "attack",
+      diceCount: 1,
+      diceSides: 6,
+      amount: 1,
+    });
+
+    engine.startCombat();
+
+    const result = engine.attack({
+      attackerId: "attacker",
+      defenderId: "defender",
+      type: "melee",
+      distance: 1,
+      target: "body",
+      damage: {
+        count: 1,
+        sides: 6,
+        type: "physical",
+      },
+      attackerLevel: 1,
+      attackerConditions: [],
+      defenderConditions: [],
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.attack).toBeDefined();
+    expect(result.damage).toBeDefined();
+
+    // Base 1d6 + extra 1d6.
+    expect(result.damage?.rolls).toHaveLength(2);
+
+    const updatedAttacker = engine
+      .getState()
+      .combatants.find((c) => c.id === "attacker");
+
+    expect(updatedAttacker?.modifiers).toHaveLength(0);
+  });
+  it("consumes turn modifiers when the combatant's turn ends", () => {
+    const attacker = createCombatant("attacker", 10, 2);
+
+    const defender = createCombatant("defender", 10, 1, "enemy", {
+      x: 1,
+      y: 0,
+    });
+
+    const engine = new CombatEngine(createCombatState([attacker, defender]));
+
+    engine.addModifier("attacker", {
+      behavior: "accuracy",
+      operation: "add",
+      trigger: "turn",
+      value: 10,
+      amount: 2,
+    });
+
+    engine.startCombat();
+
+    const getModifier = () =>
+      engine.getState().combatants.find((c) => c.id === "attacker")
+        ?.modifiers[0];
+
+    expect(getModifier()?.amount).toBe(2);
+
+    engine.endTurn();
+
+    expect(getModifier()?.amount).toBe(1);
+
+    engine.endTurn();
+
+    expect(getModifier()?.amount).toBe(1);
+
+    engine.endTurn();
+
+    expect(getModifier()).toBeUndefined();
+  });
+  it("applies a defense modifier to dodge chance", () => {
+    const attacker = createCombatant("attacker", 10, 2);
+
+    const defender = createCombatant("defender", 10, 1, "enemy", {
+      x: 1,
+      y: 0,
+    });
+
+    const engine = new CombatEngine(
+      createCombatState([attacker, defender]),
+      () => 0.99,
+    );
+
+    engine.addModifier("defender", {
+      behavior: "defense",
+      operation: "add",
+      trigger: "turn",
+      value: 20,
+      amount: 2,
+    });
+
+    engine.startCombat();
+
+    // Attack must hit so that defense can be chosen.
+    const result = engine.attack({
+      attackerId: "attacker",
+      defenderId: "defender",
+      type: "melee",
+      distance: 1,
+      target: "body",
+      damage: {
+        count: 1,
+        sides: 6,
+        type: "physical",
+      },
+      attackerLevel: 1,
+      attackerConditions: [],
+      defenderConditions: [],
+    });
+
+    expect(result.success).toBe(true);
+  });
+  it("applies an armor modifier", () => {
+    const attacker = createCombatant("attacker", 10, 2);
+
+    const defender = createCombatant("defender", 10, 1, "enemy", {
+      x: 1,
+      y: 0,
+    });
+
+    const engine = new CombatEngine(
+      createCombatState([attacker, defender]),
+      () => 0.5,
+    );
+
+    engine.addModifier("defender", {
+      behavior: "armor",
+      operation: "add",
+      trigger: "turn",
+      value: 5,
+      amount: 1,
+    });
+
+    engine.startCombat();
   });
 });

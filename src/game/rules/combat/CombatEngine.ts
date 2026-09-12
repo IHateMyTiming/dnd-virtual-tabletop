@@ -51,6 +51,12 @@ import { getEffectiveArmor } from "../condition/ConditionArmor";
 import { getEffectiveMagicResistance } from "../condition/ConditionMagicResistance";
 import { getIncomingDamageMultiplier } from "../condition/ConditionDamageModifier";
 import { getConditionDodgeMultiplier } from "../condition/ConditionDefense";
+import {
+  consumeModifier,
+  getModifierValue,
+  getModifierMultiplier,
+  type CombatModifier,
+} from "./CombatModifier";
 
 interface PendingDefense {
   attackerId: string;
@@ -101,6 +107,12 @@ export class CombatEngine {
   }
 
   endTurn(): void {
+    const current = this.getCurrentCombatant();
+
+    if (current) {
+      this.consumeTurnModifiers(current);
+    }
+
     const nextIndex = this.state.currentTurnIndex + 1;
 
     if (nextIndex >= this.state.combatants.length) {
@@ -335,6 +347,18 @@ export class CombatEngine {
     return calculateDistance(first.position, second.position);
   }
 
+  public addModifier(combatantId: string, modifier: CombatModifier): void {
+    const combatant = this.state.combatants.find(
+      (current) => current.id === combatantId,
+    );
+
+    if (!combatant) {
+      throw new Error(`Combatant "${combatantId}" not found.`);
+    }
+
+    combatant.modifiers.push({ ...modifier });
+  }
+
   public applyCondition(
     targetId: string,
     conditionId: ConditionId,
@@ -560,6 +584,7 @@ export class CombatEngine {
       type: "melee",
       distance,
       target: "body",
+      attackerLevel: attacker.level,
 
       // Temporary until equipment provides the weapon attack.
       damage: {
@@ -663,7 +688,11 @@ export class CombatEngine {
       attackerConditions,
       defenderConditions,
       patternBonus: patternKnowledge?.bonus ?? 0,
+      attackerLevel: attacker.level,
+      attackerModifiers: attacker.modifiers,
     });
+
+    this.consumeAttackRollModifiers(attacker);
 
     if (resource === "action") {
       attacker.actionAvailable = false;
@@ -672,6 +701,7 @@ export class CombatEngine {
     const hpBefore = defender.hp;
 
     if (!attack.hit) {
+      this.consumeAttackModifiers(attacker, request.type);
       return {
         success: true,
         status: "resolved",
@@ -699,7 +729,11 @@ export class CombatEngine {
       attackerConditions,
       defenderConditions,
       patternBonus: patternKnowledge?.bonus ?? 0,
+      attackerLevel: attacker.level,
+      attackerModifiers: attacker.modifiers,
     });
+
+    this.consumeAttackModifiers(attacker, request.type);
 
     this.pendingDefense = {
       attackerId: attacker.id,
@@ -786,11 +820,27 @@ export class CombatEngine {
           ? defenseStats.spellDodge
           : defenseStats.physicalDodge;
 
+      const conditionDodge =
+        baseDodge * getConditionDodgeMultiplier(defenderConditions);
+
+      const modifierDodgeBonus = getModifierValue(
+        defender.modifiers,
+        "defense",
+        "add",
+        "turn",
+      );
+
+      const modifierDodgeMultiplier = getModifierMultiplier(
+        defender.modifiers,
+        "defense",
+        "turn",
+      );
+
       const dodgeChance = Math.max(
         0,
         Math.min(
           100,
-          baseDodge * getConditionDodgeMultiplier(defenderConditions),
+          (conditionDodge + modifierDodgeBonus) * modifierDodgeMultiplier,
         ),
       );
 
@@ -820,20 +870,53 @@ export class CombatEngine {
 
     if (!dodged) {
       if (pending.type === "spell") {
-        const effectiveMagicResistance = getEffectiveMagicResistance(
+        const conditionMagicResistance = getEffectiveMagicResistance(
           defender.magicResistance,
           defenderConditions,
         );
+
+        const modifierMagicResistanceBonus = getModifierValue(
+          defender.modifiers,
+          "magic-resistance",
+          "add",
+          "turn",
+        );
+
+        const modifierMagicResistanceMultiplier = getModifierMultiplier(
+          defender.modifiers,
+          "magic-resistance",
+          "turn",
+        );
+
+        const effectiveMagicResistance =
+          (conditionMagicResistance + modifierMagicResistanceBonus) *
+          modifierMagicResistanceMultiplier;
 
         finalDamage = Math.max(
           0,
           finalDamage - Math.max(0, effectiveMagicResistance),
         );
       } else {
-        const effectiveArmor = getEffectiveArmor(
+        const conditionArmor = getEffectiveArmor(
           defender.armor,
           defenderConditions,
         );
+
+        const modifierArmorBonus = getModifierValue(
+          defender.modifiers,
+          "armor",
+          "add",
+          "turn",
+        );
+
+        const modifierArmorMultiplier = getModifierMultiplier(
+          defender.modifiers,
+          "armor",
+          "turn",
+        );
+
+        const effectiveArmor =
+          (conditionArmor + modifierArmorBonus) * modifierArmorMultiplier;
 
         finalDamage = Math.max(0, finalDamage - Math.max(0, effectiveArmor));
       }
@@ -888,5 +971,50 @@ export class CombatEngine {
       defenderHpBefore: hpBefore,
       defenderHpAfter: defender.hp,
     };
+  }
+
+  private consumeAttackRollModifiers(attacker: Combatant): void {
+    const modifiers = [...attacker.modifiers];
+
+    for (const modifier of modifiers) {
+      if (modifier.trigger === "roll" && modifier.amount > 0) {
+        consumeModifier(attacker.modifiers, modifier);
+      }
+    }
+  }
+
+  private consumeAttackModifiers(
+    attacker: Combatant,
+    attackType: AttackType,
+  ): void {
+    const modifiers = [...attacker.modifiers];
+
+    for (const modifier of modifiers) {
+      if (modifier.amount <= 0) {
+        continue;
+      }
+
+      if (modifier.trigger === "attack") {
+        consumeModifier(attacker.modifiers, modifier);
+
+        continue;
+      }
+
+      if (modifier.trigger === "spell" && attackType === "spell") {
+        consumeModifier(attacker.modifiers, modifier);
+      }
+    }
+  }
+
+  private consumeTurnModifiers(combatant: Combatant): void {
+    const modifiers = [...combatant.modifiers];
+
+    for (const modifier of modifiers) {
+      if (modifier.trigger !== "turn" || modifier.amount <= 0) {
+        continue;
+      }
+
+      consumeModifier(combatant.modifiers, modifier);
+    }
   }
 }

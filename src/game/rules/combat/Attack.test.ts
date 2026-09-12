@@ -41,6 +41,8 @@ describe("Attack", () => {
 
       attackerConditions: [],
       defenderConditions: [],
+      attackerModifiers: [],
+      attackerLevel: 1,
     });
 
     expect(result.chance).toBe(65);

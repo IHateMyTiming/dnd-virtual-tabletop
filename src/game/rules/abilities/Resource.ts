@@ -1,5 +1,7 @@
 export type SpellSlotLevel = 1 | 2 | 3 | 4 | 5 | 6;
 
+export const SPELL_SLOT_LEVELS: SpellSlotLevel[] = [1, 2, 3, 4, 5, 6];
+
 export interface CharacterResources {
   spellSlots: Record<SpellSlotLevel, number>;
   maxSpellSlots: Record<SpellSlotLevel, number>;
@@ -26,29 +28,94 @@ export function createEmptyResources(): CharacterResources {
   };
 }
 
+export function findAvailableSpellSlot(
+  resources: CharacterResources,
+  minimumLevel: SpellSlotLevel,
+): SpellSlotLevel | null {
+  for (const level of SPELL_SLOT_LEVELS) {
+    if (level < minimumLevel) {
+      continue;
+    }
+
+    if (resources.spellSlots[level] > 0) {
+      return level;
+    }
+  }
+
+  return null;
+}
+
 export function hasSpellSlot(
   resources: CharacterResources,
-  level: SpellSlotLevel,
+  minimumLevel: SpellSlotLevel,
   amount = 1,
 ): boolean {
-  return resources.spellSlots[level] >= amount;
+  if (amount <= 0) {
+    return true;
+  }
+
+  let availableSlots = 0;
+
+  for (const level of SPELL_SLOT_LEVELS) {
+    if (level < minimumLevel) {
+      continue;
+    }
+
+    availableSlots += resources.spellSlots[level];
+
+    if (availableSlots >= amount) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export function consumeSpellSlot(
   resources: CharacterResources,
-  level: SpellSlotLevel,
+  minimumLevel: SpellSlotLevel,
   amount = 1,
 ): CharacterResources {
-  if (!hasSpellSlot(resources, level, amount)) {
-    throw new Error(`Not enough level ${level} spell slots.`);
+  if (amount <= 0) {
+    return { ...resources };
+  }
+
+  if (!hasSpellSlot(resources, minimumLevel, amount)) {
+    throw new Error(
+      `Not enough spell slots of level ${minimumLevel} or higher.`,
+    );
+  }
+
+  let remaining = amount;
+
+  const updatedSpellSlots = {
+    ...resources.spellSlots,
+  };
+
+  for (const level of SPELL_SLOT_LEVELS) {
+    if (level < minimumLevel) {
+      continue;
+    }
+
+    const available = updatedSpellSlots[level];
+
+    if (available <= 0) {
+      continue;
+    }
+
+    const consumed = Math.min(available, remaining);
+
+    updatedSpellSlots[level] -= consumed;
+    remaining -= consumed;
+
+    if (remaining === 0) {
+      break;
+    }
   }
 
   return {
     ...resources,
-    spellSlots: {
-      ...resources.spellSlots,
-      [level]: resources.spellSlots[level] - amount,
-    },
+    spellSlots: updatedSpellSlots,
   };
 }
 

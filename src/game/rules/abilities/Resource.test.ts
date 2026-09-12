@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createEmptyResources,
+  findAvailableSpellSlot,
   hasSpellSlot,
   consumeSpellSlot,
   restoreSpellSlot,
@@ -31,7 +32,7 @@ describe("Resource", () => {
     });
   });
 
-  it("detects whether a spell slot is available", () => {
+  it("detects whether a spell slot of the required level or higher is available", () => {
     const resources: CharacterResources = {
       spellSlots: {
         1: 3,
@@ -57,6 +58,98 @@ describe("Resource", () => {
     expect(hasSpellSlot(resources, 4)).toBe(false);
   });
 
+  it("allows a higher-level spell slot to cast a lower-level spell", () => {
+    const resources: CharacterResources = {
+      spellSlots: {
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 1,
+        5: 0,
+        6: 0,
+      },
+      maxSpellSlots: {
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 1,
+        5: 0,
+        6: 0,
+      },
+    };
+
+    expect(hasSpellSlot(resources, 3)).toBe(true);
+  });
+
+  it("does not allow a lower-level spell slot to cast a higher-level spell", () => {
+    const resources: CharacterResources = {
+      spellSlots: {
+        1: 0,
+        2: 1,
+        3: 0,
+        4: 0,
+        5: 0,
+        6: 0,
+      },
+      maxSpellSlots: {
+        1: 0,
+        2: 1,
+        3: 0,
+        4: 0,
+        5: 0,
+        6: 0,
+      },
+    };
+
+    expect(hasSpellSlot(resources, 3)).toBe(false);
+  });
+
+  it("finds the lowest available spell slot that can cast the spell", () => {
+    const resources: CharacterResources = {
+      spellSlots: {
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 2,
+        5: 1,
+        6: 1,
+      },
+      maxSpellSlots: {
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 2,
+        5: 1,
+        6: 1,
+      },
+    };
+
+    expect(findAvailableSpellSlot(resources, 3)).toBe(4);
+  });
+
+  it("returns null when no valid spell slot exists", () => {
+    const resources: CharacterResources = {
+      spellSlots: {
+        1: 0,
+        2: 2,
+        3: 0,
+        4: 0,
+        5: 0,
+        6: 0,
+      },
+      maxSpellSlots: {
+        1: 0,
+        2: 2,
+        3: 0,
+        4: 0,
+        5: 0,
+        6: 0,
+      },
+    };
+
+    expect(findAvailableSpellSlot(resources, 3)).toBe(null);
+  });
+
   it("consumes a spell slot", () => {
     const resources: CharacterResources = {
       spellSlots: {
@@ -80,6 +173,61 @@ describe("Resource", () => {
     const updated = consumeSpellSlot(resources, 1);
 
     expect(updated.spellSlots[1]).toBe(2);
+  });
+
+  it("consumes a higher-level slot when the required level is unavailable", () => {
+    const resources: CharacterResources = {
+      spellSlots: {
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 2,
+        5: 1,
+        6: 1,
+      },
+      maxSpellSlots: {
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 2,
+        5: 1,
+        6: 1,
+      },
+    };
+
+    const updated = consumeSpellSlot(resources, 3);
+
+    expect(updated.spellSlots[3]).toBe(0);
+    expect(updated.spellSlots[4]).toBe(1);
+    expect(updated.spellSlots[5]).toBe(1);
+    expect(updated.spellSlots[6]).toBe(1);
+  });
+
+  it("consumes the lowest available valid slot first", () => {
+    const resources: CharacterResources = {
+      spellSlots: {
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 1,
+        5: 1,
+        6: 1,
+      },
+      maxSpellSlots: {
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 1,
+        5: 1,
+        6: 1,
+      },
+    };
+
+    const updated = consumeSpellSlot(resources, 3);
+
+    expect(updated.spellSlots[4]).toBe(0);
+    expect(updated.spellSlots[5]).toBe(1);
+    expect(updated.spellSlots[6]).toBe(1);
   });
 
   it("consumes multiple spell slots", () => {
@@ -128,7 +276,7 @@ describe("Resource", () => {
     };
 
     expect(() => consumeSpellSlot(resources, 1, 2)).toThrow(
-      "Not enough level 1 spell slots.",
+      "Not enough spell slots of level 1 or higher.",
     );
   });
 

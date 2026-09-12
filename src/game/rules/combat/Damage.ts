@@ -7,13 +7,21 @@ import { getEffectiveMagicResistance } from "../condition/ConditionMagicResistan
 
 export type DamageType = "physical" | "magic";
 
+export interface DiceScaling {
+  type: "character-level";
+
+  diceCount?: Record<number, number>;
+
+  modifier?: Record<number, number>;
+}
+
 export interface DamageExpression {
   count: number;
   sides: number;
   modifier?: number;
   type?: DamageType;
+  scaling?: DiceScaling;
 }
-
 export interface DamageResult {
   rolls: number[];
   modifier: number;
@@ -23,12 +31,13 @@ export interface DamageResult {
   finalDamage: number;
 }
 
-export function rollDamage(expression: DamageExpression): DamageResult {
-  const result = rollDice(
-    expression.count,
-    expression.sides,
-    expression.modifier ?? 0,
-  );
+export function rollDamage(
+  expression: DamageExpression,
+  characterLevel?: number,
+): DamageResult {
+  const scaled = getScaledDiceExpression(expression, characterLevel);
+
+  const result = rollDice(scaled.count, scaled.sides, scaled.modifier);
 
   return {
     rolls: result.rolls,
@@ -93,4 +102,48 @@ export function rollCombinedDamage(expressions: DamageExpression[]): number {
     (total, expression) => total + rollDamage(expression).rawDamage,
     0,
   );
+}
+
+export function getScaledDiceExpression(
+  expression: DamageExpression,
+  characterLevel?: number,
+): {
+  count: number;
+  sides: number;
+  modifier: number;
+} {
+  let count = expression.count;
+  let modifier = expression.modifier ?? 0;
+
+  if (expression.scaling && characterLevel !== undefined) {
+    const { diceCount, modifier: scalingModifier } = expression.scaling;
+
+    if (diceCount) {
+      const levels = Object.keys(diceCount)
+        .map(Number)
+        .filter((level) => level <= characterLevel)
+        .sort((a, b) => b - a);
+
+      if (levels.length > 0) {
+        count = diceCount[levels[0]];
+      }
+    }
+
+    if (scalingModifier) {
+      const levels = Object.keys(scalingModifier)
+        .map(Number)
+        .filter((level) => level <= characterLevel)
+        .sort((a, b) => b - a);
+
+      if (levels.length > 0) {
+        modifier += scalingModifier[levels[0]];
+      }
+    }
+  }
+
+  return {
+    count,
+    sides: expression.sides,
+    modifier,
+  };
 }

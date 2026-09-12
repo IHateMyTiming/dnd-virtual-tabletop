@@ -110,14 +110,22 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
     };
   }
 
-  if (ability.resourceCost?.spellSlotLevel !== undefined) {
-    const { spellSlotLevel, amount } = ability.resourceCost;
-
-    if (!hasSpellSlot(resources, spellSlotLevel, amount)) {
+  if (ability.resourceCost && ability.isSpell) {
+    if (ability.spellLevel === undefined) {
       return {
         success: false,
         abilityId: ability.id,
-        reason: `Not enough level ${spellSlotLevel} spell slots.`,
+        reason: "Spell requires a spell level.",
+      };
+    }
+
+    const { amount } = ability.resourceCost;
+
+    if (!hasSpellSlot(resources, ability.spellLevel, amount)) {
+      return {
+        success: false,
+        abilityId: ability.id,
+        reason: `Not enough spell slots of level ${ability.spellLevel} or higher.`,
       };
     }
   }
@@ -141,12 +149,15 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
 
   let updatedResources = resources;
 
-  if (ability.resourceCost?.spellSlotLevel !== undefined) {
-    const { spellSlotLevel, amount } = ability.resourceCost;
+  if (ability.resourceCost && ability.isSpell) {
+    if (ability.spellLevel === undefined) {
+      throw new Error("Spell requires a spell level.");
+    }
 
-    updatedResources = consumeSpellSlot(resources, spellSlotLevel, amount);
+    const { amount } = ability.resourceCost;
+
+    updatedResources = consumeSpellSlot(resources, ability.spellLevel, amount);
   }
-
   let attackResult;
 
   if (ability.attackType) {
@@ -163,6 +174,17 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
     }
 
     const distance = combatEngine.getDistanceBetween(casterId, target.id) ?? 0;
+    const caster = combatState.combatants.find(
+      (combatant) => combatant.id === casterId,
+    );
+
+    if (!caster) {
+      return {
+        success: false,
+        abilityId: ability.id,
+        reason: "Caster not found.",
+      };
+    }
 
     const attackRequest: CombatAttackRequest = {
       attackerId: casterId,
@@ -173,6 +195,7 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
       damage: damageEffect.damage,
       attackerConditions: casterConditions,
       defenderConditions,
+      attackerLevel: caster.level,
     };
 
     attackResult = combatEngine.attack(attackRequest);

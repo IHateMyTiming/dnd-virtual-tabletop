@@ -11,8 +11,24 @@ export type AbilityRecovery =
   | "short-rest"
   | "long-rest";
 
+export type AbilityAreaShape =
+  | "circle"
+  | "rectangle"
+  | "line"
+  | "cone"
+  | "grid";
+
+export interface AbilityArea {
+  shape: AbilityAreaShape;
+
+  width?: number;
+  height?: number;
+  radius?: number;
+
+  pattern?: boolean[][];
+}
+
 export interface AbilityResourceCost {
-  spellSlotLevel?: SpellSlotLevel;
   amount: number;
 }
 
@@ -20,13 +36,27 @@ export interface AbilityDefinition {
   id: string;
   nameKey: string;
   descriptionKey: string;
+
   actionType: CombatActionType;
   targetType: AbilityTargetType;
+
   attackType?: AttackType;
+
   range?: number;
+
+  maxTargets?: number;
+
+  area?: AbilityArea;
+
   effects: AbilityEffect[];
+
   recovery: AbilityRecovery;
   cooldown?: number;
+
   resourceCost?: AbilityResourceCost;
+
   isSpell?: boolean;
+  spellLevel?: SpellSlotLevel;
+
+  imagePath?: string;
 }

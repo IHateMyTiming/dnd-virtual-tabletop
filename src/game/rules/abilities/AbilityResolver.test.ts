@@ -46,6 +46,7 @@ function createCombatState(combatants: Combatant[]): CombatState {
     round: 1,
     currentTurnIndex: 0,
     conditionManager: new ConditionManager(),
+    patternKnowledge: {},
   };
 }
 
@@ -151,4 +152,54 @@ it("executes ability effects when the ability is successfully resolved", () => {
     .combatants.find((combatant) => combatant.id === "enemy-1");
 
   expect(enemy?.hp).toBe(9);
+});
+it("uses a higher-level spell slot when the required level is unavailable", () => {
+  const ability = createAbility({
+    isSpell: true,
+    spellLevel: 3,
+    resourceCost: {
+      amount: 1,
+    },
+  });
+
+  const resources = createEmptyResources();
+
+  resources.spellSlots[4] = 1;
+  resources.maxSpellSlots[4] = 1;
+
+  const request = createAbilityRequest(ability, {
+    resources,
+  });
+
+  const result = resolveAbility(request);
+
+  expect(result.success).toBe(true);
+  expect(result.resources?.spellSlots[3]).toBe(0);
+  expect(result.resources?.spellSlots[4]).toBe(0);
+});
+it("fails when only lower-level spell slots are available", () => {
+  const ability = createAbility({
+    isSpell: true,
+    spellLevel: 3,
+    resourceCost: {
+      amount: 1,
+    },
+  });
+
+  const resources = createEmptyResources();
+
+  resources.spellSlots[2] = 1;
+  resources.maxSpellSlots[2] = 1;
+
+  const request = createAbilityRequest(ability, {
+    resources,
+  });
+
+  const result = resolveAbility(request);
+
+  expect(result.success).toBe(false);
+  expect(result.reason).toBe("Not enough spell slots of level 3 or higher.");
+
+  expect(result.resources).toBeUndefined();
+  expect(resources.spellSlots[2]).toBe(1);
 });
