@@ -4,6 +4,7 @@ import type { ConditionState } from "../condition/ConditionState";
 import { getIncomingDamageMultiplier } from "../condition/ConditionDamageModifier";
 import { getEffectiveArmor } from "../condition/ConditionArmor";
 import { getEffectiveMagicResistance } from "../condition/ConditionMagicResistance";
+import type { ConditionId } from "../condition/Condition";
 
 export type DamageType = "physical" | "magic";
 
@@ -15,12 +16,18 @@ export interface DiceScaling {
   modifier?: Record<number, number>;
 }
 
+export interface DamageCondition {
+  type: "target-has-condition";
+  conditionId?: ConditionId;
+  multiplier: number;
+}
 export interface DamageExpression {
   count: number;
   sides: number;
   modifier?: number;
   type?: DamageType;
   scaling?: DiceScaling;
+  conditions?: DamageCondition[];
 }
 export interface DamageResult {
   rolls: number[];
@@ -55,6 +62,31 @@ export function applyArmor(damage: number, armor: number): number {
   return Math.max(0, damage - reduction);
 }
 
+function getDamageConditionMultiplier(
+  expression: DamageExpression,
+  defenderConditions: ConditionState[],
+): number {
+  if (!expression.conditions || expression.conditions.length === 0) {
+    return 1;
+  }
+
+  let multiplier = 1;
+
+  for (const condition of expression.conditions) {
+    const hasCondition = condition.conditionId
+      ? defenderConditions.some(
+          (activeCondition) => activeCondition.id === condition.conditionId,
+        )
+      : defenderConditions.length > 0;
+
+    if (hasCondition) {
+      multiplier *= condition.multiplier;
+    }
+  }
+
+  return multiplier;
+}
+
 export function resolveDamage(
   expression: DamageExpression,
   armor: number,
@@ -87,7 +119,15 @@ export function resolveDamage(
 
   const damageMultiplier = getIncomingDamageMultiplier(defenderConditions);
 
-  const finalDamage = Math.max(0, afterDefense * damageMultiplier);
+  const conditionalDamageMultiplier = getDamageConditionMultiplier(
+    expression,
+    defenderConditions,
+  );
+
+  const finalDamage = Math.max(
+    0,
+    afterDefense * damageMultiplier * conditionalDamageMultiplier,
+  );
 
   return {
     ...rolled,

@@ -3,7 +3,12 @@ import type { AttackType } from "../combat/Attack";
 import type { AbilityEffect } from "./AbilityEffect";
 import type { SpellSlotLevel } from "./Resource";
 
-export type AbilityTargetType = "self" | "ally" | "enemy" | "area";
+export type AbilityTargetType =
+  | "self"
+  | "ally"
+  | "enemy"
+  | "area"
+  | "self-or-ally";
 
 export type AbilityRecovery =
   | "unlimited"

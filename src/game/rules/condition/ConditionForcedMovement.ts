@@ -10,19 +10,25 @@ export function calculateForcedMovement(
   sourcePosition: Position,
   condition: ConditionState,
 ): Position {
-  const distance = condition.value ?? 0;
+  const requestedDistance = condition.value ?? 0;
 
-  if (distance <= 0) {
+  if (requestedDistance <= 0) {
     return { ...targetPosition };
   }
 
   const dx = targetPosition.x - sourcePosition.x;
   const dy = targetPosition.y - sourcePosition.y;
+
   const currentDistance = Math.sqrt(dx * dx + dy * dy);
 
   if (currentDistance === 0) {
     return { ...targetPosition };
   }
+
+  const movementDistance =
+    condition.id === "pulled"
+      ? Math.min(requestedDistance, currentDistance)
+      : requestedDistance;
 
   const directionX = dx / currentDistance;
   const directionY = dy / currentDistance;
@@ -30,7 +36,7 @@ export function calculateForcedMovement(
   const direction = condition.id === "pulled" ? -1 : 1;
 
   return {
-    x: targetPosition.x + directionX * distance * direction,
-    y: targetPosition.y + directionY * distance * direction,
+    x: targetPosition.x + directionX * movementDistance * direction,
+    y: targetPosition.y + directionY * movementDistance * direction,
   };
 }

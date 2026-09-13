@@ -88,6 +88,15 @@ export function validateAbilityTarget(
       }
       break;
 
+    case "self-or-ally":
+      if (target.id !== casterId && targetCombatant.team !== caster.team) {
+        return {
+          valid: false,
+          reason: "Target must be the caster or an ally.",
+        };
+      }
+      break;
+
     case "enemy":
       if (targetCombatant.team === caster.team) {
         return {

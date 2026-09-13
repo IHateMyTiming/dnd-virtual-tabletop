@@ -14,19 +14,16 @@ export type AbilityEffectType =
 
 export interface AbilityEffect {
   type: AbilityEffectType;
-
   value?: number;
-
   damage?: DamageExpression;
-
   healing?: DamageExpression;
-
   conditionId?: ConditionId;
-
   duration?: number;
-
   stacks?: number;
-
   distance?: number;
   modifier?: CombatModifier;
+
+  areaDamage?: {
+    falloff: number;
+  };
 }
