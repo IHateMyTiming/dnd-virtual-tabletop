@@ -47,7 +47,7 @@ export const CANTRIPS: AbilityDefinition[] = [
   {
     id: "acid_throw",
 
-    nameKey: "acid_throw",
+    nameKey: "spell_acid_throw",
     descriptionKey: "spell_acid_throw_description",
 
     actionType: "action",
@@ -96,7 +96,7 @@ export const CANTRIPS: AbilityDefinition[] = [
   {
     id: "frosting_legs",
 
-    nameKey: "frosting_legs",
+    nameKey: "spell_frosting_legs",
     descriptionKey: "spell_frosting_legs_description",
 
     actionType: "action",
@@ -196,7 +196,7 @@ export const CANTRIPS: AbilityDefinition[] = [
   {
     id: "poison_gas",
 
-    nameKey: "poison_gas",
+    nameKey: "spell_poison_gas",
     descriptionKey: "spell_poison_gas_description",
 
     actionType: "action",
@@ -245,7 +245,7 @@ export const CANTRIPS: AbilityDefinition[] = [
   {
     id: "blessing_from_the_dead",
 
-    nameKey: "blessing_from_the_dead",
+    nameKey: "spell_blessing_from_the_dead",
     descriptionKey: "spell_blessing_from_the_dead_description",
 
     actionType: "action",
@@ -292,7 +292,7 @@ export const CANTRIPS: AbilityDefinition[] = [
   {
     id: "get_over_here",
 
-    nameKey: "get_over_here",
+    nameKey: "spell_get_over_here",
     descriptionKey: "spell_get_over_here_description",
 
     actionType: "action",
@@ -339,7 +339,7 @@ export const CANTRIPS: AbilityDefinition[] = [
   {
     id: "shadow_bolt",
 
-    nameKey: "shadow_bolt",
+    nameKey: "spell_shadow_bolt",
     descriptionKey: "spell_shadow_bolt_description",
 
     actionType: "action",
@@ -391,7 +391,7 @@ export const CANTRIPS: AbilityDefinition[] = [
   {
     id: "on_the_dot",
 
-    nameKey: "on_the_dot",
+    nameKey: "spell_on_the_dot",
     descriptionKey: "spell_on_the_dot_description",
 
     actionType: "bonus-action",
@@ -420,7 +420,7 @@ export const CANTRIPS: AbilityDefinition[] = [
   {
     id: "tank_that",
 
-    nameKey: "tank_that",
+    nameKey: "spell_tank_that",
     descriptionKey: "spell_tank_that_description",
 
     actionType: "action",
@@ -439,6 +439,16 @@ export const CANTRIPS: AbilityDefinition[] = [
         },
         duration: 3,
       },
+      {
+        type: "modify-behavior",
+        modifier: {
+          behavior: "armor",
+          operation: "add",
+          trigger: "turn",
+          amount: 5,
+        },
+        duration: 3,
+      },
     ],
 
     recovery: "unlimited",
@@ -450,7 +460,7 @@ export const CANTRIPS: AbilityDefinition[] = [
   {
     id: "helping_hand",
 
-    nameKey: "helping_hand",
+    nameKey: "spell_helping_hand",
     descriptionKey: "spell_helping_hand_description",
 
     actionType: "action",
@@ -477,12 +487,12 @@ export const CANTRIPS: AbilityDefinition[] = [
 
     imagePath: "/assets/abilities/",
   },
-
+  //NEEDS FIX
   //ILLUMINATION SYSTEM
   {
     id: "dancing_lights",
 
-    nameKey: "dancing_lights",
+    nameKey: "spell_dancing_lights",
     descriptionKey: "spell_dancing_lights_description",
 
     actionType: "action",
@@ -511,7 +521,7 @@ export const CANTRIPS: AbilityDefinition[] = [
   {
     id: "i_was_here",
 
-    nameKey: "i_was_here",
+    nameKey: "spell_i_was_here",
     descriptionKey: "spell_i_was_here_description",
 
     actionType: "action",
