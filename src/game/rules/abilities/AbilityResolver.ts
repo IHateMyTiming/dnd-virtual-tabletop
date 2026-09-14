@@ -196,6 +196,12 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
       attackerConditions: casterConditions,
       defenderConditions,
       attackerLevel: caster.level,
+
+      abilityId: ability.id,
+
+      remainingEffects: ability.effects.filter(
+        (effect) => effect.type !== "damage",
+      ),
     };
 
     attackResult = combatEngine.attack(attackRequest);

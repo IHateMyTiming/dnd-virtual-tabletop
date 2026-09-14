@@ -14,7 +14,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     attackType: "spell",
 
-    range: 17,
+    range: 12,
 
     area: {
       shape: "circle",
@@ -28,6 +28,13 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
           count: 2,
           sides: 7,
           type: "magic",
+          scaling: {
+            type: "character-level",
+            diceCount: {
+              5: 3,
+              9: 4,
+            },
+          },
         },
       },
       {
@@ -49,6 +56,8 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
+  //NEEDS FIX
+  //NO STACKABLE
   {
     id: "ice_shard",
 
@@ -69,6 +78,16 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
           count: 2,
           sides: 7,
           type: "magic",
+          scaling: {
+            type: "character-level",
+            diceCount: {
+              5: 3,
+              9: 4,
+            },
+            modifier: {
+              12: +1,
+            },
+          },
         },
       },
       {
@@ -109,7 +128,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     attackType: "spell",
 
-    range: 25,
+    range: 15,
     maxTargets: 3,
 
     effects: [
@@ -119,6 +138,12 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
           count: 1,
           sides: 8,
           type: "magic",
+          scaling: {
+            type: "character-level",
+            diceCount: {
+              9: 2,
+            },
+          },
         },
       },
     ],
@@ -133,6 +158,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
   //NEEDS FIX
+  //MULTI - TARGET
   {
     id: "lightning_arc",
 
@@ -143,7 +169,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetType: "area",
     attackType: "spell",
 
-    range: 15,
+    range: 10,
 
     area: {
       shape: "circle",
@@ -159,6 +185,12 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
           count: 2,
           sides: 6,
           type: "magic",
+          scaling: {
+            type: "character-level",
+            diceCount: {
+              9: 3,
+            },
+          },
         },
       },
     ],
@@ -174,6 +206,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
   },
 
   //NEEDS FIX
+  //HP THRESHOLD CONDITION
   {
     id: "blood_thirster",
 
@@ -184,7 +217,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetType: "enemy",
     attackType: "spell",
 
-    range: 15,
+    range: 10,
     maxTargets: 1,
 
     effects: [
@@ -192,12 +225,19 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
         type: "damage",
         damage: {
           count: 2,
-          sides: 8,
+          sides: 10,
           type: "magic",
+          scaling: {
+            type: "character-level",
+            diceCount: {
+              6: 3,
+            },
+          },
         },
       },
     ],
 
+    //ADD A 25% EXTRA DAMAGE TO LESS THAN 50% HP
     recovery: "unlimited",
     isSpell: true,
     spellLevel: 1,
@@ -207,7 +247,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     imagePath: "/assets/abilities/",
   },
+
   //NEEDS FIX
+  //NO STACKABLE
   {
     id: "earth_spike",
 
@@ -218,7 +260,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetType: "enemy",
     attackType: "spell",
 
-    range: 12,
+    range: 7,
     maxTargets: 1,
 
     effects: [
@@ -226,8 +268,17 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
         type: "damage",
         damage: {
           count: 2,
-          sides: 6,
+          sides: 9,
           type: "magic",
+          scaling: {
+            type: "character-level",
+            diceCount: {
+              9: 3,
+            },
+            modifier: {
+              11: +3,
+            },
+          },
         },
       },
       {
@@ -248,7 +299,10 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     imagePath: "/assets/abilities/",
   },
+
+  //COMBAT DEALING DAMAGE SPELLS  CLERIC
   //NEEDS FIX
+  //CHARACTER ID
   {
     id: "radiant_bolt",
 
@@ -269,10 +323,19 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
           count: 2,
           sides: 6,
           type: "magic",
+          scaling: {
+            type: "character-level",
+            diceCount: {
+              6: 3,
+            },
+            modifier: {
+              12: +3,
+            },
+          },
         },
       },
     ],
-
+    //ADD A 50% MORE DAMAGE TO UNDEAD
     recovery: "unlimited",
     isSpell: true,
     spellLevel: 1,
@@ -389,6 +452,8 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
+  //NEEDS FIX
+  //PLACE
   {
     id: "alarm",
 
@@ -408,6 +473,249 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     effects: [],
 
     recovery: "unlimited",
+    isSpell: true,
+    spellLevel: 1,
+    resourceCost: {
+      amount: 1,
+    },
+
+    imagePath: "/assets/abilities/",
+  },
+
+  //UTILITY SPELLS CLERIC
+  {
+    id: "bless",
+
+    nameKey: "spell_bless",
+    descriptionKey: "spell_bless_description",
+
+    actionType: "action",
+    targetType: "ally",
+
+    range: 15,
+    maxTargets: 1,
+
+    effects: [
+      {
+        type: "modify-behavior",
+        modifier: {
+          behavior: "attack-roll",
+          operation: "add-dice",
+          trigger: "roll",
+          amount: 1,
+          diceCount: 1,
+          diceSides: 6,
+        },
+      },
+    ],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 1,
+    resourceCost: {
+      amount: 1,
+    },
+
+    imagePath: "/assets/abilities/",
+  },
+
+  {
+    id: "cure_light_wounds",
+
+    nameKey: "spell_cure_light_wounds",
+    descriptionKey: "spell_cure_light_wounds_description",
+
+    actionType: "action",
+    targetType: "ally",
+
+    range: 1,
+    maxTargets: 1,
+
+    effects: [
+      {
+        type: "heal",
+        healing: {
+          count: 1,
+          sides: 8,
+        },
+      },
+    ],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 1,
+    resourceCost: {
+      amount: 1,
+    },
+
+    imagePath: "/assets/abilities/",
+  },
+
+  {
+    id: "divine_cure",
+
+    nameKey: "spell_divine_cure",
+    descriptionKey: "spell_divine_cure_description",
+
+    actionType: "action",
+    targetType: "ally",
+
+    range: 8,
+    maxTargets: 1,
+
+    effects: [
+      {
+        type: "heal",
+        healing: {
+          count: 1,
+          sides: 4,
+        },
+      },
+    ],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 1,
+    resourceCost: {
+      amount: 1,
+    },
+
+    imagePath: "/assets/abilities/",
+  },
+
+  //NEEDS FIX
+  //DURATION
+  {
+    id: "cause_fear",
+
+    nameKey: "spell_cause_fear",
+    descriptionKey: "spell_cause_fear_description",
+
+    actionType: "action",
+    targetType: "enemy",
+
+    range: 10,
+    maxTargets: 1,
+
+    effects: [
+      {
+        type: "apply-condition",
+        conditionId: "frightened",
+        duration: 0, //NEEDS FIX: ongoing until the spell is dismissed
+        stacks: 1,
+        value: 0,
+      },
+    ],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 1,
+    resourceCost: {
+      amount: 1,
+    },
+
+    imagePath: "/assets/abilities/",
+  },
+
+  //NEEDS FIX
+  //DURATION
+  {
+    id: "magic_weapon",
+
+    nameKey: "spell_magic_weapon",
+    descriptionKey: "spell_magic_weapon_description",
+
+    actionType: "action",
+    targetType: "ally",
+
+    range: 1,
+    maxTargets: 1,
+
+    effects: [
+      {
+        type: "modify-behavior",
+        modifier: {
+          behavior: "damage",
+          operation: "add-dice",
+          trigger: "attack",
+          amount: 1,
+          diceCount: 1,
+          diceSides: 6,
+        },
+      },
+    ],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 1,
+    resourceCost: {
+      amount: 1,
+    },
+
+    imagePath: "/assets/abilities/",
+  },
+
+  //NEEDS FIX
+  //PLACE
+  {
+    id: "sanctuary",
+
+    nameKey: "spell_sanctuary",
+    descriptionKey: "spell_sanctuary_description",
+
+    actionType: "action",
+    targetType: "area",
+
+    range: 15,
+
+    area: {
+      shape: "circle",
+      radius: 3,
+    },
+
+    effects: [
+      // Creatures inside the Sanctuary cannot be damaged.
+      // Creatures inside the Sanctuary cannot attack.
+    ],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 1,
+    resourceCost: {
+      amount: 1,
+    },
+
+    imagePath: "/assets/abilities/",
+  },
+
+  //NEEDS FIX
+  //CREATURE ID
+  {
+    id: "speak_with_dead",
+
+    nameKey: "spell_speak_with_dead",
+    descriptionKey: "spell_speak_with_dead_description",
+
+    actionType: "action",
+    targetType: "enemy",
+
+    range: 1,
+    maxTargets: 1,
+
+    effects: [
+      // The target must be a corpse.
+      // The corpse answers up to three questions.
+      // The Master determines the answers based on the corpse's knowledge.
+    ],
+
+    recovery: "unlimited",
+
     isSpell: true,
     spellLevel: 1,
     resourceCost: {

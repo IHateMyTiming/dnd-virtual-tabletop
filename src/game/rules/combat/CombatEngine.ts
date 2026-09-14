@@ -51,12 +51,14 @@ import { getEffectiveArmor } from "../condition/ConditionArmor";
 import { getEffectiveMagicResistance } from "../condition/ConditionMagicResistance";
 import { getIncomingDamageMultiplier } from "../condition/ConditionDamageModifier";
 import { getConditionDodgeMultiplier } from "../condition/ConditionDefense";
+import type { AbilityEffect } from "../abilities/AbilityEffect";
 import {
   consumeModifier,
   getModifierValue,
   getModifierMultiplier,
   type CombatModifier,
 } from "./CombatModifier";
+import { executeAbilityEffects } from "../abilities/AbilityEffectExecutor";
 
 interface PendingDefense {
   attackerId: string;
@@ -67,6 +69,8 @@ interface PendingDefense {
   defenderStats: CharacterStats;
   defenderHpBefore: number;
   type: AttackType;
+  abilityId?: string;
+  remainingEffects?: AbilityEffect[];
 }
 
 export class CombatEngine {
@@ -744,6 +748,8 @@ export class CombatEngine {
       defenderStats: defender.stats,
       defenderHpBefore: hpBefore,
       type: request.type,
+      abilityId: request.abilityId,
+      remainingEffects: request.remainingEffects,
     };
 
     return {
@@ -935,6 +941,17 @@ export class CombatEngine {
     defender.hp = Math.max(0, defender.hp - finalDamage);
 
     defender.alive = defender.hp > 0;
+
+    if (!dodged && pending.remainingEffects?.length) {
+      executeAbilityEffects(
+        pending.remainingEffects,
+        {
+          casterId: pending.attackerId,
+          targetId: pending.defenderId,
+        },
+        this,
+      );
+    }
 
     this.pendingDefense = null;
 

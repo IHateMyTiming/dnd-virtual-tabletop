@@ -60,8 +60,6 @@ export const spellTranslations = {
     spell_hand_pistol_gun_description:
       "Fire magical projectiles at up to three enemies.",
 
-    // SPELLS LVL 1
-
     spell_lightning_arc: "Lightning Arc",
     spell_lightning_arc_description:
       "Strike an enemy with a powerful arc of lightning, then have the lightning jump to another nearby enemy. Each jump can continue to another enemy, allowing the lightning to chain between multiple targets.",

@@ -4,6 +4,7 @@ import type { DamageExpression } from "./Damage";
 import type { AttackType, AttackResult } from "./Attack";
 import type { ConditionState } from "../condition/ConditionState";
 import type { DamageResult } from "./Damage";
+import type { AbilityEffect } from "../abilities/AbilityEffect";
 
 export interface CombatAttackRequest {
   attackerId: string;
@@ -15,6 +16,8 @@ export interface CombatAttackRequest {
   attackerConditions: ConditionState[];
   defenderConditions: ConditionState[];
   attackerLevel: number;
+  abilityId?: string;
+  remainingEffects?: AbilityEffect[];
 }
 
 export interface CombatAttackResult {

@@ -12,7 +12,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     targetType: "enemy",
     attackType: "spell",
 
-    range: 15,
+    range: 10,
     maxTargets: 1,
 
     effects: [
@@ -30,7 +30,6 @@ export const CANTRIPS: AbilityDefinition[] = [
               5: 3,
               9: 4,
               11: 5,
-              12: 6,
             },
           },
         },
@@ -54,7 +53,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     targetType: "enemy",
     attackType: "spell",
 
-    range: 15,
+    range: 10,
     maxTargets: 1,
 
     effects: [
@@ -72,7 +71,6 @@ export const CANTRIPS: AbilityDefinition[] = [
               5: 3,
               9: 4,
               11: 5,
-              12: 6,
             },
           },
         },
@@ -103,7 +101,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     targetType: "enemy",
     attackType: "spell",
 
-    range: 25,
+    range: 10,
     maxTargets: 1,
 
     effects: [
@@ -119,7 +117,6 @@ export const CANTRIPS: AbilityDefinition[] = [
               1: 1,
               6: 3,
               10: 4,
-              12: 5,
             },
           },
         },
@@ -151,7 +148,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     targetType: "enemy",
     attackType: "spell",
 
-    range: 20,
+    range: 15,
     maxTargets: 6,
 
     area: {
@@ -175,13 +172,12 @@ export const CANTRIPS: AbilityDefinition[] = [
               5: 3,
               9: 4,
               11: 5,
-              12: 6,
             },
           },
         },
 
         areaDamage: {
-          falloff: 0.5,
+          falloff: 0.25,
         },
       },
     ],
@@ -203,7 +199,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     targetType: "enemy",
     attackType: "spell",
 
-    range: 15,
+    range: 10,
     maxTargets: 1,
 
     effects: [
@@ -221,7 +217,6 @@ export const CANTRIPS: AbilityDefinition[] = [
               5: 3,
               9: 4,
               11: 5,
-              13: 6,
             },
           },
         },
@@ -252,7 +247,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     targetType: "enemy",
     attackType: "spell",
 
-    range: 15,
+    range: 10,
     maxTargets: 1,
 
     effects: [
@@ -260,14 +255,14 @@ export const CANTRIPS: AbilityDefinition[] = [
         type: "damage",
         damage: {
           count: 1,
-          sides: 7,
+          sides: 6,
           type: "magic",
           scaling: {
             type: "character-level",
             diceCount: {
               1: 1,
               5: 2,
-              10: 3,
+              11: 3,
             },
           },
         },
@@ -277,7 +272,7 @@ export const CANTRIPS: AbilityDefinition[] = [
         conditionId: "cursed",
         duration: 3,
         stacks: 1,
-        value: 0,
+        value: 25,
       },
     ],
 
@@ -299,7 +294,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     targetType: "enemy",
     attackType: "spell",
 
-    range: 30,
+    range: 25,
     maxTargets: 1,
 
     effects: [
@@ -307,13 +302,13 @@ export const CANTRIPS: AbilityDefinition[] = [
         type: "damage",
         damage: {
           count: 1,
-          sides: 10,
+          sides: 7,
           type: "magic",
           scaling: {
             type: "character-level",
             diceCount: {
               1: 1,
-              5: 2,
+              7: 2,
               10: 3,
             },
           },
@@ -346,7 +341,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     targetType: "enemy",
     attackType: "spell",
 
-    range: 15,
+    range: 10,
     maxTargets: 1,
 
     effects: [
@@ -364,8 +359,7 @@ export const CANTRIPS: AbilityDefinition[] = [
               3: 2,
               5: 3,
               9: 4,
-              11: 5,
-              12: 6,
+              12: 5,
             },
           },
 
@@ -517,7 +511,8 @@ export const CANTRIPS: AbilityDefinition[] = [
 
     imagePath: "/assets/abilities/",
   },
-
+  //NEEDS FIX
+  //INVISIBILTY SYSTEM
   {
     id: "i_was_here",
 

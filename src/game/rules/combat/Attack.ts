@@ -121,6 +121,7 @@ export function rollAttackDamage(attack: AttackRequest): AttackDamageResult {
     attack.damage,
     attack.attackerLevel,
     attackModifiers,
+    attack.defenderConditions,
   );
 
   return {
@@ -233,6 +234,7 @@ function rollModifiedDamage(
   expression: DamageExpression,
   characterLevel: number,
   modifiers: CombatModifier[],
+  defenderConditions: ConditionState[],
 ): DamageResult {
   const damageModifiers = modifiers.filter(
     (modifier) => modifier.behavior === "damage",
@@ -244,6 +246,7 @@ function rollModifiedDamage(
   let rolls = [...base.rolls];
   let modifier = base.modifier;
 
+  // Damage modifiers from the attacker/item/etc.
   for (const damageModifier of damageModifiers) {
     switch (damageModifier.operation) {
       case "add":
@@ -276,6 +279,17 @@ function rollModifiedDamage(
       case "advantage":
       case "disadvantage":
         break;
+    }
+  }
+
+  // Damage multipliers based on the target's conditions.
+  if (expression.conditions) {
+    for (const condition of expression.conditions) {
+      if (condition.type === "target-has-condition") {
+        if (defenderConditions.length > 0) {
+          rawDamage *= condition.multiplier;
+        }
+      }
     }
   }
 
