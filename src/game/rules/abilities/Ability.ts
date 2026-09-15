@@ -3,12 +3,9 @@ import type { AttackType } from "../combat/Attack";
 import type { AbilityEffect } from "./AbilityEffect";
 import type { SpellSlotLevel } from "./Resource";
 
-export type AbilityTargetType =
-  | "self"
-  | "ally"
-  | "enemy"
-  | "area"
-  | "self-or-ally";
+export type AbilityTargetType = "self" | "ally" | "enemy" | "self-or-ally";
+
+export type AbilityTargetingMode = "single" | "multi" | "area";
 
 export type AbilityRecovery =
   | "unlimited"
@@ -37,31 +34,50 @@ export interface AbilityResourceCost {
   amount: number;
 }
 
-export interface AbilityDefinition {
+export type AbilityDefinition =
+  | AbilitySingleTarget
+  | AbilityMultiTarget
+  | AbilityAreaTarget;
+
+interface AbilityBase {
   id: string;
+
   nameKey: string;
   descriptionKey: string;
 
   actionType: CombatActionType;
+
   targetType: AbilityTargetType;
 
   attackType?: AttackType;
 
   range?: number;
 
-  maxTargets?: number;
-
-  area?: AbilityArea;
-
   effects: AbilityEffect[];
 
   recovery: AbilityRecovery;
+
   cooldown?: number;
 
   resourceCost?: AbilityResourceCost;
 
   isSpell?: boolean;
+
   spellLevel?: SpellSlotLevel;
 
   imagePath?: string;
+}
+
+export interface AbilitySingleTarget extends AbilityBase {
+  targetingMode: "single";
+}
+
+export interface AbilityMultiTarget extends AbilityBase {
+  targetingMode: "multi";
+  maxTargets: number;
+}
+
+export interface AbilityAreaTarget extends AbilityBase {
+  targetingMode: "area";
+  area: AbilityArea;
 }

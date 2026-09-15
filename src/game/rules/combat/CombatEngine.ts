@@ -76,7 +76,7 @@ interface PendingDefense {
 export class CombatEngine {
   private state: CombatState;
   private readonly random: () => number;
-  private pendingDefense: PendingDefense | null = null;
+  private pendingDefenses: PendingDefense[] = [];
   private lastCombatResult: CombatAttackResult | null = null;
 
   constructor(state: CombatState, random: () => number = Math.random) {
@@ -99,7 +99,11 @@ export class CombatEngine {
   }
 
   public getPendingDefense(): PendingDefense | null {
-    return this.pendingDefense;
+    return this.pendingDefenses[0] ?? null;
+  }
+
+  public getPendingDefenseCount(): number {
+    return this.pendingDefenses.length;
   }
 
   public startCombat(): void {
@@ -223,7 +227,51 @@ export class CombatEngine {
       };
     }
 
-    return this.resolveCombatAttack(request, "action");
+    return this.resolveCombatAttack(request, "action", true);
+  }
+
+  public attackMultiple(requests: CombatAttackRequest[]): CombatAttackResult[] {
+    if (requests.length === 0) {
+      return [];
+    }
+
+    const attackerId = requests[0].attackerId;
+
+    if (requests.some((request) => request.attackerId !== attackerId)) {
+      return requests.map((request) => ({
+        success: false,
+        attackerId: request.attackerId,
+        defenderId: request.defenderId,
+      }));
+    }
+
+    const attacker = this.state.combatants.find(
+      (combatant) => combatant.id === attackerId,
+    );
+
+    if (!attacker || this.getCurrentCombatant()?.id !== attacker.id) {
+      return requests.map((request) => ({
+        success: false,
+        attackerId: request.attackerId,
+        defenderId: request.defenderId,
+      }));
+    }
+
+    const conditions = this.state.conditionManager.getConditions(attacker.id);
+
+    if (!canUseAction(conditions) || !attacker.actionAvailable) {
+      return requests.map((request) => ({
+        success: false,
+        attackerId: request.attackerId,
+        defenderId: request.defenderId,
+      }));
+    }
+
+    attacker.actionAvailable = false;
+
+    return requests.map((request) =>
+      this.resolveCombatAttack(request, "action", false),
+    );
   }
 
   public getLastCombatResult(): CombatAttackResult | null {
@@ -301,7 +349,7 @@ export class CombatEngine {
 
     // If the AOO hit, the defender must choose
     // Dodge or Parry before movement continues.
-    if (this.pendingDefense) {
+    if (this.pendingDefenses.length > 0) {
       this.pendingMovement = {
         combatantId: current.id,
         position: { ...position },
@@ -612,6 +660,7 @@ export class CombatEngine {
   private resolveCombatAttack(
     request: CombatAttackRequest,
     resource: "action" | "opportunity",
+    consumeAction = false,
   ): CombatAttackResult {
     const attackerIndex = this.state.combatants.findIndex(
       (combatant) => combatant.id === request.attackerId,
@@ -698,7 +747,7 @@ export class CombatEngine {
 
     this.consumeAttackRollModifiers(attacker);
 
-    if (resource === "action") {
+    if (resource === "action" && consumeAction) {
       attacker.actionAvailable = false;
     }
 
@@ -737,20 +786,54 @@ export class CombatEngine {
       attackerModifiers: attacker.modifiers,
     });
 
+    const damageMultiplier = request.damageMultiplier ?? 1;
+
+    const adjustedDamage: DamageResult = {
+      ...attackDamage.damage,
+      rawDamage: attackDamage.damage.rawDamage * damageMultiplier,
+      finalDamage: attackDamage.damage.finalDamage * damageMultiplier,
+    };
+
     this.consumeAttackModifiers(attacker, request.type);
 
-    this.pendingDefense = {
+    const isAllyTarget = attacker.team === defender.team;
+
+    if (isAllyTarget) {
+      // Friendly attacks still roll to hit, but the ally never gets
+      // a Dodge/Parry reaction.
+      this.applyDamageAndEffectsImmediately(
+        attacker.id,
+        defender.id,
+        adjustedDamage,
+        request.remainingEffects,
+      );
+
+      return {
+        success: true,
+        status: "resolved",
+        attackerId: attacker.id,
+        defenderId: defender.id,
+        attack,
+        damage: adjustedDamage,
+        attackerStats: attacker.stats,
+        defenderStats: defender.stats,
+        defenderHpBefore: hpBefore,
+        defenderHpAfter: defender.hp,
+      };
+    }
+
+    this.pendingDefenses.push({
       attackerId: attacker.id,
       defenderId: defender.id,
       attack,
-      damage: attackDamage.damage,
+      damage: adjustedDamage,
       attackerStats: attacker.stats,
       defenderStats: defender.stats,
       defenderHpBefore: hpBefore,
       type: request.type,
       abilityId: request.abilityId,
       remainingEffects: request.remainingEffects,
-    };
+    });
 
     return {
       success: true,
@@ -758,17 +841,12 @@ export class CombatEngine {
       attackerId: attacker.id,
       defenderId: defender.id,
       attack,
-      damage: attackDamage.damage,
-      attackerStats: attacker.stats,
-      defenderStats: defender.stats,
-      defenderHpBefore: hpBefore,
-      defenderHpAfter: hpBefore,
+      damage: adjustedDamage,
     };
   }
 
   public resolveDefense(choice: DefenseChoice): CombatAttackResult {
-    const pending = this.pendingDefense;
-
+    const pending = this.pendingDefenses[0];
     if (!pending) {
       return {
         success: false,
@@ -782,8 +860,7 @@ export class CombatEngine {
     );
 
     if (!defender || !defender.alive) {
-      this.pendingDefense = null;
-
+      this.pendingDefenses.shift();
       if (this.pendingMovement) {
         const movingCombatant = this.state.combatants.find(
           (combatant) => combatant.id === this.pendingMovement!.combatantId,
@@ -953,7 +1030,7 @@ export class CombatEngine {
       );
     }
 
-    this.pendingDefense = null;
+    this.pendingDefenses.shift();
 
     if (this.pendingMovement) {
       const movingCombatant = this.state.combatants.find(
@@ -988,6 +1065,52 @@ export class CombatEngine {
       defenderHpBefore: hpBefore,
       defenderHpAfter: defender.hp,
     };
+  }
+
+  private applyDamageAndEffectsImmediately(
+    attackerId: string,
+    defenderId: string,
+    damage: DamageResult,
+    remainingEffects?: AbilityEffect[],
+  ): void {
+    const defender = this.state.combatants.find(
+      (combatant) => combatant.id === defenderId,
+    );
+
+    if (!defender) {
+      return;
+    }
+
+    const defenderConditions =
+      this.state.conditionManager.getConditions(defenderId);
+
+    const incomingDamageMultiplier =
+      getIncomingDamageMultiplier(defenderConditions);
+
+    const finalDamage = Math.max(
+      0,
+      damage.finalDamage * incomingDamageMultiplier,
+    );
+
+    const shouldWake = shouldWakeFromDamage(defenderConditions, finalDamage);
+
+    if (shouldWake) {
+      this.state.conditionManager.removeCondition(defenderId, "sleeping");
+    }
+
+    defender.hp = Math.max(0, defender.hp - finalDamage);
+    defender.alive = defender.hp > 0;
+
+    if (remainingEffects?.length) {
+      executeAbilityEffects(
+        remainingEffects,
+        {
+          casterId: attackerId,
+          targetId: defenderId,
+        },
+        this,
+      );
+    }
   }
 
   private consumeAttackRollModifiers(attacker: Combatant): void {

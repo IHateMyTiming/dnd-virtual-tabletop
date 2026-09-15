@@ -20,21 +20,6 @@ export type ConditionEffectType =
 
 export interface ConditionEffect {
   type: ConditionEffectType;
-
-  /**
-   * Optional numeric value used by effects such as
-   * movement reduction, accuracy modification,
-   * damage modification, etc.
-   */
   value?: number;
-
-  /**
-   * Optional identifier used when the effect is
-   * specific to another character.
-   *
-   * Example:
-   * Charmed by "wizard"
-   * Frightened by "dragon"
-   */
   sourceId?: string;
 }

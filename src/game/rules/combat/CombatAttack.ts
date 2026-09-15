@@ -18,6 +18,7 @@ export interface CombatAttackRequest {
   attackerLevel: number;
   abilityId?: string;
   remainingEffects?: AbilityEffect[];
+  damageMultiplier?: number;
 }
 
 export interface CombatAttackResult {

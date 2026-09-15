@@ -20,13 +20,24 @@ import { CANTRIPS } from "./rules/abilities/spells/cantrips";
 export class CombatTestScene extends Phaser.Scene {
   private ranger!: Phaser.GameObjects.Arc;
   private goblin!: Phaser.GameObjects.Arc;
+  private goblin2!: Phaser.GameObjects.Arc;
+  private ranger2!: Phaser.GameObjects.Arc;
 
   private combatEngine!: CombatEngine;
+
+  private targetingAbility: AbilityDefinition | null = null;
+  private targetingActive = false;
+  private targetingTargetId: string | null = null;
+
+  private targetingGraphics?: Phaser.GameObjects.Graphics;
+  private targetingText?: Phaser.GameObjects.Text;
 
   private combatText!: Phaser.GameObjects.Text;
 
   private rangerHpText!: Phaser.GameObjects.Text;
   private goblinHpText!: Phaser.GameObjects.Text;
+  private goblin2HpText!: Phaser.GameObjects.Text;
+  private ranger2HpText!: Phaser.GameObjects.Text;
 
   private rangerMovementText!: Phaser.GameObjects.Text;
   private goblinMovementText!: Phaser.GameObjects.Text;
@@ -175,6 +186,38 @@ export class CombatTestScene extends Phaser.Scene {
       alive: true,
     };
 
+    const ranger2: Combatant = {
+      id: "ranger2",
+      name: "Ranger2",
+      level: 1,
+      team: "player",
+      modifiers: [],
+
+      stats: this.rangerStats,
+
+      hp: 21,
+      maxHp: 21,
+
+      armor: 0,
+      magicResistance: 0,
+
+      position: {
+        x: 3,
+        y: 3,
+      },
+
+      movement: 6,
+      movementRemaining: 6,
+
+      actionAvailable: false,
+      bonusActionAvailable: false,
+      reactionAvailable: false,
+
+      initiative: 10,
+
+      alive: true,
+    };
+
     const goblin: Combatant = {
       id: "goblin",
       name: "Goblin",
@@ -207,8 +250,39 @@ export class CombatTestScene extends Phaser.Scene {
       alive: true,
     };
 
-    const state = createCombatState([ranger, goblin]);
+    const goblin2: Combatant = {
+      id: "goblin2",
+      name: "Goblin 2",
+      level: 1,
+      team: "enemy",
+      modifiers: [],
 
+      stats: this.goblinStats,
+
+      hp: 10,
+      maxHp: 10,
+
+      armor: 2,
+      magicResistance: 0,
+
+      position: {
+        x: 11,
+        y: 8,
+      },
+
+      movement: 6,
+      movementRemaining: 6,
+
+      actionAvailable: false,
+      bonusActionAvailable: false,
+      reactionAvailable: false,
+
+      initiative: 4,
+
+      alive: true,
+    };
+
+    const state = createCombatState([ranger, ranger2, goblin, goblin2]);
     this.combatEngine = new CombatEngine(state);
 
     this.combatEngine.startCombat();
@@ -216,15 +290,25 @@ export class CombatTestScene extends Phaser.Scene {
 
   private createCharacters(): void {
     const ranger = this.getCombatant("ranger");
-    const goblin = this.getCombatant("goblin");
+    const ranger2 = this.getCombatant("ranger2");
 
-    if (!ranger || !goblin) {
+    const goblin = this.getCombatant("goblin");
+    const goblin2 = this.getCombatant("goblin2");
+
+    if (!ranger || !ranger2 || !goblin || !goblin2) {
       return;
     }
 
     this.ranger = this.add.circle(
       ranger.position.x * cellSize + cellSize / 2,
       ranger.position.y * cellSize + cellSize / 2,
+      16,
+      0xff3333,
+    );
+
+    this.ranger2 = this.add.circle(
+      ranger2.position.x * cellSize + cellSize / 2,
+      ranger2.position.y * cellSize + cellSize / 2,
       16,
       0xff3333,
     );
@@ -236,12 +320,52 @@ export class CombatTestScene extends Phaser.Scene {
       0x3388ff,
     );
 
+    this.goblin2 = this.add.circle(
+      goblin2.position.x * cellSize + cellSize / 2,
+      goblin2.position.y * cellSize + cellSize / 2,
+      16,
+      0x3388ff,
+    );
+
+    this.goblin2.setInteractive({ useHandCursor: true });
+
+    this.goblin2.on("pointerdown", () => {
+      this.handleAbilityTargetClick("goblin2");
+    });
+
+    this.ranger.setInteractive({ useHandCursor: true });
+    this.ranger2.setInteractive({ useHandCursor: true });
+
+    this.goblin.setInteractive({ useHandCursor: true });
+
+    this.ranger.on("pointerdown", () => {
+      this.handleAbilityTargetClick("ranger");
+    });
+
+    this.ranger2.on("pointerdown", () => {
+      this.handleAbilityTargetClick("ranger2");
+    });
+
+    this.goblin.on("pointerdown", () => {
+      this.handleAbilityTargetClick("goblin");
+    });
+
     this.add.text(this.ranger.x - 25, this.ranger.y + 25, "Ranger", {
       fontSize: "16px",
       color: "#ffffff",
     });
 
+    this.add.text(this.ranger2.x - 25, this.ranger2.y + 25, "Ranger2", {
+      fontSize: "16px",
+      color: "#ffffff",
+    });
+
     this.add.text(this.goblin.x - 25, this.goblin.y + 25, "Goblin", {
+      fontSize: "16px",
+      color: "#ffffff",
+    });
+
+    this.add.text(this.goblin2.x - 35, this.goblin2.y + 25, "Goblin 2", {
       fontSize: "16px",
       color: "#ffffff",
     });
@@ -262,19 +386,27 @@ export class CombatTestScene extends Phaser.Scene {
       fontSize: "13px",
       color: "#ffffff",
     });
-    this.goblinHpText = this.add.text(panelX + 15, 70, "", {
+    this.ranger2HpText = this.add.text(panelX + 15, 60, "", {
       fontSize: "13px",
       color: "#ffffff",
     });
-    this.rangerMovementText = this.add.text(panelX + 15, 90, "", {
+    this.goblinHpText = this.add.text(panelX + 15, 73, "", {
+      fontSize: "13px",
+      color: "#ffffff",
+    });
+    this.goblin2HpText = this.add.text(panelX + 15, 85, "", {
+      fontSize: "13px",
+      color: "#ffffff",
+    });
+    this.rangerMovementText = this.add.text(panelX + 15, 110, "", {
       fontSize: "11px",
       color: "#ffffff",
     });
-    this.goblinMovementText = this.add.text(panelX + 15, 108, "", {
+    this.goblinMovementText = this.add.text(panelX + 15, 120, "", {
       fontSize: "11px",
       color: "#ffffff",
     });
-    this.rangerDefenseText = this.add.text(panelX + 15, 126, "", {
+    this.rangerDefenseText = this.add.text(panelX + 15, 130, "", {
       fontSize: "9px",
       color: "#ffffff",
     });
@@ -291,7 +423,7 @@ export class CombatTestScene extends Phaser.Scene {
       fontSize: "11px",
       color: "#ffffff",
     });
-    this.resourcesText = this.add.text(panelX + 15, 202, "", {
+    this.resourcesText = this.add.text(panelX + 15, 210, "", {
       fontSize: "10px",
       color: "#ffffff",
       wordWrap: { width: 210 },
@@ -359,16 +491,16 @@ export class CombatTestScene extends Phaser.Scene {
       fontStyle: "bold",
     });
 
-    this.createButton(panelX + 120, 430, 150, 26, "Poison Gas", 0x5a2875, () =>
-      this.useCantrip("poison_gas"),
+    this.createButton(panelX + 120, 430, 150, 26, "iguinis", 0x5a2875, () =>
+      this.useCantrip("iguinis"),
     );
 
-    this.createButton(panelX + 120, 460, 150, 26, "shadow_bolt", 0x5a2875, () =>
-      this.useCantrip("shadow_bolt"),
+    this.createButton(panelX + 120, 460, 150, 26, "on_the_dot", 0x5a2875, () =>
+      this.useCantrip("on_the_dot"),
     );
 
-    this.createButton(panelX + 120, 490, 150, 26, "get", 0x5a2875, () =>
-      this.useCantrip("get_over_here"),
+    this.createButton(panelX + 120, 490, 150, 26, "tank_that", 0x5a2875, () =>
+      this.useCantrip("tank_that"),
     );
 
     this.add.text(panelX + 15, 522, "CONDITION TESTER", {
@@ -702,6 +834,8 @@ export class CombatTestScene extends Phaser.Scene {
     const defender = this.getCombatant(result.defenderId);
     const damage = result.damage;
 
+    this.updateCharacterPositions();
+
     this.setCombatLog([
       `${defender?.name ?? result.defenderId} defends`,
       "",
@@ -844,78 +978,150 @@ export class CombatTestScene extends Phaser.Scene {
       return;
     }
 
-    const targetId = caster.team === "player" ? "goblin" : "ranger";
-
-    const result = this.resolveTestAbility(cantrip, caster.id, targetId);
-
-    console.log("[ABILITY]", {
-      id: cantrip.id,
-      name: cantrip.nameKey,
-      caster: caster.id,
-      target: targetId,
-      ability: cantrip,
-      result,
-    });
-
-    if (!result.success) {
-      this.setCombatLog([
-        `${caster.name} uses ${cantrip.id}`,
-        "",
-        result.reason ?? "Ability failed.",
-      ]);
+    if (cantrip.targetType === "self") {
+      this.confirmSelfCast(cantrip);
       return;
     }
 
-    console.log("[ABILITY RESULT]", result);
+    this.startAbilityTargeting(cantrip);
+  }
 
-    const attack = result.attackResult?.attack;
+  private startAbilityTargeting(ability: AbilityDefinition): void {
+    this.cancelAbilityTargeting();
 
-    if (!attack) {
-      this.setCombatLog([
-        `${caster.name} uses ${cantrip.id}`,
-        "",
-        `Target: ${this.getCombatant(targetId)?.name ?? targetId}`,
-        "",
-        "No attack result.",
-      ]);
-      this.updateInterface();
-      return;
-    }
+    this.targetingAbility = ability;
+    this.targetingActive = true;
+    this.targetingTargetId = null;
 
-    if (!attack.hit) {
-      this.setCombatLog([
-        `${caster.name} uses ${cantrip.id}`,
-        "",
-        `Target: ${this.getCombatant(targetId)?.name ?? targetId}`,
-        "",
-        `Hit chance: ${attack.chance.toFixed(1)}%`,
-        `Roll: ${attack.rolls[0].toFixed(1)}`,
-        "",
-        "MISS!",
-      ]);
+    this.targetingText = this.add.text(
+      15,
+      470,
+      `TARGET: ${ability.id}\nClick a valid target. Press ESC to cancel.`,
+      {
+        fontSize: "12px",
+        color: "#ffffff",
+        backgroundColor: "#222222",
+        padding: {
+          x: 8,
+          y: 6,
+        },
+      },
+    );
 
-      this.updateInterface();
-      return;
-    }
-
-    const damage = result.attackResult?.damage;
+    this.targetingGraphics = this.add.graphics();
 
     this.setCombatLog([
-      `${caster.name} uses ${cantrip.id}`,
+      `Targeting: ${ability.id}`,
       "",
-      `Target: ${this.getCombatant(targetId)?.name ?? targetId}`,
+      this.getTargetingInstruction(ability),
       "",
-      `Hit chance: ${attack.chance.toFixed(1)}%`,
-      `Roll: ${attack.rolls[0].toFixed(1)}`,
-      "",
-      attack.criticalHit ? "CRITICAL HIT!" : "HIT!",
-      "",
-      `Incoming magic damage: ${damage?.rawDamage ?? 0}`,
-      "",
-      "Choose DODGE or PARRY.",
+      "Click a target.",
+      "Press ESC to cancel.",
     ]);
 
-    this.updateInterface();
+    this.input.keyboard?.on("keydown-ESC", this.handleTargetingEscape, this);
+  }
+
+  private getTargetingInstruction(ability: AbilityDefinition): string {
+    switch (ability.targetType) {
+      case "enemy":
+        return "Select an enemy.";
+
+      case "ally":
+        return "Select an ally.";
+
+      case "self-or-ally":
+        return "Select yourself or an ally.";
+
+      case "self":
+        return "This ability targets yourself.";
+
+      default:
+        return "Select a target.";
+    }
+  }
+
+  private handleAbilityTargetClick(targetId: string): void {
+    if (!this.targetingActive || !this.targetingAbility) {
+      return;
+    }
+
+    const ability = this.targetingAbility;
+    const caster = this.combatEngine.getCurrentCombatant();
+    const target = this.getCombatant(targetId);
+
+    if (!caster || !target || !target.alive) {
+      return;
+    }
+
+    if (!this.isValidAbilityTarget(ability, caster, target)) {
+      this.setCombatLog([
+        `Invalid target: ${target.name}`,
+        "",
+        this.getTargetingInstruction(ability),
+      ]);
+
+      return;
+    }
+
+    if (this.targetingTargetId !== targetId) {
+      this.targetingTargetId = targetId;
+
+      this.updateTargetingPreview();
+
+      this.setCombatLog([
+        `Selected target: ${target.name}`,
+        "",
+        ability.targetingMode === "area"
+          ? "AoE preview shown."
+          : "Click the target again to cast.",
+      ]);
+
+      return;
+    }
+
+    this.confirmTargetedAbility(ability, targetId);
+  }
+
+  private isValidAbilityTarget(
+    ability: AbilityDefinition,
+    caster: Combatant,
+    target: Combatant,
+  ): boolean {
+    switch (ability.targetType) {
+      case "self":
+        return target.id === caster.id;
+
+      case "ally":
+        return target.team === caster.team;
+
+      case "self-or-ally":
+        return target.id === caster.id || target.team === caster.team;
+
+      case "enemy":
+        return target.team !== caster.team;
+
+      default:
+        return false;
+    }
+  }
+
+  private confirmTargetedAbility(
+    ability: AbilityDefinition,
+    targetId: string,
+  ): void {
+    const caster = this.combatEngine.getCurrentCombatant();
+
+    if (!caster) {
+      this.cancelAbilityTargeting();
+      return;
+    }
+
+    const result = this.resolveTestAbility(ability, caster.id, targetId);
+
+    this.cancelAbilityTargeting();
+
+    this.handleAbilityResult(ability, caster.id, targetId, result);
   }
 
   private resolveTestAbility(
@@ -927,23 +1133,324 @@ export class CombatTestScene extends Phaser.Scene {
 
     const request: AbilityUseRequest = {
       ability,
-
       state: createAbilityState(ability.id),
-
       resources: createEmptyResources(),
-
       casterId,
-
       target: {
         id: targetId,
       },
-
       combatState,
-
       combatEngine: this.combatEngine,
     };
 
     return resolveAbility(request);
+  }
+
+  private confirmSelfCast(ability: AbilityDefinition): void {
+    const caster = this.combatEngine.getCurrentCombatant();
+
+    if (!caster) {
+      return;
+    }
+
+    const background = this.add.rectangle(360, 300, 360, 150, 0x151515, 0.98);
+
+    background.setDepth(100);
+    background.setInteractive();
+
+    const text = this.add.text(360, 270, `Cast ${ability.id}?`, {
+      fontSize: "18px",
+      color: "#ffffff",
+      fontStyle: "bold",
+      align: "center",
+    });
+
+    text.setOrigin(0.5);
+    text.setDepth(101);
+
+    const cancel = this.add
+      .rectangle(290, 330, 100, 35, 0x555555)
+      .setInteractive({ useHandCursor: true });
+
+    cancel.setDepth(100);
+
+    const cancelText = this.add.text(290, 330, "CANCEL", {
+      fontSize: "11px",
+      color: "#ffffff",
+      fontStyle: "bold",
+    });
+
+    cancelText.setOrigin(0.5);
+    cancelText.setDepth(101);
+
+    const cast = this.add
+      .rectangle(430, 330, 100, 35, 0x754040)
+      .setInteractive({ useHandCursor: true });
+
+    cast.setDepth(100);
+
+    const castText = this.add.text(430, 330, "CAST", {
+      fontSize: "11px",
+      color: "#ffffff",
+      fontStyle: "bold",
+    });
+
+    castText.setOrigin(0.5);
+    castText.setDepth(101);
+
+    const close = (): void => {
+      background.destroy();
+      text.destroy();
+      cancel.destroy();
+      cancelText.destroy();
+      cast.destroy();
+      castText.destroy();
+    };
+
+    cancel.on("pointerdown", () => {
+      close();
+
+      this.setCombatLog(["Cast cancelled."]);
+    });
+
+    cast.on("pointerdown", () => {
+      close();
+
+      const result = this.resolveTestAbility(ability, caster.id, caster.id);
+
+      this.handleAbilityResult(ability, caster.id, caster.id, result);
+    });
+  }
+
+  private updateTargetingPreview(): void {
+    if (!this.targetingGraphics) {
+      return;
+    }
+
+    this.targetingGraphics.clear();
+
+    if (!this.targetingAbility || !this.targetingTargetId) {
+      return;
+    }
+
+    const ability = this.targetingAbility;
+
+    if (
+      ability.targetingMode !== "area" ||
+      ability.area.shape !== "circle" ||
+      ability.area.radius === undefined
+    ) {
+      return;
+    }
+
+    const target = this.getCombatant(this.targetingTargetId);
+
+    if (!target) {
+      return;
+    }
+
+    const x = target.position.x * cellSize + cellSize / 2;
+    const y = target.position.y * cellSize + cellSize / 2;
+    const radius = ability.area.radius * cellSize;
+
+    this.targetingGraphics.lineStyle(2, 0xffcc33, 0.9);
+
+    this.targetingGraphics.fillStyle(0xffcc33, 0.15);
+
+    this.targetingGraphics.fillCircle(x, y, radius);
+
+    this.targetingGraphics.strokeCircle(x, y, radius);
+  }
+
+  private handleTargetingEscape = (): void => {
+    if (!this.targetingActive) {
+      return;
+    }
+
+    this.cancelAbilityTargeting();
+
+    this.setCombatLog(["Targeting cancelled."]);
+  };
+
+  private cancelAbilityTargeting(): void {
+    this.targetingActive = false;
+    this.targetingAbility = null;
+    this.targetingTargetId = null;
+
+    this.targetingGraphics?.destroy();
+    this.targetingGraphics = undefined;
+
+    this.targetingText?.destroy();
+    this.targetingText = undefined;
+
+    this.input.keyboard?.off("keydown-ESC", this.handleTargetingEscape, this);
+  }
+
+  private handleAbilityResult(
+    ability: AbilityDefinition,
+    casterId: string,
+    targetId: string,
+    result: ReturnType<typeof resolveAbility>,
+  ): void {
+    if (!result.success) {
+      this.setCombatLog([
+        `Ability failed: ${result.reason ?? "Unknown reason."}`,
+      ]);
+      this.updateInterface();
+      return;
+    }
+
+    const caster = this.getCombatant(casterId);
+    const primaryTarget = this.getCombatant(targetId);
+
+    // Multiple attacks: AoE / multi-target
+    if (result.attackResults && result.attackResults.length > 0) {
+      const log: string[] = [
+        `Ability used: ${ability.nameKey}`,
+        `Caster: ${caster?.name ?? casterId}`,
+        `Primary target: ${primaryTarget?.name ?? targetId}`,
+        "",
+        `Targets hit: ${result.attackResults.length}`,
+        "",
+      ];
+
+      let pendingDefenseCount = 0;
+
+      for (const attackResult of result.attackResults) {
+        const defender = this.getCombatant(attackResult.defenderId);
+
+        if (!defender) {
+          continue;
+        }
+
+        const distance =
+          this.combatEngine.getDistanceBetween(
+            casterId,
+            attackResult.defenderId,
+          ) ?? 0;
+
+        log.push(`${defender.name}`);
+        log.push(`Distance from caster: ${distance.toFixed(1)}m`);
+
+        if (!attackResult.attack) {
+          log.push("No attack result.");
+          log.push("");
+          continue;
+        }
+
+        log.push(
+          `Hit chance: ${attackResult.attack.chance?.toFixed(1) ?? "?"}%`,
+        );
+
+        log.push(`Roll: ${attackResult.attack.rolls ?? "?"}`);
+
+        if (!attackResult.attack.hit) {
+          log.push("MISS!");
+          log.push("");
+          continue;
+        }
+
+        log.push("HIT!");
+
+        if (attackResult.damage) {
+          log.push(`Incoming damage: ${attackResult.damage.rawDamage}`);
+        }
+
+        if (attackResult.status === "awaiting-defense") {
+          pendingDefenseCount++;
+        }
+
+        log.push("");
+      }
+
+      if (pendingDefenseCount > 0) {
+        log.push(
+          `Defense required: ${pendingDefenseCount} target${
+            pendingDefenseCount === 1 ? "" : "s"
+          }`,
+        );
+        log.push("");
+        log.push("Choose DODGE or PARRY.");
+      }
+
+      this.setCombatLog(log);
+      this.updateInterface();
+      return;
+    }
+
+    // Single-target attack
+    const attack = result.attackResult;
+
+    if (!attack) {
+      this.setCombatLog([
+        `Ability used: ${ability.nameKey}`,
+        `Caster: ${caster?.name ?? casterId}`,
+        `Target: ${primaryTarget?.name ?? targetId}`,
+      ]);
+
+      this.updateInterface();
+      return;
+    }
+
+    if (!attack.attack?.hit) {
+      this.setCombatLog([
+        `Ability used: ${ability.nameKey}`,
+        `Caster: ${caster?.name ?? casterId}`,
+        `Target: ${primaryTarget?.name ?? targetId}`,
+        "",
+        "MISS!",
+        "",
+        `Hit chance: ${attack.attack?.chance?.toFixed(1) ?? "?"}%`,
+        `Roll: ${attack.attack?.rolls ?? "?"}`,
+      ]);
+
+      this.updateInterface();
+      return;
+    }
+
+    if (attack.status === "awaiting-defense") {
+      const distance =
+        this.combatEngine.getDistanceBetween(casterId, targetId) ?? 0;
+
+      const defender = this.getCombatant(attack.defenderId);
+
+      this.setCombatLog([
+        `Ability used: ${ability.nameKey}`,
+        `Caster: ${caster?.name ?? casterId}`,
+        `Target: ${primaryTarget?.name ?? targetId}`,
+        "",
+        `Distance: ${distance.toFixed(1)}m`,
+        `Hit chance: ${attack.attack?.chance?.toFixed(1) ?? "?"}%`,
+        `Roll: ${attack.attack?.rolls ?? "?"}`,
+        "",
+        "HIT!",
+        "",
+        `Incoming damage: ${attack.damage?.rawDamage ?? 0}`,
+        "",
+        `Defender: ${defender?.name ?? attack.defenderId}`,
+        "Choose DODGE or PARRY.",
+        defender
+          ? `Dodge: ${
+              getDefenseStats(defender.stats).physicalDodge
+            }% | Parry: ${getDefenseStats(defender.stats).parry}%`
+          : "",
+      ]);
+
+      this.updateInterface();
+      return;
+    }
+
+    this.setCombatLog([
+      `Ability used: ${ability.nameKey}`,
+      `Caster: ${caster?.name ?? casterId}`,
+      `Target: ${primaryTarget?.name ?? targetId}`,
+      "",
+      "HIT!",
+      "",
+      `Damage: ${attack.damage?.finalDamage ?? 0}`,
+    ]);
+
+    this.updateInterface();
   }
 
   private nextCondition(): void {
@@ -1080,7 +1587,11 @@ export class CombatTestScene extends Phaser.Scene {
   private updateInterface(): void {
     this.rangerHpText.setText(this.getRangerHpText());
 
+    this.ranger2HpText.setText(this.getRangerHpText());
+
     this.goblinHpText.setText(this.getGoblinHpText());
+
+    this.goblin2HpText.setText(this.getGoblin2HpText());
 
     this.rangerMovementText.setText(this.getRangerMovementText());
 
@@ -1129,6 +1640,16 @@ export class CombatTestScene extends Phaser.Scene {
     return `Ranger HP: ${ranger.hp}/${ranger.maxHp}`;
   }
 
+  private getRanger2HpText(): string {
+    const ranger2 = this.getCombatant("ranger");
+
+    if (!ranger2) {
+      return "Ranger HP: ?";
+    }
+
+    return `Ranger HP: ${ranger2.hp}/${ranger2.maxHp}`;
+  }
+
   private getGoblinHpText(): string {
     const goblin = this.getCombatant("goblin");
 
@@ -1137,6 +1658,16 @@ export class CombatTestScene extends Phaser.Scene {
     }
 
     return `Goblin HP: ${goblin.hp}/${goblin.maxHp}`;
+  }
+
+  private getGoblin2HpText(): string {
+    const goblin2 = this.getCombatant("goblin2");
+
+    if (!goblin2) {
+      return "Goblin 2 HP: ?";
+    }
+
+    return `Goblin 2 HP: ${goblin2.hp}/${goblin2.maxHp}`;
   }
 
   private getRangerMovementText(): string {
@@ -1259,9 +1790,13 @@ export class CombatTestScene extends Phaser.Scene {
   }
 
   private getDefensePromptText(): string {
-    const pending = (this.combatEngine as any).pendingDefense as {
-      defenderId: string;
-    } | null;
+    const pendingCount = this.combatEngine.getPendingDefenseCount();
+
+    if (pendingCount === 0) {
+      return "";
+    }
+
+    const pending = this.combatEngine.getPendingDefense();
 
     if (!pending) {
       return "";
@@ -1269,7 +1804,15 @@ export class CombatTestScene extends Phaser.Scene {
 
     const defender = this.getCombatant(pending.defenderId);
 
-    return defender ? `DEFENSE: ${defender.name} — choose Dodge or Parry` : "";
+    if (pendingCount === 1) {
+      return defender
+        ? `DEFENSE: ${defender.name} — choose Dodge or Parry`
+        : "";
+    }
+
+    return defender
+      ? `DEFENSE: ${defender.name} — choose Dodge or Parry (${pendingCount} pending)`
+      : `DEFENSE: ${pendingCount} attacks pending`;
   }
 
   private getConditionText(combatantId: string): string {
@@ -1305,8 +1848,10 @@ export class CombatTestScene extends Phaser.Scene {
 
   private updateCharacterPositions(): void {
     const ranger = this.getCombatant("ranger");
+    const ranger2 = this.getCombatant("ranger2");
 
     const goblin = this.getCombatant("goblin");
+    const goblin2 = this.getCombatant("goblin2");
 
     if (ranger) {
       this.ranger.setPosition(
@@ -1315,10 +1860,24 @@ export class CombatTestScene extends Phaser.Scene {
       );
     }
 
+    if (ranger2) {
+      this.ranger2.setPosition(
+        ranger2.position.x * cellSize + cellSize / 2,
+        ranger2.position.y * cellSize + cellSize / 2,
+      );
+    }
+
     if (goblin) {
       this.goblin.setPosition(
         goblin.position.x * cellSize + cellSize / 2,
         goblin.position.y * cellSize + cellSize / 2,
+      );
+    }
+
+    if (goblin2) {
+      this.goblin2.setPosition(
+        goblin2.position.x * cellSize + cellSize / 2,
+        goblin2.position.y * cellSize + cellSize / 2,
       );
     }
   }

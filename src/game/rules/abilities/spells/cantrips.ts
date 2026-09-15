@@ -10,10 +10,10 @@ export const CANTRIPS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "enemy",
+    targetingMode: "single",
     attackType: "spell",
 
     range: 10,
-    maxTargets: 1,
 
     effects: [
       {
@@ -51,10 +51,10 @@ export const CANTRIPS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "enemy",
+    targetingMode: "single",
     attackType: "spell",
 
     range: 10,
-    maxTargets: 1,
 
     effects: [
       {
@@ -99,10 +99,10 @@ export const CANTRIPS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "enemy",
+    targetingMode: "single",
     attackType: "spell",
 
     range: 10,
-    maxTargets: 1,
 
     effects: [
       {
@@ -146,10 +146,10 @@ export const CANTRIPS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "enemy",
+    targetingMode: "area",
     attackType: "spell",
 
     range: 15,
-    maxTargets: 6,
 
     area: {
       shape: "circle",
@@ -197,10 +197,10 @@ export const CANTRIPS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "enemy",
+    targetingMode: "single",
     attackType: "spell",
 
     range: 10,
-    maxTargets: 1,
 
     effects: [
       {
@@ -245,10 +245,10 @@ export const CANTRIPS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "enemy",
+    targetingMode: "single",
     attackType: "spell",
 
     range: 10,
-    maxTargets: 1,
 
     effects: [
       {
@@ -292,10 +292,10 @@ export const CANTRIPS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "enemy",
+    targetingMode: "single",
     attackType: "spell",
 
     range: 25,
-    maxTargets: 1,
 
     effects: [
       {
@@ -339,10 +339,10 @@ export const CANTRIPS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "enemy",
+    targetingMode: "single",
     attackType: "spell",
 
     range: 10,
-    maxTargets: 1,
 
     effects: [
       {
@@ -390,6 +390,7 @@ export const CANTRIPS: AbilityDefinition[] = [
 
     actionType: "bonus-action",
     targetType: "self-or-ally",
+    targetingMode: "single",
 
     range: 30,
 
@@ -419,6 +420,7 @@ export const CANTRIPS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "self-or-ally",
+    targetingMode: "single",
 
     range: 30,
 
@@ -459,6 +461,7 @@ export const CANTRIPS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "self-or-ally",
+    targetingMode: "single",
 
     range: 30,
 
@@ -481,6 +484,7 @@ export const CANTRIPS: AbilityDefinition[] = [
 
     imagePath: "/assets/abilities/",
   },
+
   //NEEDS FIX
   //ILLUMINATION SYSTEM
   {
@@ -490,7 +494,8 @@ export const CANTRIPS: AbilityDefinition[] = [
     descriptionKey: "spell_dancing_lights_description",
 
     actionType: "action",
-    targetType: "area",
+    targetType: "self",
+    targetingMode: "area",
 
     range: 15,
 
@@ -511,6 +516,7 @@ export const CANTRIPS: AbilityDefinition[] = [
 
     imagePath: "/assets/abilities/",
   },
+
   //NEEDS FIX
   //INVISIBILTY SYSTEM
   {
@@ -520,7 +526,8 @@ export const CANTRIPS: AbilityDefinition[] = [
     descriptionKey: "spell_i_was_here_description",
 
     actionType: "action",
-    targetType: "area",
+    targetType: "self",
+    targetingMode: "area",
 
     range: 7,
 

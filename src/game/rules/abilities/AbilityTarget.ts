@@ -21,10 +21,6 @@ export function validateAbilityTarget(
     (combatant) => combatant.id === casterId,
   );
 
-  const targetCombatant = state.combatants.find(
-    (combatant) => combatant.id === target.id,
-  );
-
   if (!caster) {
     return {
       valid: false,
@@ -39,16 +35,21 @@ export function validateAbilityTarget(
     };
   }
 
-  if (ability.targetType === "area") {
-    return {
-      valid: true,
-    };
-  }
+  const targetCombatant = state.combatants.find(
+    (combatant) => combatant.id === target.id,
+  );
 
   if (!targetCombatant) {
     return {
       valid: false,
       reason: "Target does not exist.",
+    };
+  }
+
+  if (!targetCombatant.alive) {
+    return {
+      valid: false,
+      reason: "Target is not alive.",
     };
   }
 
@@ -59,13 +60,6 @@ export function validateAbilityTarget(
     return {
       valid: false,
       reason: "Target is out of range.",
-    };
-  }
-
-  if (!targetCombatant.alive) {
-    return {
-      valid: false,
-      reason: "Target is not alive.",
     };
   }
 

@@ -25,9 +25,14 @@ export function calculateForcedMovement(
     return { ...targetPosition };
   }
 
+  const minimumDistance = 1;
+
   const movementDistance =
     condition.id === "pulled"
-      ? Math.min(requestedDistance, currentDistance)
+      ? Math.min(
+          requestedDistance,
+          Math.max(0, currentDistance - minimumDistance),
+        )
       : requestedDistance;
 
   const directionX = dx / currentDistance;
@@ -35,8 +40,13 @@ export function calculateForcedMovement(
 
   const direction = condition.id === "pulled" ? -1 : 1;
 
+  const newX = targetPosition.x + directionX * movementDistance * direction;
+
+  const newY = targetPosition.y + directionY * movementDistance * direction;
+
+  // Snap the final position to the 1m grid.
   return {
-    x: targetPosition.x + directionX * movementDistance * direction,
-    y: targetPosition.y + directionY * movementDistance * direction,
+    x: Math.round(newX),
+    y: Math.round(newY),
   };
 }
