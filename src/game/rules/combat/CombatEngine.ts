@@ -2,6 +2,7 @@ import type { CombatState } from "./CombatState";
 import { startTurn, getCurrentCombatant } from "./Turn";
 import type { Combatant } from "./Combatant";
 import type { CombatActionType } from "./Action";
+import { roundToOneDecimal } from "../dice/Dice";
 import {
   resolveAttack,
   rollAttackDamage,
@@ -400,12 +401,26 @@ export class CombatEngine {
   }
 
   public addModifier(combatantId: string, modifier: CombatModifier): void {
+    console.log("ADDING MODIFIER:", modifier);
     const combatant = this.state.combatants.find(
       (current) => current.id === combatantId,
     );
 
     if (!combatant) {
       throw new Error(`Combatant "${combatantId}" not found.`);
+    }
+
+    const existingModifier = modifier.id
+      ? combatant.modifiers.find((current) => current.id === modifier.id)
+      : undefined;
+
+    if (existingModifier) {
+      existingModifier.value = modifier.value;
+      existingModifier.amount = modifier.amount;
+      existingModifier.duration = modifier.duration;
+      existingModifier.diceCount = modifier.diceCount;
+      existingModifier.diceSides = modifier.diceSides;
+      return;
     }
 
     combatant.modifiers.push({ ...modifier });
@@ -531,8 +546,9 @@ export class CombatEngine {
           continue;
         }
 
-        combatant.hp = Math.max(0, combatant.hp - damage.totalDamage);
-
+        combatant.hp = roundToOneDecimal(
+          Math.max(0, combatant.hp - damage.totalDamage),
+        );
         if (combatant.hp === 0) {
           combatant.alive = false;
         }
@@ -579,8 +595,7 @@ export class CombatEngine {
 
     const hpBefore = target.hp;
 
-    target.hp = Math.max(0, target.hp - result.finalDamage);
-
+    target.hp = roundToOneDecimal(Math.max(0, target.hp - result.finalDamage));
     if (target.hp === 0) {
       target.alive = false;
     }
@@ -619,8 +634,7 @@ export class CombatEngine {
 
     const hpBefore = target.hp;
 
-    target.hp = Math.min(target.maxHp, target.hp + amount);
-
+    target.hp = roundToOneDecimal(Math.min(target.maxHp, target.hp + amount));
     return target.hp - hpBefore;
   }
 
@@ -806,6 +820,7 @@ export class CombatEngine {
         defender.id,
         adjustedDamage,
         request.remainingEffects,
+        request.abilityId,
       );
 
       return {
@@ -1006,8 +1021,10 @@ export class CombatEngine {
 
       const damageMultiplier = getIncomingDamageMultiplier(defenderConditions);
 
-      finalDamage = Math.max(0, finalDamage * damageMultiplier);
+      finalDamage = Math.max(1, finalDamage * damageMultiplier);
     }
+
+    finalDamage = roundToOneDecimal(finalDamage);
 
     const shouldWake = shouldWakeFromDamage(defenderConditions, finalDamage);
 
@@ -1015,7 +1032,7 @@ export class CombatEngine {
       this.state.conditionManager.removeCondition(defender.id, "sleeping");
     }
 
-    defender.hp = Math.max(0, defender.hp - finalDamage);
+    defender.hp = roundToOneDecimal(Math.max(0, defender.hp - finalDamage));
 
     defender.alive = defender.hp > 0;
 
@@ -1027,6 +1044,7 @@ export class CombatEngine {
           targetId: pending.defenderId,
         },
         this,
+        pending.abilityId ?? "",
       );
     }
 
@@ -1072,6 +1090,7 @@ export class CombatEngine {
     defenderId: string,
     damage: DamageResult,
     remainingEffects?: AbilityEffect[],
+    abilityId?: string,
   ): void {
     const defender = this.state.combatants.find(
       (combatant) => combatant.id === defenderId,
@@ -1087,9 +1106,8 @@ export class CombatEngine {
     const incomingDamageMultiplier =
       getIncomingDamageMultiplier(defenderConditions);
 
-    const finalDamage = Math.max(
-      0,
-      damage.finalDamage * incomingDamageMultiplier,
+    const finalDamage = roundToOneDecimal(
+      Math.max(1, damage.finalDamage * incomingDamageMultiplier),
     );
 
     const shouldWake = shouldWakeFromDamage(defenderConditions, finalDamage);
@@ -1098,7 +1116,7 @@ export class CombatEngine {
       this.state.conditionManager.removeCondition(defenderId, "sleeping");
     }
 
-    defender.hp = Math.max(0, defender.hp - finalDamage);
+    defender.hp = roundToOneDecimal(Math.max(0, defender.hp - finalDamage));
     defender.alive = defender.hp > 0;
 
     if (remainingEffects?.length) {
@@ -1109,6 +1127,7 @@ export class CombatEngine {
           targetId: defenderId,
         },
         this,
+        abilityId ?? "",
       );
     }
   }
@@ -1117,7 +1136,11 @@ export class CombatEngine {
     const modifiers = [...attacker.modifiers];
 
     for (const modifier of modifiers) {
-      if (modifier.trigger === "roll" && modifier.amount > 0) {
+      if (
+        modifier.trigger === "roll" &&
+        modifier.behavior === "attack-roll" &&
+        modifier.amount > 0
+      ) {
         consumeModifier(attacker.modifiers, modifier);
       }
     }
@@ -1154,7 +1177,20 @@ export class CombatEngine {
         continue;
       }
 
-      consumeModifier(combatant.modifiers, modifier);
+      if (modifier.duration === undefined) {
+        consumeModifier(combatant.modifiers, modifier);
+        continue;
+      }
+
+      modifier.duration -= 1;
+
+      if (modifier.duration <= 0) {
+        const index = combatant.modifiers.indexOf(modifier);
+
+        if (index !== -1) {
+          combatant.modifiers.splice(index, 1);
+        }
+      }
     }
   }
 }

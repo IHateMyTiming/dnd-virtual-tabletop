@@ -28,6 +28,7 @@ export class CombatTestScene extends Phaser.Scene {
   private targetingAbility: AbilityDefinition | null = null;
   private targetingActive = false;
   private targetingTargetId: string | null = null;
+  private targetingAttackType: "melee" | "ranged" | null = null;
 
   private targetingGraphics?: Phaser.GameObjects.Graphics;
   private targetingText?: Phaser.GameObjects.Text;
@@ -202,8 +203,8 @@ export class CombatTestScene extends Phaser.Scene {
       magicResistance: 0,
 
       position: {
-        x: 3,
-        y: 3,
+        x: 12,
+        y: 6,
       },
 
       movement: 6,
@@ -446,14 +447,14 @@ export class CombatTestScene extends Phaser.Scene {
       fontStyle: "bold",
     });
 
-    /* this.createButton(
+    this.createButton(
       panelX + 120,
       275,
       150,
       28,
       "RANGED ATTACK",
       0x8b2020,
-      () => this.performRangedAttack(),
+      () => this.startBasicAttackTargeting("ranged"),
     );
     this.createButton(
       panelX + 120,
@@ -462,8 +463,8 @@ export class CombatTestScene extends Phaser.Scene {
       28,
       "MELEE ATTACK",
       0x7a3030,
-      () => this.performMeleeAttack(),
-    );*/
+      () => this.startBasicAttackTargeting("melee"),
+    );
     /* this.createButton(panelX + 120, 339, 150, 28, "MOVE 3m", 0x285c35, () =>
       this.performMove(),
     );
@@ -491,16 +492,28 @@ export class CombatTestScene extends Phaser.Scene {
       fontStyle: "bold",
     });
 
-    this.createButton(panelX + 120, 430, 150, 26, "iguinis", 0x5a2875, () =>
-      this.useCantrip("iguinis"),
+    this.createButton(
+      panelX + 120,
+      430,
+      150,
+      26,
+      "multi_missiles",
+      0x5a2875,
+      () => this.useCantrip("multi_missiles"),
     );
 
-    this.createButton(panelX + 120, 460, 150, 26, "on_the_dot", 0x5a2875, () =>
-      this.useCantrip("on_the_dot"),
-    );
-
-    this.createButton(panelX + 120, 490, 150, 26, "tank_that", 0x5a2875, () =>
+    this.createButton(panelX + 120, 460, 150, 26, "tank_that", 0x5a2875, () =>
       this.useCantrip("tank_that"),
+    );
+
+    this.createButton(
+      panelX + 120,
+      490,
+      150,
+      26,
+      "helping_hand",
+      0x5a2875,
+      () => this.useCantrip("helping_hand"),
     );
 
     this.add.text(panelX + 15, 522, "CONDITION TESTER", {
@@ -652,15 +665,13 @@ export class CombatTestScene extends Phaser.Scene {
     button.on("pointerdown", callback);
   }
 
-  /*private performRangedAttack(): void {
+  private executeRangedAttack(defenderId: string): void {
     const attacker = this.combatEngine.getCurrentCombatant();
 
     if (!attacker || !attacker.alive) {
       this.setCombatLog(["No valid current combatant."]);
       return;
     }
-
-    const defenderId = attacker.team === "player" ? "goblin" : "ranger";
 
     const distance =
       this.combatEngine.getDistanceBetween(attacker.id, defenderId) ?? 0;
@@ -678,6 +689,7 @@ export class CombatTestScene extends Phaser.Scene {
       defenderId,
       attackerConditions,
       defenderConditions,
+      attackerLevel: attacker.level,
       type: "ranged",
       distance,
       target: "body",
@@ -698,17 +710,15 @@ export class CombatTestScene extends Phaser.Scene {
     }
 
     this.showAttackResult(`${attacker.name} RANGED ATTACK`, result, distance);
-  }*/
+  }
 
-  /*private performMeleeAttack(): void {
+  private executeMeleeAttack(defenderId: string): void {
     const attacker = this.combatEngine.getCurrentCombatant();
 
     if (!attacker || !attacker.alive) {
       this.setCombatLog(["No valid current combatant."]);
       return;
     }
-
-    const defenderId = attacker.team === "player" ? "goblin" : "ranger";
 
     const distance =
       this.combatEngine.getDistanceBetween(attacker.id, defenderId) ?? 0;
@@ -736,6 +746,7 @@ export class CombatTestScene extends Phaser.Scene {
       defenderId,
       attackerConditions,
       defenderConditions,
+      attackerLevel: attacker.level,
       type: "melee",
       distance,
       target: "body",
@@ -756,9 +767,9 @@ export class CombatTestScene extends Phaser.Scene {
     }
 
     this.showAttackResult(`${attacker.name} MELEE ATTACK`, result, distance);
-  }*/
+  }
 
-  /*private showAttackResult(title: string, result: any, distance: number): void {
+  private showAttackResult(title: string, result: any, distance: number): void {
     const attack = result.attack;
 
     if (!attack) {
@@ -772,7 +783,7 @@ export class CombatTestScene extends Phaser.Scene {
         "",
         `Distance: ${distance.toFixed(1)}m`,
         `Hit chance: ${attack.chance.toFixed(1)}%`,
-        `Roll: ${attack.roll.toFixed(1)}`,
+        `Roll: ${attack.rolls ?? "?"}`,
         "",
         "MISS!",
       ]);
@@ -799,8 +810,8 @@ export class CombatTestScene extends Phaser.Scene {
       title,
       "",
       `Distance: ${distance.toFixed(1)}m`,
-      `Hit chance: ${attack.chance.toFixed(1)}%`,
-      `Roll: ${attack.roll.toFixed(1)}`,
+      `Hit chance: ${attack.chance?.toFixed(1) ?? "?"}%`,
+      `Roll: ${attack.rolls ?? "?"}`,
       "",
       "HIT!",
       "",
@@ -814,7 +825,7 @@ export class CombatTestScene extends Phaser.Scene {
     ]);
 
     this.updateInterface();
-  }*/
+  }
 
   private chooseDefense(choice: "dodge" | "parry"): void {
     const result = this.combatEngine.resolveDefense(choice);
@@ -1042,7 +1053,18 @@ export class CombatTestScene extends Phaser.Scene {
   }
 
   private handleAbilityTargetClick(targetId: string): void {
-    if (!this.targetingActive || !this.targetingAbility) {
+    if (!this.targetingActive) {
+      return;
+    }
+
+    // Normal attack targeting
+    if (this.targetingAttackType) {
+      this.handleBasicAttackTargetClick(targetId);
+      return;
+    }
+
+    // Ability targeting
+    if (!this.targetingAbility) {
       return;
     }
 
@@ -1275,6 +1297,7 @@ export class CombatTestScene extends Phaser.Scene {
   private cancelAbilityTargeting(): void {
     this.targetingActive = false;
     this.targetingAbility = null;
+    this.targetingAttackType = null;
     this.targetingTargetId = null;
 
     this.targetingGraphics?.destroy();
@@ -1481,6 +1504,108 @@ export class CombatTestScene extends Phaser.Scene {
     this.updateConditionControls();
   }
 
+  private startBasicAttackTargeting(attackType: "melee" | "ranged"): void {
+    const attacker = this.combatEngine.getCurrentCombatant();
+
+    if (!attacker || !attacker.alive) {
+      this.setCombatLog(["No valid current combatant."]);
+      return;
+    }
+
+    this.cancelAbilityTargeting();
+
+    this.targetingAttackType = attackType;
+    this.targetingActive = true;
+    this.targetingTargetId = null;
+
+    this.targetingText = this.add.text(
+      15,
+      470,
+      `TARGET: ${attackType.toUpperCase()} ATTACK\nClick a target. Press ESC to cancel.`,
+      {
+        fontSize: "12px",
+        color: "#ffffff",
+        backgroundColor: "#222222",
+        padding: {
+          x: 8,
+          y: 6,
+        },
+      },
+    );
+
+    this.setCombatLog([
+      `${attackType.toUpperCase()} attack targeting`,
+      "",
+      "Click a target.",
+      "Press ESC to cancel.",
+    ]);
+
+    this.input.keyboard?.on("keydown-ESC", this.handleTargetingEscape, this);
+  }
+
+  private handleBasicAttackTargetClick(targetId: string): void {
+    const attacker = this.combatEngine.getCurrentCombatant();
+    const target = this.getCombatant(targetId);
+    const attackType = this.targetingAttackType;
+
+    if (!attacker || !target || !attackType) {
+      return;
+    }
+
+    if (!target.alive) {
+      this.setCombatLog([
+        `Invalid target: ${target.name}`,
+        "",
+        "Target is defeated.",
+      ]);
+      return;
+    }
+
+    const distance =
+      this.combatEngine.getDistanceBetween(attacker.id, target.id) ?? 0;
+
+    if (attackType === "melee" && distance > 1) {
+      this.setCombatLog([
+        `Invalid target: ${target.name}`,
+        "",
+        `Distance: ${distance.toFixed(1)}m`,
+        "Melee range is limited to 1m.",
+      ]);
+      return;
+    }
+
+    // First click = select target
+    if (this.targetingTargetId !== targetId) {
+      this.targetingTargetId = targetId;
+
+      this.setCombatLog([
+        `Selected target: ${target.name}`,
+        "",
+        `Distance: ${distance.toFixed(1)}m`,
+        `Click ${target.name} again to confirm the ${attackType} attack.`,
+        "Press ESC to cancel.",
+      ]);
+
+      return;
+    }
+
+    // Second click = confirm attack
+    this.targetingAttackType = null;
+    this.targetingActive = false;
+    this.targetingTargetId = null;
+
+    this.targetingText?.destroy();
+    this.targetingText = undefined;
+
+    this.input.keyboard?.off("keydown-ESC", this.handleTargetingEscape, this);
+
+    if (attackType === "ranged") {
+      this.executeRangedAttack(target.id);
+    } else {
+      this.executeMeleeAttack(target.id);
+    }
+  }
+
   private toggleConditionTarget(): void {
     this.conditionTargetId =
       this.conditionTargetId === "goblin" ? "ranger" : "goblin";
@@ -1587,7 +1712,7 @@ export class CombatTestScene extends Phaser.Scene {
   private updateInterface(): void {
     this.rangerHpText.setText(this.getRangerHpText());
 
-    this.ranger2HpText.setText(this.getRangerHpText());
+    this.ranger2HpText.setText(this.getRanger2HpText());
 
     this.goblinHpText.setText(this.getGoblinHpText());
 
@@ -1644,10 +1769,10 @@ export class CombatTestScene extends Phaser.Scene {
     const ranger2 = this.getCombatant("ranger");
 
     if (!ranger2) {
-      return "Ranger HP: ?";
+      return "Ranger2 HP: ?";
     }
 
-    return `Ranger HP: ${ranger2.hp}/${ranger2.maxHp}`;
+    return `Ranger2 HP: ${ranger2.hp}/${ranger2.maxHp}`;
   }
 
   private getGoblinHpText(): string {
@@ -1694,11 +1819,14 @@ export class CombatTestScene extends Phaser.Scene {
     const ranger = this.getCombatant("ranger");
 
     if (!ranger) {
-      return "Ranger Dodge: ?";
+      return "Ranger Defense: ?";
     }
 
     const defense = getDefenseStats(ranger.stats);
-    return `Ranger Dodge: ${defense.physicalDodge}% | Spell: ${defense.spellDodge}%\nParry: ${defense.parry}% | Effect Res: ${defense.effectResistance}% | Mental Res: ${defense.mentalResistance}%`;
+
+    return `Ranger Armor: ${ranger.armor} | MR: ${ranger.magicResistance}
+    Dodge: ${defense.physicalDodge}% | Spell: ${defense.spellDodge}%
+    Parry: ${defense.parry}% | Effect Res: ${defense.effectResistance}% | Mental Res: ${defense.mentalResistance}%`;
   }
 
   private getGoblinDefenseText(): string {

@@ -14,6 +14,7 @@ export function executeAbilityEffects(
   effects: AbilityEffect[],
   context: AbilityEffectContext,
   engine: CombatEngine,
+  abilityId: string,
 ): void {
   for (const effect of effects) {
     switch (effect.type) {
@@ -34,7 +35,7 @@ export function executeAbilityEffects(
         break;
 
       case "modify-behavior":
-        executeModifyBehavior(effect, context, engine);
+        executeModifyBehavior(effect, context, engine, abilityId);
         break;
 
       case "move":
@@ -105,11 +106,31 @@ export function executeAbilityEffects(
     effect: AbilityEffect,
     context: AbilityEffectContext,
     engine: CombatEngine,
+    abilityId: string,
   ): void {
     if (!effect.modifier) {
       throw new Error("Modify-behavior effect requires a modifier.");
     }
 
-    engine.addModifier(context.targetId, effect.modifier);
+    const modifier = {
+      ...effect.modifier,
+      id: `${abilityId}:${effect.modifier.behavior}:${effect.modifier.operation}:${effect.modifier.trigger}`,
+      duration: effect.duration,
+    };
+
+    console.log("=== APPLYING ABILITY MODIFIER ===");
+    console.log("Ability:", abilityId);
+    console.log("Target:", context.targetId);
+    console.log("Behavior:", modifier.behavior);
+    console.log("Operation:", modifier.operation);
+    console.log("Trigger:", modifier.trigger);
+    console.log("Dice:", modifier.diceCount, "d", modifier.diceSides);
+    console.log("Value:", modifier.value);
+    console.log("Amount:", modifier.amount);
+    console.log("Duration:", modifier.duration);
+    console.log("Modifier ID:", modifier.id);
+    console.log("=================================");
+
+    engine.addModifier(context.targetId, modifier);
   }
 }

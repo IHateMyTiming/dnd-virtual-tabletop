@@ -27,6 +27,8 @@ export interface CombatModifier {
   diceSides?: number;
 
   amount: number;
+  duration?: number;
+  id?: string;
 }
 
 export function getModifiersForTrigger(

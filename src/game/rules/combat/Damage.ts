@@ -1,4 +1,4 @@
-import { rollDice } from "../dice/Dice";
+import { rollDice, roundToOneDecimal } from "../dice/Dice";
 import type { CharacterStats } from "../stats/Stats";
 import type { ConditionState } from "../condition/ConditionState";
 import { getIncomingDamageMultiplier } from "../condition/ConditionDamageModifier";
@@ -46,13 +46,15 @@ export function rollDamage(
 
   const result = rollDice(scaled.count, scaled.sides, scaled.modifier);
 
+  const rawDamage = roundToOneDecimal(result.total);
+
   return {
     rolls: result.rolls,
     modifier: result.modifier,
-    rawDamage: result.total,
+    rawDamage,
     armorReduction: 0,
     magicResistanceReduction: 0,
-    finalDamage: result.total,
+    finalDamage: rawDamage,
   };
 }
 
@@ -124,9 +126,8 @@ export function resolveDamage(
     defenderConditions,
   );
 
-  const finalDamage = Math.max(
-    0,
-    afterDefense * damageMultiplier * conditionalDamageMultiplier,
+  const finalDamage = roundToOneDecimal(
+    Math.max(0, afterDefense * damageMultiplier * conditionalDamageMultiplier),
   );
 
   return {

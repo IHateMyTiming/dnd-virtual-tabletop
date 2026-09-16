@@ -10,8 +10,8 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     descriptionKey: "spell_burning_ray_description",
 
     actionType: "action",
-    targetType: "area",
-
+    targetType: "enemy",
+    targetingMode: "area",
     attackType: "spell",
 
     range: 12,
@@ -66,10 +66,10 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "enemy",
+    targetingMode: "single",
     attackType: "spell",
 
     range: 10,
-    maxTargets: 1,
 
     effects: [
       {
@@ -117,6 +117,8 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
   },
 
   //NEEDS FIX
+  //MULTI - TARGET
+
   {
     id: "hand_pistol_gun",
 
@@ -125,6 +127,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "enemy",
+    targetingMode: "multi",
 
     attackType: "spell",
 
@@ -166,7 +169,8 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     descriptionKey: "spell_lightning_arc_description",
 
     actionType: "action",
-    targetType: "area",
+    targetType: "enemy",
+    targetingMode: "area",
     attackType: "spell",
 
     range: 10,
@@ -175,8 +179,6 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
       shape: "circle",
       radius: 3,
     },
-
-    maxTargets: 3,
 
     effects: [
       {
@@ -215,10 +217,10 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "enemy",
+    targetingMode: "single",
     attackType: "spell",
 
     range: 10,
-    maxTargets: 1,
 
     effects: [
       {
@@ -258,10 +260,10 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "enemy",
+    targetingMode: "single",
     attackType: "spell",
 
     range: 7,
-    maxTargets: 1,
 
     effects: [
       {
@@ -311,10 +313,10 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "enemy",
+    targetingMode: "single",
     attackType: "spell",
 
     range: 15,
-    maxTargets: 1,
 
     effects: [
       {
@@ -356,6 +358,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "self",
+    targetingMode: "single",
 
     range: 0,
 
@@ -378,9 +381,15 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     descriptionKey: "spell_detect_magic_description",
 
     actionType: "action",
-    targetType: "area",
+    targetType: "enemy",
+    targetingMode: "area",
 
     range: 15,
+
+    area: {
+      shape: "circle",
+      radius: 15,
+    },
 
     effects: [],
 
@@ -402,10 +411,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "enemy",
+    targetingMode: "single",
 
     range: 7,
-
-    maxTargets: 1,
 
     effects: [],
 
@@ -427,10 +435,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "enemy",
+    targetingMode: "single",
 
     range: 1,
-
-    maxTargets: 1,
 
     effects: [
       {
@@ -461,7 +468,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     descriptionKey: "spell_alarm_description",
 
     actionType: "action",
-    targetType: "area",
+    targetType: "enemy",
+    targetingMode: "area",
+    attackType: "spell",
 
     range: 15,
 
@@ -491,9 +500,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "ally",
+    targetingMode: "single",
 
     range: 15,
-    maxTargets: 1,
 
     effects: [
       {
@@ -528,9 +537,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "ally",
+    targetingMode: "single",
 
     range: 1,
-    maxTargets: 1,
 
     effects: [
       {
@@ -561,9 +570,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "ally",
+    targetingMode: "single",
 
     range: 8,
-    maxTargets: 1,
 
     effects: [
       {
@@ -596,9 +605,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "enemy",
+    targetingMode: "single",
 
     range: 10,
-    maxTargets: 1,
 
     effects: [
       {
@@ -631,9 +640,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "ally",
+    targetingMode: "single",
 
     range: 1,
-    maxTargets: 1,
 
     effects: [
       {
@@ -669,7 +678,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     descriptionKey: "spell_sanctuary_description",
 
     actionType: "action",
-    targetType: "area",
+    targetType: "enemy",
+    targetingMode: "area",
+    attackType: "spell",
 
     range: 15,
 
@@ -704,9 +715,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "enemy",
+    targetingMode: "single",
 
     range: 1,
-    maxTargets: 1,
 
     effects: [
       // The target must be a corpse.

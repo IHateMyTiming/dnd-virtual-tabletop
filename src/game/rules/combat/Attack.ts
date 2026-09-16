@@ -1,6 +1,6 @@
 import type { CharacterStats } from "../stats/Stats";
 import type { TargetLocation } from "./TargetLocation";
-
+import { roundToOneDecimal, rollDie } from "../dice/Dice";
 import {
   calculateMeleeAccuracy,
   calculateSpellAccuracy,
@@ -18,8 +18,11 @@ import {
 } from "./Advantage";
 
 import type { AttackOutcome } from "./Advantage";
-import type { CombatModifier } from "./CombatModifier";
-
+import {
+  getModifierValue,
+  getModifierMultiplier,
+  type CombatModifier,
+} from "./CombatModifier";
 export type AttackType = "melee" | "ranged" | "spell";
 
 export interface AttackRequest {
@@ -74,9 +77,16 @@ export function resolveAttack(attack: AttackRequest): AttackResult {
 
   const baseChance = calculateBaseAccuracy(attack);
 
-  const accuracyModifier = getAccuracyModifier(attackModifiers);
+  const accuracyModifier = getModifierValue(attackModifiers, "accuracy", "add");
 
-  const chance = Math.max(0, Math.min(100, baseChance + accuracyModifier));
+  const accuracyMultiplier = getModifierMultiplier(attackModifiers, "accuracy");
+
+  const chance = roundToOneDecimal(
+    Math.max(
+      0,
+      Math.min(100, (baseChance + accuracyModifier) * accuracyMultiplier),
+    ),
+  );
 
   const critThreshold = chance * 0.1;
 
@@ -91,9 +101,15 @@ export function resolveAttack(attack: AttackRequest): AttackResult {
     conditionAdvantage,
     modifierAdvantage,
   );
+  const attackRollModifier = getAttackRollDiceModifier(attackModifiers);
 
-  const result = resolveAdvantage(advantageState, chance, critThreshold);
-
+  const result = resolveAdvantage(
+    advantageState,
+    chance,
+    critThreshold,
+    undefined,
+    attackRollModifier,
+  );
   return {
     hit: result.selectedOutcome !== "miss",
 
@@ -126,6 +142,40 @@ export function rollAttackDamage(attack: AttackRequest): AttackDamageResult {
 
   return {
     damage,
+  };
+}
+
+function getAttackRollDiceModifier(
+  modifiers: CombatModifier[],
+): (() => number) | undefined {
+  const diceModifiers = modifiers.filter(
+    (modifier) =>
+      modifier.behavior === "attack-roll" &&
+      modifier.operation === "add-dice" &&
+      modifier.trigger === "roll",
+  );
+
+  if (diceModifiers.length === 0) {
+    return undefined;
+  }
+
+  return () => {
+    let total = 0;
+
+    for (const modifier of diceModifiers) {
+      const diceCount = modifier.diceCount ?? 0;
+      const diceSides = modifier.diceSides ?? 0;
+
+      for (let i = 0; i < diceCount; i++) {
+        const roll = rollDie(diceSides);
+
+        //console.log(`Attack roll bonus: d${diceSides} rolled ${roll}`);
+
+        total += roll;
+      }
+    }
+
+    return total;
   };
 }
 
@@ -173,15 +223,6 @@ function getAttackModifiers(
         return false;
     }
   });
-}
-
-function getAccuracyModifier(modifiers: CombatModifier[]): number {
-  return modifiers
-    .filter(
-      (modifier) =>
-        modifier.behavior === "accuracy" && modifier.operation === "add",
-    )
-    .reduce((total, modifier) => total + (modifier.value ?? 0), 0);
 }
 
 function getModifierAdvantage(modifiers: CombatModifier[]): AdvantageState {

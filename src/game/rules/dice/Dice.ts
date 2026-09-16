@@ -49,3 +49,7 @@ export function succeedsPercentage(
 
   return roll <= chance;
 }
+
+export function roundToOneDecimal(value: number): number {
+  return Math.round((value + Number.EPSILON) * 10) / 10;
+}

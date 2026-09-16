@@ -34,8 +34,22 @@ export function resolveAdvantage(
   precision: number,
   critThreshold: number,
   roll: () => number = rollPercentage,
+  rollModifier?: () => number,
 ): AdvantageRollResult {
-  const rolls = state === "normal" ? [roll()] : [roll(), roll()];
+  const rollWithModifier = (): number => {
+    const baseRoll = roll();
+
+    if (!rollModifier) {
+      return baseRoll;
+    }
+
+    return Math.min(100, baseRoll + rollModifier());
+  };
+
+  const rolls =
+    state === "normal"
+      ? [rollWithModifier()]
+      : [rollWithModifier(), rollWithModifier()];
 
   const outcomes = rolls.map((value) =>
     classifyAttackRoll(value, precision, critThreshold),

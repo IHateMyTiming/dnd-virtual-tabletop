@@ -271,6 +271,7 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
           targetId: target.id,
         },
         combatEngine,
+        ability.id,
       );
     }
   }
