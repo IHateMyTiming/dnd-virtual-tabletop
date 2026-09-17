@@ -90,6 +90,20 @@ export function executeAbilityEffects(
       throw new Error("Apply-condition effect requires a conditionId.");
     }
 
+    const target = engine
+      .getState()
+      .combatants.find((combatant) => combatant.id === context.targetId);
+    if (!target) {
+      return;
+    }
+
+    if (
+      effect.targetCreatureType !== undefined &&
+      target.creatureType !== effect.targetCreatureType
+    ) {
+      return;
+    }
+
     engine.applyCondition(
       context.targetId,
       effect.conditionId,
@@ -128,7 +142,7 @@ export function executeAbilityEffects(
       duration: effect.duration,
     };
 
-    console.log("=== APPLYING ABILITY MODIFIER ===");
+    /* console.log("=== APPLYING ABILITY MODIFIER ===");
     console.log("Ability:", abilityId);
     console.log("Target:", context.targetId);
     console.log("Behavior:", modifier.behavior);
@@ -139,7 +153,7 @@ export function executeAbilityEffects(
     console.log("Amount:", modifier.amount);
     console.log("Duration:", modifier.duration);
     console.log("Modifier ID:", modifier.id);
-    console.log("=================================");
+    console.log("=================================");*/
 
     engine.addModifier(context.targetId, modifier);
   }

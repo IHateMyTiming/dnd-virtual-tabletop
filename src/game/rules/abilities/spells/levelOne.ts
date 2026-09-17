@@ -463,6 +463,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
         duration: 3,
         stacks: 1,
         value: 0,
+        targetCreatureType: "humanoid",
       },
     ],
 
@@ -506,6 +507,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     },
 
     instance: {
+      lifetime: "until-disarmed-or-destroyed",
       hp: 10,
       maxHp: 10,
     },
@@ -636,6 +638,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
         duration: 3,
         stacks: 1,
         value: 0,
+        targetCreatureType: "humanoid",
       },
     ],
 
@@ -688,7 +691,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
   },
 
   //NEEDS FIX
-  //PLACE
+  //NEEDING TO ADD THE EFFECTS OF SANCTUARY LATER
   {
     id: "sanctuary",
 
@@ -696,9 +699,8 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     descriptionKey: "spell_sanctuary_description",
 
     actionType: "action",
-    targetType: "enemy",
+    targetType: "location",
     targetingMode: "area",
-    attackType: "spell",
 
     range: 15,
 
@@ -707,10 +709,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
       radius: 3,
     },
 
-    effects: [
-      // Creatures inside the Sanctuary cannot be damaged.
-      // Creatures inside the Sanctuary cannot attack.
-    ],
+    effects: [],
 
     recovery: "unlimited",
 
@@ -720,11 +719,16 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
       amount: 1,
     },
 
+    instance: {
+      lifetime: "duration",
+      duration: 3,
+    },
+
     imagePath: "/assets/abilities/",
   },
 
   //NEEDS FIX
-  //CREATURE ID
+  //NEEDS DEAD FEATURES
   {
     id: "speak_with_dead",
 
@@ -738,9 +742,15 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     range: 1,
 
     effects: [
-      // The target must be a corpse.
-      // The corpse answers up to three questions.
-      // The Master determines the answers based on the corpse's knowledge.
+      /*{
+        type: "modify-behavior",
+        modifier: {
+          behavior: "target",
+          operation: "require",
+          trigger: "spell",
+          targetCreatureState: "dead",
+        },
+      },*/
     ],
 
     recovery: "unlimited",

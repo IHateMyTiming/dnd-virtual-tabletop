@@ -1,6 +1,7 @@
 import type { DamageExpression } from "../combat/Damage";
 import type { ConditionId } from "../condition/Condition";
 import type { CombatModifier } from "../combat/CombatModifier";
+import type { CreatureType } from "../combat/Combatant";
 
 export type AbilityEffectType =
   | "damage"
@@ -22,6 +23,7 @@ export interface AbilityEffect {
   stacks?: number;
   distance?: number;
   modifier?: CombatModifier;
+  targetCreatureType?: CreatureType;
 
   areaDamage?: {
     falloff: number;

@@ -71,6 +71,12 @@ interface AbilityBase {
   spellLevel?: SpellSlotLevel;
 
   instance?: {
+    lifetime?:
+      | "permanent"
+      | "duration"
+      | "until-destroyed"
+      | "until-disarmed-or-destroyed";
+
     hp?: number;
     maxHp?: number;
     duration?: number;

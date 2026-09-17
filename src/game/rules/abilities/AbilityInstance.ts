@@ -13,5 +13,8 @@ export interface AbilityInstance {
   hp?: number;
   maxHp?: number;
 
+  armor?: number;
+  magicResistance?: number;
+
   duration?: number;
 }

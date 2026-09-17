@@ -6,8 +6,10 @@ import { roundToOneDecimal } from "../dice/Dice";
 import {
   resolveAttack,
   rollAttackDamage,
+  resolveAbilityInstanceAttack,
   type AttackResult,
   type AttackType,
+  type AbilityInstanceAttackResult,
 } from "./Attack";
 import type { CombatAttackRequest, CombatAttackResult } from "./CombatAttack";
 import type { ConditionId } from "../condition/Condition";
@@ -124,6 +126,7 @@ export class CombatEngine {
 
     if (current) {
       this.processTurnModifierDurations(current);
+      this.processAbilityInstanceDurations(current);
     }
 
     const nextIndex = this.state.currentTurnIndex + 1;
@@ -1261,8 +1264,132 @@ export class CombatEngine {
     return this.abilityInstances;
   }
 
+  public attackAbilityInstance(
+    instanceId: string,
+    attackType: AttackType,
+    target: import("./TargetLocation").TargetLocation = "body",
+    damage: DamageExpression = {
+      count: 1,
+      sides: 8,
+      type: "physical",
+    },
+  ): AbilityInstanceAttackResult & {
+    success: boolean;
+    instanceId: string;
+    attackerId: string;
+    damageDealt: number;
+  } {
+    const attacker = this.getCurrentCombatant();
+    const instance = this.getAbilityInstance(instanceId);
+
+    if (!attacker || !attacker.alive || !instance) {
+      return {
+        success: false,
+        instanceId,
+        attackerId: attacker?.id ?? "",
+        hit: false,
+        chance: 0,
+        roll: 0,
+        damageDealt: 0,
+      };
+    }
+
+    if (instance.hp === undefined) {
+      return {
+        success: false,
+        instanceId,
+        attackerId: attacker.id,
+        hit: false,
+        chance: 0,
+        roll: 0,
+        damageDealt: 0,
+      };
+    }
+
+    const distance = calculateDistance(attacker.position, instance.position);
+
+    const attackerConditions = this.state.conditionManager.getConditions(
+      attacker.id,
+    );
+
+    const result = resolveAbilityInstanceAttack(
+      {
+        attackerStats: attacker.stats,
+        attackerConditions,
+        type: attackType,
+        distance,
+        target,
+        damage,
+        armor: undefined,
+        magicResistance: undefined,
+      },
+      this.random,
+    );
+
+    if (!result.hit || !result.damage) {
+      attacker.actionAvailable = false;
+
+      return {
+        success: true,
+        instanceId,
+        attackerId: attacker.id,
+        ...result,
+        damageDealt: 0,
+      };
+    }
+
+    const damageDealt = this.damageAbilityInstance(
+      instanceId,
+      result.damage.finalDamage,
+    );
+
+    attacker.actionAvailable = false;
+
+    return {
+      success: true,
+      instanceId,
+      attackerId: attacker.id,
+      ...result,
+      damageDealt,
+    };
+  }
+
+  public damageAbilityInstance(instanceId: string, amount: number): number {
+    const instance = this.getAbilityInstance(instanceId);
+
+    if (!instance || instance.hp === undefined || amount <= 0) {
+      return 0;
+    }
+
+    const hpBefore = instance.hp;
+
+    instance.hp = Math.max(0, instance.hp - amount);
+
+    if (instance.hp === 0) {
+      this.removeAbilityInstance(instance.id);
+    }
+
+    return hpBefore - instance.hp;
+  }
+
   public getAbilityInstance(instanceId: string): AbilityInstance | undefined {
     return this.abilityInstances.find((instance) => instance.id === instanceId);
+  }
+
+  public getAbilityInstancesAtPosition(position: Position): AbilityInstance[] {
+    return this.abilityInstances.filter((instance) => {
+      if (instance.area.shape === "circle") {
+        if (instance.area.radius === undefined) {
+          return false;
+        }
+
+        return (
+          calculateDistance(instance.position, position) <= instance.area.radius
+        );
+      }
+
+      return false;
+    });
   }
 
   public removeAbilityInstance(instanceId: string): boolean {
@@ -1276,5 +1403,29 @@ export class CombatEngine {
 
     this.abilityInstances.splice(index, 1);
     return true;
+  }
+
+  private processAbilityInstanceDurations(combatant: Combatant): void {
+    const instances = [...this.abilityInstances];
+
+    for (const instance of instances) {
+      if (instance.duration === undefined) {
+        continue;
+      }
+
+      if (instance.casterId !== combatant.id) {
+        continue;
+      }
+
+      instance.duration -= 1;
+
+      if (instance.duration <= 0) {
+        this.removeAbilityInstance(instance.id);
+      }
+    }
+  }
+
+  public getDistanceBetweenPosition(first: Position, second: Position): number {
+    return calculateDistance(first, second);
   }
 }

@@ -32,6 +32,7 @@ export class CombatTestScene extends Phaser.Scene {
   private targetingTargetIds: string[] = [];
   private targetingLocation: { x: number; y: number } | null = null;
   private targetingAttackType: "melee" | "ranged" | null = null;
+  private targetingInstanceId: string | null = null;
 
   private targetingGraphics?: Phaser.GameObjects.Graphics;
   private abilityInstanceGraphics?: Phaser.GameObjects.Graphics;
@@ -247,7 +248,7 @@ export class CombatTestScene extends Phaser.Scene {
       name: "Goblin",
       level: 1,
       team: "enemy",
-      creatureType: "humanoid",
+      creatureType: "undead",
 
       modifiers: [],
 
@@ -519,28 +520,16 @@ export class CombatTestScene extends Phaser.Scene {
       fontStyle: "bold",
     });
 
-    this.createButton(
-      panelX + 120,
-      430,
-      150,
-      26,
-      "magic_weapon",
-      0x5a2875,
-      () => this.useAbility("magic_weapon"),
+    this.createButton(panelX + 120, 430, 150, 26, "sanctuary", 0x5a2875, () =>
+      this.useAbility("sanctuary"),
     );
 
     this.createButton(panelX + 120, 460, 150, 26, "test", 0x5a2875, () =>
       this.useAbility("test"),
     );
 
-    this.createButton(
-      panelX + 120,
-      490,
-      150,
-      26,
-      "blood_thirster",
-      0x5a2875,
-      () => this.useAbility("blood_thirster"),
+    this.createButton(panelX + 120, 490, 150, 26, "pink", 0x5a2875, () =>
+      this.useAbility("pink"),
     );
 
     this.add.text(panelX + 15, 522, "CONDITION TESTER", {
@@ -1231,11 +1220,30 @@ export class CombatTestScene extends Phaser.Scene {
   }
 
   private handleMapPointerDown(pointer: Phaser.Input.Pointer): void {
-    if (!this.targetingActive || !this.targetingAbility) {
+    if (!this.targetingActive) {
       return;
     }
 
     if (this.targetingAttackType) {
+      const worldPosition = {
+        x: pointer.worldX / cellSize,
+        y: pointer.worldY / cellSize,
+      };
+
+      const instances =
+        this.combatEngine.getAbilityInstancesAtPosition(worldPosition);
+
+      if (instances.length > 0) {
+        const instance = instances[instances.length - 1];
+
+        this.handleAbilityInstanceAttackClick(instance.id);
+        return;
+      }
+
+      return;
+    }
+
+    if (!this.targetingAbility) {
       return;
     }
 
@@ -1532,6 +1540,7 @@ export class CombatTestScene extends Phaser.Scene {
     this.targetingTargetId = null;
     this.targetingTargetIds = [];
     this.targetingLocation = null;
+    this.targetingInstanceId = null;
 
     this.targetingGraphics?.destroy();
     this.targetingGraphics = undefined;
@@ -1874,6 +1883,114 @@ export class CombatTestScene extends Phaser.Scene {
     }
   }
 
+  private handleAbilityInstanceAttackClick(instanceId: string): void {
+    const attacker = this.combatEngine.getCurrentCombatant();
+    const attackType = this.targetingAttackType;
+
+    if (!attacker || !attacker.alive || !attackType) {
+      return;
+    }
+
+    const instance = this.combatEngine.getAbilityInstance(instanceId);
+
+    if (!instance) {
+      return;
+    }
+
+    if (instance.hp === undefined) {
+      this.setCombatLog([
+        "This ability instance cannot be attacked.",
+        "",
+        "It has no HP.",
+      ]);
+      return;
+    }
+
+    const distance = this.combatEngine.getDistanceBetweenPosition(
+      attacker.position,
+      instance.position,
+    );
+
+    if (attackType === "melee" && distance > 1) {
+      this.setCombatLog([
+        "Instance is out of melee range.",
+        "",
+        `Distance: ${distance.toFixed(1)}m`,
+        "Melee range is limited to 1m.",
+      ]);
+      return;
+    }
+
+    if (this.targetingInstanceId !== instanceId) {
+      this.targetingInstanceId = instanceId;
+
+      this.setCombatLog([
+        `Selected instance: ${instance.abilityId}`,
+        "",
+        `HP: ${instance.hp}/${instance.maxHp ?? instance.hp}`,
+        `Distance: ${distance.toFixed(1)}m`,
+        "",
+        `Click the instance again to confirm the ${attackType} attack.`,
+        "Press ESC to cancel.",
+      ]);
+
+      return;
+    }
+
+    this.targetingAttackType = null;
+    this.targetingInstanceId = null;
+    this.targetingActive = false;
+
+    this.targetingText?.destroy();
+    this.targetingText = undefined;
+
+    this.input.keyboard?.off("keydown-ESC", this.handleTargetingEscape, this);
+
+    const result = this.combatEngine.attackAbilityInstance(
+      instanceId,
+      attackType,
+    );
+
+    if (!result.success) {
+      this.setCombatLog([
+        "Attack failed.",
+        "",
+        "This instance cannot be attacked.",
+      ]);
+      return;
+    }
+
+    const currentInstance = this.combatEngine.getAbilityInstance(instanceId);
+
+    const log = [
+      `${attacker.name} attacks ${instance.abilityId}`,
+      "",
+      `Hit chance: ${result.chance.toFixed(1)}%`,
+      `Roll: ${result.roll.toFixed(1)}`,
+      "",
+    ];
+
+    if (!result.hit) {
+      log.push("MISS!");
+    } else {
+      log.push("HIT!");
+      log.push("");
+      log.push(`Damage: ${result.damageDealt}`);
+
+      if (currentInstance) {
+        log.push(
+          `Instance HP: ${currentInstance.hp}/${currentInstance.maxHp ?? currentInstance.hp}`,
+        );
+      } else {
+        log.push("Instance destroyed!");
+      }
+    }
+
+    this.setCombatLog(log);
+    this.redrawAbilityInstances();
+    this.updateInterface();
+  }
+
   private toggleConditionTarget(): void {
     this.conditionTargetId =
       this.conditionTargetId === "goblin" ? "ranger" : "goblin";
@@ -1963,6 +2080,9 @@ export class CombatTestScene extends Phaser.Scene {
     }
 
     this.combatEngine.endTurn();
+
+    // Refresh persistent ability visuals after durations are processed.
+    this.redrawAbilityInstances();
 
     const next = this.combatEngine.getCurrentCombatant();
 

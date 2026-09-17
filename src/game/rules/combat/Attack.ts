@@ -1,13 +1,19 @@
 import type { CharacterStats } from "../stats/Stats";
 import type { TargetLocation } from "./TargetLocation";
-import { roundToOneDecimal, rollDie } from "../dice/Dice";
+import { roundToOneDecimal, rollDie, succeedsPercentage } from "../dice/Dice";
 import {
   calculateMeleeAccuracy,
-  calculateSpellAccuracy,
   calculateRangedAccuracy,
+  calculateSpellAccuracy,
+  getSpellPrecision,
 } from "./Accuracy";
 
-import { rollDamage, type DamageExpression, type DamageResult } from "./Damage";
+import {
+  rollDamage,
+  resolveDamage,
+  type DamageExpression,
+  type DamageResult,
+} from "./Damage";
 
 import type { ConditionState } from "../condition/ConditionState";
 
@@ -79,6 +85,24 @@ export interface AttackResult {
   advantageState: AdvantageState;
 
   criticalHit: boolean;
+}
+
+export interface AbilityInstanceAttackRequest {
+  attackerStats: CharacterStats;
+  attackerConditions: ConditionState[];
+  type: AttackType;
+  distance: number;
+  target: TargetLocation;
+  damage: DamageExpression;
+  armor?: number;
+  magicResistance?: number;
+}
+
+export interface AbilityInstanceAttackResult {
+  hit: boolean;
+  chance: number;
+  roll: number;
+  damage?: DamageResult;
 }
 
 export interface AttackDamageResult {
@@ -228,7 +252,7 @@ function getAttackModifiers(
   type: AttackType,
 ): CombatModifier[] {
   return modifiers.filter((modifier) => {
-    if (modifier.amount <= 0) {
+    if (modifier.amount !== undefined && modifier.amount <= 0) {
       return false;
     }
 
@@ -369,7 +393,7 @@ function getDamageModifiers(
   type: AttackType,
 ): CombatModifier[] {
   return modifiers.filter((modifier) => {
-    if (modifier.amount <= 0) {
+    if (modifier.amount !== undefined && modifier.amount <= 0) {
       return false;
     }
 
@@ -383,4 +407,60 @@ function getDamageModifiers(
 
     return false;
   });
+}
+
+export function resolveAbilityInstanceAttack(
+  attack: AbilityInstanceAttackRequest,
+  random: () => number = Math.random,
+): AbilityInstanceAttackResult {
+  let chance: number;
+
+  switch (attack.type) {
+    case "melee":
+      chance = calculateMeleeAccuracy(
+        attack.attackerStats,
+        attack.target,
+        attack.attackerConditions,
+      );
+      break;
+
+    case "ranged":
+      chance = calculateRangedAccuracy(
+        attack.attackerStats,
+        attack.distance,
+        attack.target,
+        attack.attackerConditions,
+      );
+      break;
+
+    case "spell":
+      chance = getSpellPrecision(attack.attackerStats.intelligence);
+      break;
+  }
+
+  const roll = random() * 100;
+  const hit = succeedsPercentage(chance, roll);
+
+  if (!hit) {
+    return {
+      hit: false,
+      chance,
+      roll,
+    };
+  }
+
+  const damage = resolveDamage(
+    attack.damage,
+    attack.armor ?? 0,
+    attack.magicResistance ?? 0,
+    attack.attackerStats,
+    [],
+  );
+
+  return {
+    hit: true,
+    chance,
+    roll,
+    damage,
+  };
 }
