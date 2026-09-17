@@ -3,7 +3,12 @@ import type { AttackType } from "../combat/Attack";
 import type { AbilityEffect } from "./AbilityEffect";
 import type { SpellSlotLevel } from "./Resource";
 
-export type AbilityTargetType = "self" | "ally" | "enemy" | "self-or-ally";
+export type AbilityTargetType =
+  | "self"
+  | "ally"
+  | "enemy"
+  | "self-or-ally"
+  | "location";
 
 export type AbilityTargetingMode = "single" | "multi" | "area" | "chain";
 export type AbilityRecovery =
@@ -64,6 +69,12 @@ interface AbilityBase {
   isSpell?: boolean;
 
   spellLevel?: SpellSlotLevel;
+
+  instance?: {
+    hp?: number;
+    maxHp?: number;
+    duration?: number;
+  };
 
   imagePath?: string;
 }

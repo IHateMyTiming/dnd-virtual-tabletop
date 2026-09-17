@@ -84,9 +84,9 @@ export const spellTranslations = {
     spell_telepathy_description:
       "Establish mental communication with a creature within range. The spell has no automated gameplay effect. The Master determines how the communication works. Roll 1{tooltip:dice}20 to determine how the communication goes.",
 
-    spell_alarm: "Alarm",
-    spell_alarm_description:
-      "Create a magical alarm around an area. When a creature enters the designated area, the Caster is alerted. The spell may also reveal hidden creatures or traps within the area, at the Master's discretion. Roll 1{tooltip:dice}20 to determine how well the alarm works.",
+    spell_pink: "pink",
+    spell_pink_description:
+      "Create a magical trinket around an area. Reveal enemies that move inside its range even in fog of war or that were hidden. Enemies can destroy it making everything in its range clear of fog of war and reveling everyone hidden or enemies can try to defuse by rolling the die",
 
     spell_contact_spirits: "Contact Spirits",
     spell_contact_spirits_description:
@@ -183,10 +183,9 @@ export const spellTranslations = {
     spell_telepathy_description:
       "Estabeleça uma comunicação mental com uma criatura dentro do alcance. A magia não possui efeito automatizado no jogo. O Mestre determina como a comunicação funciona. Role 1{tooltip:dice}20 para determinar como a comunicação acontece.",
 
-    spell_alarm: "Alarme",
-    spell_alarm_description:
-      "Crie um alarme mágico ao redor de uma área. Quando uma criatura entrar na área designada, o Conjurador será alertado. A magia também pode revelar criaturas ou armadilhas escondidas na área, a critério do Mestre. Role 1{tooltip:dice}20 para determinar o quão bem o alarme funciona.",
-
+    spell_pink: "Pink",
+    spell_pink_description:
+      "Crie uma sentinela mágica ao redor de uma área. Revele todos os inimigos que se movem dentro de seu alcance mesmo dentro da névoa de guerra ou que estejam escondidos.Inimigos podem destruir-la o que resulta nela limpando a névoa de guerra dentro de sua área e revelando os que estavam escondidos ou podem tentar desativar-la rodando o dado ",
     spell_contact_spirits: "Contatar Espíritos",
     spell_contact_spirits_description:
       "Invoque um espírito para responder a uma pergunta. A magia não possui efeito automatizado no jogo. Pergunte ao Mestre como o espírito responde com base em uma rolagem de 1{tooltip:dice}20.",

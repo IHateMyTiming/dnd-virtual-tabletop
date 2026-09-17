@@ -1,9 +1,11 @@
 import type { AbilityDefinition } from "./Ability";
 import type { CombatState } from "../combat/CombatState";
+import type { Position } from "../combat/Movement";
 import { calculateDistance } from "../combat/Movement";
 
 export interface AbilityTarget {
-  id: string;
+  id?: string;
+  position?: Position;
 }
 
 export interface AbilityTargetValidation {
@@ -25,6 +27,30 @@ export function validateAbilityTarget(
     return {
       valid: false,
       reason: "Caster is invalid.",
+    };
+  }
+
+  // Location-targeted abilities don't require a combatant.
+  if (ability.targetType === "location") {
+    if (!target.position) {
+      return {
+        valid: false,
+        reason: "Target location is invalid.",
+      };
+    }
+
+    if (
+      ability.range !== undefined &&
+      calculateDistance(caster.position, target.position) > ability.range
+    ) {
+      return {
+        valid: false,
+        reason: "Target location is out of range.",
+      };
+    }
+
+    return {
+      valid: true,
     };
   }
 

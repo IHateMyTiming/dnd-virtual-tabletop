@@ -460,7 +460,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
       {
         type: "apply-condition",
         conditionId: "charmed",
-        duration: 0,
+        duration: 3,
         stacks: 1,
         value: 0,
       },
@@ -477,17 +477,17 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
   },
 
   //NEEDS FIX
-  //PLACE
+  //NEEDS INVIBILITY TO WORK AS PLANNED
+  //TREAT IT AS A SUMMON WITH HP, DESTROY IT CLEARS THE FOG OF VISION OTHERWISE YOU CAN DISARM IT BY ROLLING
   {
-    id: "alarm",
+    id: "pink",
 
-    nameKey: "spell_alarm",
-    descriptionKey: "spell_alarm_description",
+    nameKey: "spell_pink",
+    descriptionKey: "spell_pink_description",
 
     actionType: "action",
-    targetType: "enemy",
+    targetType: "location",
     targetingMode: "area",
-    attackType: "spell",
 
     range: 15,
 
@@ -503,6 +503,11 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     spellLevel: 1,
     resourceCost: {
       amount: 1,
+    },
+
+    instance: {
+      hp: 10,
+      maxHp: 10,
     },
 
     imagePath: "/assets/abilities/",
@@ -612,8 +617,6 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
-  //NEEDS FIX
-  //DURATION
   {
     id: "intimidation",
 
@@ -647,8 +650,6 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
-  //NEEDS FIX
-  //DURATION
   {
     id: "magic_weapon",
 
@@ -659,16 +660,16 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetType: "ally",
     targetingMode: "single",
 
-    range: 1,
+    range: 10,
 
     effects: [
       {
         type: "modify-behavior",
+        duration: 3,
         modifier: {
           behavior: "damage",
           operation: "add-dice",
           trigger: "attack",
-          amount: 1,
           diceCount: 1,
           diceSides: 6,
         },

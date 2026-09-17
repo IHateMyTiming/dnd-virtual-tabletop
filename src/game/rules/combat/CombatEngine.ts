@@ -61,6 +61,8 @@ import {
   type CombatModifier,
 } from "./CombatModifier";
 import { executeAbilityEffects } from "../abilities/AbilityEffectExecutor";
+import type { AbilityInstance } from "../abilities/AbilityInstance";
+import type { AbilityArea } from "../abilities/Ability";
 
 interface PendingDefense {
   attackerId: string;
@@ -77,6 +79,7 @@ interface PendingDefense {
 
 export class CombatEngine {
   private state: CombatState;
+  private abilityInstances: AbilityInstance[] = [];
   private readonly random: () => number;
   private pendingDefenses: PendingDefense[] = [];
   private lastCombatResult: CombatAttackResult | null = null;
@@ -1177,7 +1180,7 @@ export class CombatEngine {
       if (
         modifier.trigger === "roll" &&
         modifier.behavior === "attack-roll" &&
-        modifier.amount > 0
+        (modifier.amount === undefined || modifier.amount > 0)
       ) {
         consumeModifier(attacker.modifiers, modifier);
       }
@@ -1191,7 +1194,7 @@ export class CombatEngine {
     const modifiers = [...attacker.modifiers];
 
     for (const modifier of modifiers) {
-      if (modifier.amount <= 0) {
+      if (modifier.amount !== undefined && modifier.amount <= 0) {
         continue;
       }
 
@@ -1225,5 +1228,53 @@ export class CombatEngine {
         }
       }
     }
+  }
+
+  public createAbilityInstance(
+    abilityId: string,
+    casterId: string,
+    position: Position,
+    area: AbilityArea,
+    options?: {
+      hp?: number;
+      maxHp?: number;
+      duration?: number;
+    },
+  ): AbilityInstance {
+    const instance: AbilityInstance = {
+      id: `${abilityId}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      abilityId,
+      casterId,
+      position: { ...position },
+      area: { ...area },
+      hp: options?.hp,
+      maxHp: options?.maxHp,
+      duration: options?.duration,
+    };
+
+    this.abilityInstances.push(instance);
+
+    return instance;
+  }
+
+  public getAbilityInstances(): AbilityInstance[] {
+    return this.abilityInstances;
+  }
+
+  public getAbilityInstance(instanceId: string): AbilityInstance | undefined {
+    return this.abilityInstances.find((instance) => instance.id === instanceId);
+  }
+
+  public removeAbilityInstance(instanceId: string): boolean {
+    const index = this.abilityInstances.findIndex(
+      (instance) => instance.id === instanceId,
+    );
+
+    if (index === -1) {
+      return false;
+    }
+
+    this.abilityInstances.splice(index, 1);
+    return true;
   }
 }

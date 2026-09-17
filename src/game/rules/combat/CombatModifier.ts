@@ -50,7 +50,7 @@ export interface CombatModifier {
   diceCount?: number;
   diceSides?: number;
 
-  amount: number;
+  amount?: number;
   duration?: number;
   id?: string;
   threshold?: CombatThreshold;
@@ -62,7 +62,9 @@ export function getModifiersForTrigger(
   trigger: CombatModifierTrigger,
 ): CombatModifier[] {
   return modifiers.filter(
-    (modifier) => modifier.trigger === trigger && modifier.amount > 0,
+    (modifier) =>
+      modifier.trigger === trigger &&
+      (modifier.amount === undefined || modifier.amount > 0),
   );
 }
 
@@ -70,6 +72,10 @@ export function consumeModifier(
   modifiers: CombatModifier[],
   modifier: CombatModifier,
 ): void {
+  if (modifier.amount === undefined) {
+    return;
+  }
+
   modifier.amount -= 1;
 
   if (modifier.amount <= 0) {
@@ -90,7 +96,7 @@ export function getModifierValue(
   return modifiers
     .filter(
       (modifier) =>
-        modifier.amount > 0 &&
+        (modifier.amount === undefined || modifier.amount > 0) &&
         modifier.behavior === behavior &&
         modifier.operation === operation &&
         (trigger === undefined || modifier.trigger === trigger),
@@ -106,7 +112,7 @@ export function getModifierMultiplier(
   return modifiers
     .filter(
       (modifier) =>
-        modifier.amount > 0 &&
+        (modifier.amount === undefined || modifier.amount > 0) &&
         modifier.behavior === behavior &&
         modifier.operation === "multiply" &&
         (trigger === undefined || modifier.trigger === trigger),
@@ -149,7 +155,7 @@ export function getActiveModifiers(
   },
 ): CombatModifier[] {
   return modifiers.filter((modifier) => {
-    if (modifier.amount <= 0) {
+    if (modifier.amount !== undefined && modifier.amount <= 0) {
       return false;
     }
 

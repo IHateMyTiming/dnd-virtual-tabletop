@@ -46,6 +46,9 @@ export interface AbilityUseResult {
   reason?: string;
   attackResult?: CombatAttackResult;
   attackResults?: CombatAttackResult[];
+  target?: AbilityTarget;
+  targets?: AbilityTarget[];
+  instanceId?: string;
 }
 
 export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
@@ -156,6 +159,24 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
 
   const updatedState = useAbility(ability, state);
 
+  let instanceId: string | undefined;
+
+  if (
+    ability.targetType === "location" &&
+    ability.targetingMode === "area" &&
+    request.target?.position
+  ) {
+    const instance = combatEngine.createAbilityInstance(
+      ability.id,
+      casterId,
+      request.target.position,
+      ability.area,
+      ability.instance,
+    );
+
+    instanceId = instance.id;
+  }
+
   let updatedResources = resources;
 
   if (ability.resourceCost && ability.isSpell) {
@@ -207,12 +228,17 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
       });
 
     const attackRequests: CombatAttackRequest[] = targets.map((target) => {
-      const defenderConditions = combatState.conditionManager.getConditions(
-        target.id,
-      );
+      if (!target.id) {
+        throw new Error("Combat attack target must have a combatant id.");
+      }
+
+      const targetId = target.id;
+
+      const defenderConditions =
+        combatState.conditionManager.getConditions(targetId);
 
       const distanceFromCaster =
-        combatEngine.getDistanceBetween(casterId, target.id) ?? 0;
+        combatEngine.getDistanceBetween(casterId, targetId) ?? 0;
 
       let damageMultiplier = 1;
 
@@ -222,18 +248,20 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
         ability.area.radius !== undefined &&
         primaryTarget
       ) {
-        const center = combatState.combatants.find(
-          (combatant) => combatant.id === primaryTarget.id,
-        );
-
         const targetCombatant = combatState.combatants.find(
           (combatant) => combatant.id === target.id,
         );
 
-        if (center && targetCombatant) {
-          const dx = targetCombatant.position.x - center.position.x;
+        const center =
+          ability.targetType === "location"
+            ? primaryTarget.position
+            : combatState.combatants.find(
+                (combatant) => combatant.id === primaryTarget.id,
+              )?.position;
 
-          const dy = targetCombatant.position.y - center.position.y;
+        if (center && targetCombatant) {
+          const dx = targetCombatant.position.x - center.x;
+          const dy = targetCombatant.position.y - center.y;
 
           const distanceFromCenter = Math.sqrt(dx * dx + dy * dy);
 
@@ -249,7 +277,7 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
 
       return {
         attackerId: casterId,
-        defenderId: target.id,
+        defenderId: targetId,
         type: ability.attackType!,
         distance: distanceFromCaster,
         target: "body",
@@ -300,6 +328,10 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
     }
   } else {
     for (const target of targets) {
+      if (!target.id) {
+        throw new Error("Ability effect target must have a combatant id.");
+      }
+
       executeAbilityEffects(
         ability.effects,
         {
@@ -319,6 +351,8 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
     resources: updatedResources,
     attackResult,
     attackResults,
+    target: request.target,
+    targets,
   };
 }
 
@@ -440,7 +474,10 @@ function resolveAreaTargets(
   if (!request.target) {
     return {
       success: false,
-      reason: "Area ability requires a primary target.",
+      reason:
+        ability.targetType === "location"
+          ? "Area ability requires a target location."
+          : "Area ability requires a primary target.",
     };
   }
 
@@ -455,6 +492,76 @@ function resolveAreaTargets(
     };
   }
 
+  if (ability.targetType === "location") {
+    if (!request.target.position) {
+      return {
+        success: false,
+        reason: "Target location is invalid.",
+      };
+    }
+
+    const center = request.target.position;
+
+    if (ability.range !== undefined) {
+      const distanceFromCaster = Math.sqrt(
+        Math.pow(center.x - caster.position.x, 2) +
+          Math.pow(center.y - caster.position.y, 2),
+      );
+
+      if (distanceFromCaster > ability.range) {
+        return {
+          success: false,
+          reason: "Target location is out of range.",
+        };
+      }
+    }
+
+    if (ability.area.shape !== "circle") {
+      return {
+        success: false,
+        reason: `Area shape "${ability.area.shape}" is not implemented yet.`,
+      };
+    }
+
+    if (ability.area.radius === undefined) {
+      return {
+        success: false,
+        reason: "Circle area requires a radius.",
+      };
+    }
+
+    const radius = ability.area.radius;
+    const targets: AbilityTarget[] = [];
+
+    for (const combatant of state.combatants) {
+      if (!combatant.alive) {
+        continue;
+      }
+
+      const dx = combatant.position.x - center.x;
+      const dy = combatant.position.y - center.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance <= radius) {
+        targets.push({
+          id: combatant.id,
+        });
+      }
+    }
+
+    return {
+      success: true,
+      targets,
+    };
+  }
+
+  if (!request.target.id) {
+    return {
+      success: false,
+      reason: "Primary target is invalid.",
+    };
+  }
+
   const primaryTarget = state.combatants.find(
     (combatant) => combatant.id === request.target!.id,
   );
@@ -466,7 +573,6 @@ function resolveAreaTargets(
     };
   }
 
-  // The selected target must satisfy the ability's target type.
   if (!isValidPrimaryTarget(ability, caster, primaryTarget)) {
     return {
       success: false,
@@ -474,7 +580,6 @@ function resolveAreaTargets(
     };
   }
 
-  // The primary target must be within the ability's range.
   if (ability.range !== undefined) {
     const distanceFromCaster = Math.sqrt(
       Math.pow(primaryTarget.position.x - caster.position.x, 2) +
@@ -504,7 +609,6 @@ function resolveAreaTargets(
   }
 
   const radius = ability.area.radius;
-
   const targets: AbilityTarget[] = [];
 
   for (const combatant of state.combatants) {
@@ -513,9 +617,7 @@ function resolveAreaTargets(
     }
 
     const dx = combatant.position.x - primaryTarget.position.x;
-
     const dy = combatant.position.y - primaryTarget.position.y;
-
     const distance = Math.sqrt(dx * dx + dy * dy);
 
     if (distance <= radius) {
@@ -548,6 +650,8 @@ function isValidPrimaryTarget(
 
     case "enemy":
       return target.team !== caster.team;
+    case "location":
+      return false;
   }
 }
 

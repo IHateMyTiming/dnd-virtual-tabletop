@@ -30,9 +30,11 @@ export class CombatTestScene extends Phaser.Scene {
   private targetingActive = false;
   private targetingTargetId: string | null = null;
   private targetingTargetIds: string[] = [];
+  private targetingLocation: { x: number; y: number } | null = null;
   private targetingAttackType: "melee" | "ranged" | null = null;
 
   private targetingGraphics?: Phaser.GameObjects.Graphics;
+  private abilityInstanceGraphics?: Phaser.GameObjects.Graphics;
   private targetingText?: Phaser.GameObjects.Text;
 
   private combatText!: Phaser.GameObjects.Text;
@@ -137,6 +139,9 @@ export class CombatTestScene extends Phaser.Scene {
     this.createCombat();
     this.createCharacters();
     this.createInterface();
+    this.input.on("pointerdown", this.handleMapPointerDown, this);
+    this.abilityInstanceGraphics = this.add.graphics();
+    this.abilityInstanceGraphics.setDepth(5);
 
     this.updateInterface();
 
@@ -519,9 +524,9 @@ export class CombatTestScene extends Phaser.Scene {
       430,
       150,
       26,
-      "intimidation",
+      "magic_weapon",
       0x5a2875,
-      () => this.useAbility("intimidation"),
+      () => this.useAbility("magic_weapon"),
     );
 
     this.createButton(panelX + 120, 460, 150, 26, "test", 0x5a2875, () =>
@@ -1028,11 +1033,16 @@ export class CombatTestScene extends Phaser.Scene {
     this.targetingActive = true;
     this.targetingTargetId = null;
     this.targetingTargetIds = [];
+    this.targetingLocation = null;
 
     this.targetingText = this.add.text(
       15,
       470,
-      `TARGET: ${ability.id}\nClick a valid target. Press ESC to cancel.`,
+      `TARGET: ${ability.id}\n${
+        ability.targetType === "location"
+          ? "Click a location."
+          : "Click a valid target."
+      } Press ESC to cancel.`,
       {
         fontSize: "12px",
         color: "#ffffff",
@@ -1102,6 +1112,9 @@ export class CombatTestScene extends Phaser.Scene {
 
       case "self":
         return "This ability targets yourself.";
+
+      case "location":
+        return "Select a location.";
 
       default:
         return "Select a target.";
@@ -1217,6 +1230,51 @@ export class CombatTestScene extends Phaser.Scene {
     this.confirmTargetedAbility(ability, targetId);
   }
 
+  private handleMapPointerDown(pointer: Phaser.Input.Pointer): void {
+    if (!this.targetingActive || !this.targetingAbility) {
+      return;
+    }
+
+    if (this.targetingAttackType) {
+      return;
+    }
+
+    if (this.targetingAbility.targetType !== "location") {
+      return;
+    }
+
+    const location = {
+      x: pointer.worldX / cellSize,
+      y: pointer.worldY / cellSize,
+    };
+
+    const ability = this.targetingAbility;
+
+    if (this.targetingLocation) {
+      const sameLocation =
+        this.targetingLocation.x === location.x &&
+        this.targetingLocation.y === location.y;
+
+      if (sameLocation) {
+        this.confirmLocationAbility(ability, location);
+        return;
+      }
+    }
+
+    this.targetingLocation = location;
+    this.updateTargetingPreview();
+
+    this.setCombatLog([
+      `Selected location: (${location.x.toFixed(1)}m, ${location.y.toFixed(1)}m)`,
+      "",
+      ability.targetingMode === "area"
+        ? "AoE preview shown."
+        : "Click the location again to cast.",
+      "",
+      "Press ESC to cancel.",
+    ]);
+  }
+
   private isValidAbilityTarget(
     ability: AbilityDefinition,
     caster: Combatant,
@@ -1238,6 +1296,34 @@ export class CombatTestScene extends Phaser.Scene {
       default:
         return false;
     }
+  }
+
+  private confirmLocationAbility(
+    ability: AbilityDefinition,
+    location: { x: number; y: number },
+  ): void {
+    const caster = this.combatEngine.getCurrentCombatant();
+
+    if (!caster) {
+      this.cancelAbilityTargeting();
+      return;
+    }
+
+    const result = this.resolveTestAbility(
+      ability,
+      caster.id,
+      undefined,
+      [],
+      location,
+    );
+
+    this.cancelAbilityTargeting();
+
+    if (result.success) {
+      this.redrawAbilityInstances();
+    }
+
+    this.handleAbilityResult(ability, caster.id, "", result);
   }
 
   private confirmTargetedAbility(
@@ -1269,8 +1355,9 @@ export class CombatTestScene extends Phaser.Scene {
   private resolveTestAbility(
     ability: AbilityDefinition,
     casterId: string,
-    targetId: string,
-    targetIds: string[] = [targetId],
+    targetId?: string,
+    targetIds: string[] = targetId ? [targetId] : [],
+    location?: { x: number; y: number },
   ) {
     const combatState = this.combatEngine.getState();
 
@@ -1284,9 +1371,15 @@ export class CombatTestScene extends Phaser.Scene {
       state: createAbilityState(ability.id),
       resources,
       casterId,
-      target: {
-        id: targetId,
-      },
+      target: targetId
+        ? {
+            id: targetId,
+          }
+        : location
+          ? {
+              position: location,
+            }
+          : undefined,
       targets:
         ability.targetingMode === "multi"
           ? targetIds.map((id) => ({ id }))
@@ -1381,7 +1474,7 @@ export class CombatTestScene extends Phaser.Scene {
 
     this.targetingGraphics.clear();
 
-    if (!this.targetingAbility || !this.targetingTargetId) {
+    if (!this.targetingAbility) {
       return;
     }
 
@@ -1395,22 +1488,30 @@ export class CombatTestScene extends Phaser.Scene {
       return;
     }
 
-    const target = this.getCombatant(this.targetingTargetId);
+    let position: { x: number; y: number } | null = null;
 
-    if (!target) {
+    if (ability.targetType === "location") {
+      position = this.targetingLocation;
+    } else if (this.targetingTargetId) {
+      const target = this.getCombatant(this.targetingTargetId);
+
+      if (target) {
+        position = target.position;
+      }
+    }
+
+    if (!position) {
       return;
     }
 
-    const x = target.position.x * cellSize + cellSize / 2;
-    const y = target.position.y * cellSize + cellSize / 2;
+    const x = position.x * cellSize + cellSize / 2;
+    const y = position.y * cellSize + cellSize / 2;
     const radius = ability.area.radius * cellSize;
 
     this.targetingGraphics.lineStyle(2, 0xffcc33, 0.9);
-
     this.targetingGraphics.fillStyle(0xffcc33, 0.15);
 
     this.targetingGraphics.fillCircle(x, y, radius);
-
     this.targetingGraphics.strokeCircle(x, y, radius);
   }
 
@@ -1430,6 +1531,7 @@ export class CombatTestScene extends Phaser.Scene {
     this.targetingAttackType = null;
     this.targetingTargetId = null;
     this.targetingTargetIds = [];
+    this.targetingLocation = null;
 
     this.targetingGraphics?.destroy();
     this.targetingGraphics = undefined;
@@ -1739,6 +1841,36 @@ export class CombatTestScene extends Phaser.Scene {
       this.executeRangedAttack(target.id);
     } else {
       this.executeMeleeAttack(target.id);
+    }
+  }
+
+  private redrawAbilityInstances(): void {
+    if (!this.abilityInstanceGraphics) {
+      return;
+    }
+
+    this.abilityInstanceGraphics.clear();
+
+    const instances = this.combatEngine.getAbilityInstances();
+
+    for (const instance of instances) {
+      if (
+        instance.area.shape !== "circle" ||
+        instance.area.radius === undefined
+      ) {
+        continue;
+      }
+
+      const x = instance.position.x * cellSize + cellSize / 2;
+      const y = instance.position.y * cellSize + cellSize / 2;
+      const radius = instance.area.radius * cellSize;
+
+      this.abilityInstanceGraphics.lineStyle(2, 0xffcc33, 0.9);
+      this.abilityInstanceGraphics.fillStyle(0xffcc33, 0.18);
+
+      this.abilityInstanceGraphics.fillCircle(x, y, radius);
+
+      this.abilityInstanceGraphics.strokeCircle(x, y, radius);
     }
   }
 
