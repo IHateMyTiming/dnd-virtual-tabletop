@@ -23,6 +23,7 @@ import type {
   CombatAttackRequest,
   CombatAttackResult,
 } from "../combat/CombatAttack";
+import type { CombatModifier } from "../combat/CombatModifier";
 
 export interface AbilityUseRequest {
   ability: AbilityDefinition;
@@ -186,6 +187,25 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
 
     const primaryTarget = request.target;
 
+    const temporaryModifiers: CombatModifier[] = ability.effects
+      .filter(
+        (effect) =>
+          effect.type === "modify-behavior" &&
+          effect.modifier !== undefined &&
+          effect.modifier.trigger !== "turn",
+      )
+      .map((effect) => {
+        if (effect.type !== "modify-behavior" || !effect.modifier) {
+          throw new Error("Invalid modify-behavior effect.");
+        }
+
+        return {
+          ...effect.modifier,
+          id: `${ability.id}:${effect.modifier.behavior}:${effect.modifier.operation}:${effect.modifier.trigger}`,
+          duration: effect.duration,
+        };
+      });
+
     const attackRequests: CombatAttackRequest[] = targets.map((target) => {
       const defenderConditions = combatState.conditionManager.getConditions(
         target.id,
@@ -222,6 +242,10 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
           damageMultiplier = Math.max(0, 1 - distanceFromCenter * falloff);
         }
       }
+      /*console.log(
+        `[ABILITY EFFECTS] ${ability.id} -> ${target.id}:`,
+        ability.effects.filter((effect) => effect.type !== "damage"),
+      );*/
 
       return {
         attackerId: casterId,
@@ -234,9 +258,21 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
         defenderConditions,
         attackerLevel: caster.level,
         abilityId: ability.id,
-        remainingEffects: ability.effects.filter(
-          (effect) => effect.type !== "damage",
-        ),
+
+        temporaryModifiers,
+
+        remainingEffects: ability.effects.filter((effect) => {
+          if (effect.type === "damage") {
+            return false;
+          }
+
+          if (effect.type === "modify-behavior" && effect.modifier) {
+            return effect.modifier.trigger === "turn";
+          }
+
+          return true;
+        }),
+
         damageMultiplier,
       };
     });
@@ -380,6 +416,10 @@ function resolveAbilityTargets(
     case "area": {
       return resolveAreaTargets(ability, casterId, request, state);
     }
+
+    case "chain": {
+      return resolveChainTargets(ability, casterId, request, state);
+    }
   }
 }
 
@@ -509,4 +549,126 @@ function isValidPrimaryTarget(
     case "enemy":
       return target.team !== caster.team;
   }
+}
+
+function resolveChainTargets(
+  ability: Extract<AbilityDefinition, { targetingMode: "chain" }>,
+  casterId: string,
+  request: AbilityUseRequest,
+  state: CombatState,
+):
+  | {
+      success: true;
+      targets: AbilityTarget[];
+    }
+  | {
+      success: false;
+      reason: string;
+    } {
+  if (!request.target) {
+    return {
+      success: false,
+      reason: "Chain ability requires a primary target.",
+    };
+  }
+
+  const caster = state.combatants.find(
+    (combatant) => combatant.id === casterId,
+  );
+
+  if (!caster) {
+    return {
+      success: false,
+      reason: "Caster not found.",
+    };
+  }
+
+  const firstTarget = state.combatants.find(
+    (combatant) => combatant.id === request.target!.id,
+  );
+
+  if (!firstTarget || !firstTarget.alive) {
+    return {
+      success: false,
+      reason: "Primary target is invalid.",
+    };
+  }
+
+  if (!isValidPrimaryTarget(ability, caster, firstTarget)) {
+    return {
+      success: false,
+      reason: "Primary target is invalid for this ability.",
+    };
+  }
+
+  // Check initial target range from caster.
+  if (ability.range !== undefined) {
+    const dx = firstTarget.position.x - caster.position.x;
+    const dy = firstTarget.position.y - caster.position.y;
+
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance > ability.range) {
+      return {
+        success: false,
+        reason: "Primary target is out of range.",
+      };
+    }
+  }
+
+  const targets: AbilityTarget[] = [
+    {
+      id: firstTarget.id,
+    },
+  ];
+
+  const selectedIds = new Set<string>([firstTarget.id]);
+  let previousTarget = firstTarget;
+
+  while (targets.length < ability.maxTargets) {
+    let nextTarget: CombatState["combatants"][number] | undefined;
+
+    let closestDistance = Infinity;
+
+    for (const combatant of state.combatants) {
+      if (!combatant.alive) {
+        continue;
+      }
+
+      if (selectedIds.has(combatant.id)) {
+        continue;
+      }
+
+      if (!isValidPrimaryTarget(ability, caster, combatant)) {
+        continue;
+      }
+
+      const dx = combatant.position.x - previousTarget.position.x;
+
+      const dy = combatant.position.y - previousTarget.position.y;
+
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance <= ability.chainRange && distance < closestDistance) {
+        closestDistance = distance;
+        nextTarget = combatant;
+      }
+    }
+
+    if (!nextTarget) {
+      break;
+    }
+
+    targets.push({
+      id: nextTarget.id,
+    });
+
+    selectedIds.add(nextTarget.id);
+    previousTarget = nextTarget;
+  }
+
+  return {
+    success: true,
+    targets,
+  };
 }

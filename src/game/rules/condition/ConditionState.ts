@@ -1,4 +1,5 @@
 import type { ConditionId } from "./Condition";
+import type { Position } from "../combat/Movement";
 
 export interface ConditionState {
   id: ConditionId;
@@ -6,6 +7,14 @@ export interface ConditionState {
   stacks: number;
   value?: number;
   sourceId?: string;
+  movementRestrictions?: ConditionMovementRestriction[];
+}
+export interface ConditionMovementRestriction {
+  shape: "rectangle";
+  center: Position;
+  width: number;
+  length: number;
+  rotation: number;
 }
 
 export function createCondition(

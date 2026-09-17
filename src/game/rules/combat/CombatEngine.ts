@@ -21,11 +21,12 @@ import {
 import {
   canMove,
   canMoveTo,
-  canAttackTarget,
   canUseAction,
   canUseBonusAction,
   canUseReaction,
   canUseSpecialMovement,
+  canAttackTarget,
+  createMovementRestrictions,
 } from "../condition/ConditionRestrictions";
 import { getConditionDamage } from "../condition/ConditionDamage";
 import { calculateForcedMovement } from "../condition/ConditionForcedMovement";
@@ -119,7 +120,7 @@ export class CombatEngine {
     const current = this.getCurrentCombatant();
 
     if (current) {
-      this.consumeTurnModifiers(current);
+      this.processTurnModifierDurations(current);
     }
 
     const nextIndex = this.state.currentTurnIndex + 1;
@@ -466,6 +467,27 @@ export class CombatEngine {
       return undefined;
     }
 
+    let source: Combatant | undefined;
+
+    if (sourceId) {
+      source = this.state.combatants.find(
+        (combatant) => combatant.id === sourceId,
+      );
+
+      if (!source) {
+        throw new Error("Condition source must exist.");
+      }
+    }
+
+    const movementRestrictions =
+      (conditionId === "charmed" || conditionId === "frightened") && source
+        ? createMovementRestrictions(
+            conditionId,
+            source.position,
+            target.position,
+          )
+        : undefined;
+
     const condition = this.state.conditionManager.applyCondition(
       targetId,
       conditionId,
@@ -473,6 +495,7 @@ export class CombatEngine {
       stacks,
       value,
       sourceId,
+      movementRestrictions,
     );
 
     const updatedResistance = increaseConditionResistance(
@@ -490,17 +513,17 @@ export class CombatEngine {
         throw new Error("Forced movement conditions require a source.");
       }
 
-      const source = this.state.combatants.find(
+      const forcedMovementSource = this.state.combatants.find(
         (combatant) => combatant.id === sourceId,
       );
 
-      if (!source) {
+      if (!forcedMovementSource) {
         throw new Error("Forced movement source and target must exist.");
       }
 
       target.position = calculateForcedMovement(
         target.position,
-        source.position,
+        forcedMovementSource.position,
         condition,
       );
     }
@@ -756,7 +779,10 @@ export class CombatEngine {
       defenderConditions,
       patternBonus: patternKnowledge?.bonus ?? 0,
       attackerLevel: attacker.level,
-      attackerModifiers: attacker.modifiers,
+      attackerModifiers: [
+        ...attacker.modifiers,
+        ...(request.temporaryModifiers ?? []),
+      ],
     });
 
     this.consumeAttackRollModifiers(attacker);
@@ -782,23 +808,35 @@ export class CombatEngine {
       };
     }
 
-    const attackDamage = rollAttackDamage({
-      attackerId: attacker.id,
-      defenderId: defender.id,
-      type: request.type,
-      attackerStats: attacker.stats,
-      defenderStats: defender.stats,
-      distance: request.distance,
-      target: request.target,
-      damage: request.damage,
-      armor: defender.armor,
-      magicResistance: defender.magicResistance,
-      attackerConditions,
-      defenderConditions,
-      patternBonus: patternKnowledge?.bonus ?? 0,
-      attackerLevel: attacker.level,
-      attackerModifiers: attacker.modifiers,
-    });
+    const attackDamage = rollAttackDamage(
+      {
+        attackerId: attacker.id,
+        defenderId: defender.id,
+        type: request.type,
+        attackerStats: attacker.stats,
+        defenderStats: defender.stats,
+        distance: request.distance,
+        target: request.target,
+        damage: request.damage,
+        armor: defender.armor,
+        magicResistance: defender.magicResistance,
+        attackerConditions,
+        defenderConditions,
+        patternBonus: patternKnowledge?.bonus ?? 0,
+        attackerLevel: attacker.level,
+        attackerModifiers: [
+          ...attacker.modifiers,
+          ...(request.temporaryModifiers ?? []),
+        ],
+      },
+      {
+        casterHealthPercent: (attacker.hp / attacker.maxHp) * 100,
+        targetHealthPercent: (defender.hp / defender.maxHp) * 100,
+        distance: request.distance,
+        turn: this.state.round,
+        targetCreatureType: defender.creatureType,
+      },
+    );
 
     const damageMultiplier = request.damageMultiplier ?? 1;
 
@@ -1036,7 +1074,7 @@ export class CombatEngine {
 
     defender.alive = defender.hp > 0;
 
-    if (!dodged && pending.remainingEffects?.length) {
+    if (!dodged && defender.alive && pending.remainingEffects?.length) {
       executeAbilityEffects(
         pending.remainingEffects,
         {
@@ -1119,7 +1157,7 @@ export class CombatEngine {
     defender.hp = roundToOneDecimal(Math.max(0, defender.hp - finalDamage));
     defender.alive = defender.hp > 0;
 
-    if (remainingEffects?.length) {
+    if (defender.alive && remainingEffects?.length) {
       executeAbilityEffects(
         remainingEffects,
         {
@@ -1169,16 +1207,11 @@ export class CombatEngine {
     }
   }
 
-  private consumeTurnModifiers(combatant: Combatant): void {
+  private processTurnModifierDurations(combatant: Combatant): void {
     const modifiers = [...combatant.modifiers];
 
     for (const modifier of modifiers) {
-      if (modifier.trigger !== "turn" || modifier.amount <= 0) {
-        continue;
-      }
-
       if (modifier.duration === undefined) {
-        consumeModifier(combatant.modifiers, modifier);
         continue;
       }
 

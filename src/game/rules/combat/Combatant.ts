@@ -41,4 +41,18 @@ export interface Combatant {
   magicResistance: number;
 
   modifiers: CombatModifier[];
+
+  creatureType: CreatureType;
 }
+
+export type CreatureType =
+  | "humanoid"
+  | "undead"
+  | "beast"
+  | "construct"
+  | "celestial"
+  | "elemental"
+  | "dragon"
+  | "giant"
+  | "monstrosity"
+  | "dead";

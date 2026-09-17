@@ -56,8 +56,6 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
-  //NEEDS FIX
-  //NO STACKABLE
   {
     id: "ice_shard",
 
@@ -116,9 +114,6 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
-  //NEEDS FIX
-  //MULTI - TARGET
-
   {
     id: "hand_pistol_gun",
 
@@ -160,8 +155,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     imagePath: "/assets/abilities/",
   },
-  //NEEDS FIX
-  //MULTI - TARGET
+
   {
     id: "lightning_arc",
 
@@ -170,15 +164,13 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     actionType: "action",
     targetType: "enemy",
-    targetingMode: "area",
+    targetingMode: "chain",
+
     attackType: "spell",
 
     range: 10,
-
-    area: {
-      shape: "circle",
-      radius: 3,
-    },
+    maxTargets: 4,
+    chainRange: 3,
 
     effects: [
       {
@@ -207,8 +199,6 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
-  //NEEDS FIX
-  //HP THRESHOLD CONDITION
   {
     id: "blood_thirster",
 
@@ -237,12 +227,30 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
           },
         },
       },
+
+      {
+        type: "modify-behavior",
+        modifier: {
+          behavior: "damage",
+          operation: "multiply",
+          trigger: "attack",
+          value: 1.25,
+          amount: 1,
+
+          threshold: {
+            type: "health-percent",
+            operator: "less-than",
+            value: 50,
+            target: "target",
+          },
+        },
+      },
     ],
 
-    //ADD A 25% EXTRA DAMAGE TO LESS THAN 50% HP
     recovery: "unlimited",
     isSpell: true,
     spellLevel: 1,
+
     resourceCost: {
       amount: 1,
     },
@@ -250,8 +258,6 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
-  //NEEDS FIX
-  //NO STACKABLE
   {
     id: "earth_spike",
 
@@ -303,8 +309,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
   },
 
   //COMBAT DEALING DAMAGE SPELLS  CLERIC
-  //NEEDS FIX
-  //CHARACTER ID
+
   {
     id: "radiant_bolt",
 
@@ -336,8 +341,20 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
           },
         },
       },
+
+      {
+        type: "modify-behavior",
+        modifier: {
+          behavior: "damage",
+          operation: "multiply",
+          trigger: "spell",
+          value: 1.5,
+          amount: 1,
+          targetCreatureType: "undead",
+        },
+      },
     ],
-    //ADD A 50% MORE DAMAGE TO UNDEAD
+
     recovery: "unlimited",
     isSpell: true,
     spellLevel: 1,
@@ -598,10 +615,10 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
   //NEEDS FIX
   //DURATION
   {
-    id: "cause_fear",
+    id: "intimidation",
 
-    nameKey: "spell_cause_fear",
-    descriptionKey: "spell_cause_fear_description",
+    nameKey: "spell_intimidation",
+    descriptionKey: "spell_intimidation_description",
 
     actionType: "action",
     targetType: "enemy",
@@ -613,7 +630,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
       {
         type: "apply-condition",
         conditionId: "frightened",
-        duration: 0, //NEEDS FIX: ongoing until the spell is dismissed
+        duration: 3,
         stacks: 1,
         value: 0,
       },
@@ -727,6 +744,40 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     recovery: "unlimited",
 
+    isSpell: true,
+    spellLevel: 1,
+    resourceCost: {
+      amount: 1,
+    },
+
+    imagePath: "/assets/abilities/",
+  },
+
+  {
+    id: "test",
+
+    nameKey: "spell_test",
+    descriptionKey: "spell_test_description",
+
+    actionType: "action",
+    targetType: "enemy",
+    targetingMode: "single",
+    attackType: "spell",
+
+    range: 100,
+
+    effects: [
+      {
+        type: "damage",
+        damage: {
+          count: 1,
+          sides: 1,
+          type: "magic",
+        },
+      },
+    ],
+
+    recovery: "unlimited",
     isSpell: true,
     spellLevel: 1,
     resourceCost: {

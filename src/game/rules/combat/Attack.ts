@@ -21,9 +21,25 @@ import type { AttackOutcome } from "./Advantage";
 import {
   getModifierValue,
   getModifierMultiplier,
+  getActiveModifiers,
   type CombatModifier,
 } from "./CombatModifier";
+import type { CreatureType } from "./Combatant";
+
 export type AttackType = "melee" | "ranged" | "spell";
+
+export interface CombatModifierContext {
+  casterHealthPercent?: number;
+  casterManaPercent?: number;
+
+  targetHealthPercent?: number;
+  targetManaPercent?: number;
+
+  distance?: number;
+  turn?: number;
+
+  targetCreatureType?: CreatureType;
+}
 
 export interface AttackRequest {
   attackerId: string;
@@ -127,11 +143,16 @@ export function resolveAttack(attack: AttackRequest): AttackResult {
   };
 }
 
-export function rollAttackDamage(attack: AttackRequest): AttackDamageResult {
-  const attackModifiers = getDamageModifiers(
+export function rollAttackDamage(
+  attack: AttackRequest,
+  modifierContext?: CombatModifierContext,
+): AttackDamageResult {
+  const activeModifiers = getActiveModifiers(
     attack.attackerModifiers,
-    attack.type,
+    modifierContext ?? {},
   );
+
+  const attackModifiers = getDamageModifiers(activeModifiers, attack.type);
 
   const damage = rollModifiedDamage(
     attack.damage,

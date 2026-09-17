@@ -64,11 +64,21 @@ export function executeAbilityEffects(
     context: AbilityEffectContext,
     engine: CombatEngine,
   ): void {
-    if (effect.value === undefined) {
-      throw new Error("Heal effect requires a value.");
+    if (!effect.healing) {
+      throw new Error("Heal effect requires healing.");
     }
 
-    engine.heal(context.targetId, effect.value);
+    let amount = 0;
+
+    for (let i = 0; i < effect.healing.count; i++) {
+      amount += Math.floor(Math.random() * effect.healing.sides) + 1;
+    }
+
+    if (effect.healing.modifier !== undefined) {
+      amount += effect.healing.modifier;
+    }
+
+    engine.heal(context.targetId, amount);
   }
 
   function executeApplyCondition(

@@ -4,9 +4,12 @@ import {
   isConditionExpired,
   reduceConditionDuration,
 } from "./ConditionState";
-import type { ConditionState } from "./ConditionState";
 import type { ConditionResistanceState } from "../combat/EffectResistance";
 import { createConditionResistance } from "../combat/EffectResistance";
+import type {
+  ConditionState,
+  ConditionMovementRestriction,
+} from "./ConditionState";
 
 export class ConditionManager {
   private conditions: Map<string, ConditionState[]> = new Map();
@@ -36,6 +39,7 @@ export class ConditionManager {
     stacks = 1,
     value?: number,
     sourceId?: string,
+    movementRestrictions?: ConditionMovementRestriction[],
   ): ConditionState {
     const existingConditions = this.getConditions(targetId);
 
@@ -44,6 +48,13 @@ export class ConditionManager {
     );
 
     if (existingCondition) {
+      // Charmed and frightened are positional conditions.
+      // Reapplying them does not refresh, replace, or reposition
+      // the existing condition.
+      if (conditionId === "charmed" || conditionId === "frightened") {
+        return existingCondition;
+      }
+
       const definition = getConditionDefinition(conditionId);
 
       if (!definition) {
@@ -89,6 +100,7 @@ export class ConditionManager {
     const cappedCondition: ConditionState = {
       ...newCondition,
       stacks: Math.min(stacks, definition.maxStacks),
+      movementRestrictions,
     };
 
     this.conditions.set(targetId, [...existingConditions, cappedCondition]);

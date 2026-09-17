@@ -5,6 +5,7 @@ import type { AttackType, AttackResult } from "./Attack";
 import type { ConditionState } from "../condition/ConditionState";
 import type { DamageResult } from "./Damage";
 import type { AbilityEffect } from "../abilities/AbilityEffect";
+import type { CombatModifier } from "./CombatModifier";
 
 export interface CombatAttackRequest {
   attackerId: string;
@@ -19,6 +20,7 @@ export interface CombatAttackRequest {
   abilityId?: string;
   remainingEffects?: AbilityEffect[];
   damageMultiplier?: number;
+  temporaryModifiers?: CombatModifier[];
 }
 
 export interface CombatAttackResult {

@@ -5,8 +5,7 @@ import type { SpellSlotLevel } from "./Resource";
 
 export type AbilityTargetType = "self" | "ally" | "enemy" | "self-or-ally";
 
-export type AbilityTargetingMode = "single" | "multi" | "area";
-
+export type AbilityTargetingMode = "single" | "multi" | "area" | "chain";
 export type AbilityRecovery =
   | "unlimited"
   | "cooldown"
@@ -37,7 +36,8 @@ export interface AbilityResourceCost {
 export type AbilityDefinition =
   | AbilitySingleTarget
   | AbilityMultiTarget
-  | AbilityAreaTarget;
+  | AbilityAreaTarget
+  | AbilityChainTarget;
 
 interface AbilityBase {
   id: string;
@@ -80,4 +80,9 @@ export interface AbilityMultiTarget extends AbilityBase {
 export interface AbilityAreaTarget extends AbilityBase {
   targetingMode: "area";
   area: AbilityArea;
+}
+export interface AbilityChainTarget extends AbilityBase {
+  targetingMode: "chain";
+  maxTargets: number;
+  chainRange: number;
 }

@@ -1,6 +1,8 @@
 import type { ConditionId } from "./Condition";
-import type { ConditionState } from "./ConditionState";
-import { calculateDistance } from "../combat/Movement";
+import type {
+  ConditionMovementRestriction,
+  ConditionState,
+} from "./ConditionState";
 import type { Combatant } from "../combat/Combatant";
 import type { Position } from "../combat/Movement";
 
@@ -74,58 +76,116 @@ export function canAttackTarget(
   );
 }
 
+function isPointInsideRectangle(
+  point: Position,
+  rectangle: ConditionMovementRestriction,
+): boolean {
+  const dx = point.x - rectangle.center.x;
+  const dy = point.y - rectangle.center.y;
+
+  const cos = Math.cos(-rectangle.rotation);
+  const sin = Math.sin(-rectangle.rotation);
+
+  const localX = dx * cos - dy * sin;
+  const localY = dx * sin + dy * cos;
+
+  return (
+    Math.abs(localX) <= rectangle.width / 2 &&
+    Math.abs(localY) <= rectangle.length / 2
+  );
+}
+
+export function createMovementRestrictions(
+  conditionId: ConditionId,
+  sourcePosition: Position,
+  targetPosition: Position,
+): ConditionMovementRestriction[] {
+  if (conditionId !== "charmed" && conditionId !== "frightened") {
+    return [];
+  }
+
+  const dx = targetPosition.x - sourcePosition.x;
+  const dy = targetPosition.y - sourcePosition.y;
+
+  const distance = Math.sqrt(dx * dx + dy * dy);
+
+  if (distance === 0) {
+    return [];
+  }
+
+  const directionX = dx / distance;
+  const directionY = dy / distance;
+  const rotation = Math.atan2(dy, dx);
+
+  const width = 10;
+  const extension = 5;
+
+  if (conditionId === "charmed") {
+    const length = distance + extension;
+
+    const centerDistance = (distance + extension) / 2;
+
+    return [
+      {
+        shape: "rectangle",
+        center: {
+          x: sourcePosition.x + directionX * centerDistance,
+          y: sourcePosition.y + directionY * centerDistance,
+        },
+        width,
+        length,
+        rotation,
+      },
+    ];
+  }
+
+  const length = distance + extension * 2;
+
+  const centerDistance = distance / 2;
+
+  return [
+    {
+      shape: "rectangle",
+      center: {
+        x: sourcePosition.x + directionX * centerDistance,
+        y: sourcePosition.y + directionY * centerDistance,
+      },
+      width,
+      length,
+      rotation,
+    },
+  ];
+}
+
 export function canMoveTo(
   currentPosition: Position,
   targetPosition: Position,
   conditions: ConditionState[],
-  combatants: Combatant[],
+  _combatants: Combatant[],
 ): boolean {
-  const charmed = conditions.find(
-    (condition) => condition.id === "charmed" && condition.sourceId,
-  );
+  for (const condition of conditions) {
+    if (
+      (condition.id === "charmed" || condition.id === "frightened") &&
+      condition.movementRestrictions
+    ) {
+      for (const restriction of condition.movementRestrictions) {
+        const currentInside = isPointInsideRectangle(
+          currentPosition,
+          restriction,
+        );
 
-  const frightened = conditions.find(
-    (condition) => condition.id === "frightened" && condition.sourceId,
-  );
+        const targetInside = isPointInsideRectangle(
+          targetPosition,
+          restriction,
+        );
 
-  // Charmed: cannot voluntarily move farther away
-  // from the creature that charmed you.
-  if (charmed) {
-    const source = combatants.find(
-      (combatant) => combatant.id === charmed.sourceId,
-    );
-
-    if (source) {
-      const currentDistance = calculateDistance(
-        currentPosition,
-        source.position,
-      );
-
-      const targetDistance = calculateDistance(targetPosition, source.position);
-
-      if (targetDistance > currentDistance) {
-        return false;
-      }
-    }
-  }
-
-  // Frightened: cannot voluntarily move closer
-  // to the creature that frightened you.
-  if (frightened) {
-    const source = combatants.find(
-      (combatant) => combatant.id === frightened.sourceId,
-    );
-
-    if (source) {
-      const currentDistance = calculateDistance(
-        currentPosition,
-        source.position,
-      );
-
-      const targetDistance = calculateDistance(targetPosition, source.position);
-
-      if (targetDistance < currentDistance) {
-        return false;
+        // The character can move freely while inside
+        // the fixed restriction.
+        //
+        // They cannot cross the boundary and leave it.
+        if (currentInside && !targetInside) {
+          return false;
+        }
       }
     }
   }

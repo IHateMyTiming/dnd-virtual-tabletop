@@ -16,6 +16,7 @@ import type { AbilityDefinition } from "./rules/abilities/Ability";
 import { createAbilityState } from "./rules/abilities/AbilityState";
 import { createEmptyResources } from "./rules/abilities/Resource";
 import { CANTRIPS } from "./rules/abilities/spells/cantrips";
+import { LEVELONESPELLS } from "./rules/abilities/spells/levelOne";
 
 export class CombatTestScene extends Phaser.Scene {
   private ranger!: Phaser.GameObjects.Arc;
@@ -28,6 +29,7 @@ export class CombatTestScene extends Phaser.Scene {
   private targetingAbility: AbilityDefinition | null = null;
   private targetingActive = false;
   private targetingTargetId: string | null = null;
+  private targetingTargetIds: string[] = [];
   private targetingAttackType: "melee" | "ranged" | null = null;
 
   private targetingGraphics?: Phaser.GameObjects.Graphics;
@@ -43,9 +45,9 @@ export class CombatTestScene extends Phaser.Scene {
   private rangerMovementText!: Phaser.GameObjects.Text;
   private goblinMovementText!: Phaser.GameObjects.Text;
 
-  private rangerDefenseText!: Phaser.GameObjects.Text;
-  private goblinDefenseText!: Phaser.GameObjects.Text;
-  private rangerPatternText!: Phaser.GameObjects.Text;
+  //private rangerDefenseText!: Phaser.GameObjects.Text;
+  //private goblinDefenseText!: Phaser.GameObjects.Text;
+  //private rangerPatternText!: Phaser.GameObjects.Text;
   private attributeTargetText!: Phaser.GameObjects.Text;
   private attributeSelectorText!: Phaser.GameObjects.Text;
   private attributeValueText!: Phaser.GameObjects.Text;
@@ -68,6 +70,9 @@ export class CombatTestScene extends Phaser.Scene {
   private conditionDuration = 3;
   private conditionStacks = 1;
   private conditionValue = 2;
+
+  private targetingConfirmButton?: Phaser.GameObjects.Rectangle;
+  private targetingConfirmText?: Phaser.GameObjects.Text;
 
   private attributeTargetId: "ranger" | "goblin" = "ranger";
   private selectedAttribute: keyof CharacterStats = "dexterity";
@@ -97,6 +102,15 @@ export class CombatTestScene extends Phaser.Scene {
   ];
 
   private readonly rangerStats: CharacterStats = {
+    strength: 10,
+    dexterity: 15,
+    constitution: 13,
+    intelligence: 12,
+    wisdom: 14,
+    charisma: 8,
+  };
+
+  private readonly ranger2Stats: CharacterStats = {
     strength: 10,
     dexterity: 16,
     constitution: 13,
@@ -160,11 +174,13 @@ export class CombatTestScene extends Phaser.Scene {
       name: "Ranger",
       level: 1,
       team: "player",
+      creatureType: "humanoid",
+
       modifiers: [],
 
       stats: this.rangerStats,
 
-      hp: 21,
+      hp: 10,
       maxHp: 21,
 
       armor: 0,
@@ -192,9 +208,11 @@ export class CombatTestScene extends Phaser.Scene {
       name: "Ranger2",
       level: 1,
       team: "player",
+      creatureType: "humanoid",
+
       modifiers: [],
 
-      stats: this.rangerStats,
+      stats: this.ranger2Stats,
 
       hp: 21,
       maxHp: 21,
@@ -224,11 +242,13 @@ export class CombatTestScene extends Phaser.Scene {
       name: "Goblin",
       level: 1,
       team: "enemy",
+      creatureType: "humanoid",
+
       modifiers: [],
 
       stats: this.goblinStats,
 
-      hp: 10,
+      hp: 30,
       maxHp: 10,
 
       armor: 2,
@@ -256,11 +276,13 @@ export class CombatTestScene extends Phaser.Scene {
       name: "Goblin 2",
       level: 1,
       team: "enemy",
+      creatureType: "humanoid",
+
       modifiers: [],
 
       stats: this.goblinStats,
 
-      hp: 10,
+      hp: 30,
       maxHp: 10,
 
       armor: 2,
@@ -407,7 +429,7 @@ export class CombatTestScene extends Phaser.Scene {
       fontSize: "11px",
       color: "#ffffff",
     });
-    this.rangerDefenseText = this.add.text(panelX + 15, 130, "", {
+    /*this.rangerDefenseText = this.add.text(panelX + 15, 130, "", {
       fontSize: "9px",
       color: "#ffffff",
     });
@@ -419,23 +441,23 @@ export class CombatTestScene extends Phaser.Scene {
       fontSize: "9px",
       color: "#ffffff",
       wordWrap: { width: 210 },
-    });
-    this.turnText = this.add.text(panelX + 15, 198, "", {
+    });*/
+    this.turnText = this.add.text(panelX + 15, 130, "", {
       fontSize: "11px",
       color: "#ffffff",
     });
-    this.resourcesText = this.add.text(panelX + 15, 210, "", {
+    this.resourcesText = this.add.text(panelX + 15, 140, "", {
       fontSize: "10px",
       color: "#ffffff",
       wordWrap: { width: 210 },
     });
 
-    this.rangerStatusText = this.add.text(panelX + 15, 232, "", {
+    this.rangerStatusText = this.add.text(panelX + 15, 160, "", {
       fontSize: "10px",
       color: "#ff9999",
       wordWrap: { width: 210 },
     });
-    this.goblinStatusText = this.add.text(panelX + 15, 268, "", {
+    this.goblinStatusText = this.add.text(panelX + 15, 180, "", {
       fontSize: "10px",
       color: "#9999ff",
       wordWrap: { width: 210 },
@@ -497,13 +519,13 @@ export class CombatTestScene extends Phaser.Scene {
       430,
       150,
       26,
-      "multi_missiles",
+      "intimidation",
       0x5a2875,
-      () => this.useCantrip("multi_missiles"),
+      () => this.useAbility("intimidation"),
     );
 
-    this.createButton(panelX + 120, 460, 150, 26, "tank_that", 0x5a2875, () =>
-      this.useCantrip("tank_that"),
+    this.createButton(panelX + 120, 460, 150, 26, "test", 0x5a2875, () =>
+      this.useAbility("test"),
     );
 
     this.createButton(
@@ -511,9 +533,9 @@ export class CombatTestScene extends Phaser.Scene {
       490,
       150,
       26,
-      "helping_hand",
+      "blood_thirster",
       0x5a2875,
-      () => this.useCantrip("helping_hand"),
+      () => this.useAbility("blood_thirster"),
     );
 
     this.add.text(panelX + 15, 522, "CONDITION TESTER", {
@@ -970,11 +992,13 @@ export class CombatTestScene extends Phaser.Scene {
     ]);
   }*/
 
-  private getCantrip(id: string): AbilityDefinition | undefined {
-    return CANTRIPS.find((cantrip) => cantrip.id === id);
+  private getAbility(id: string): AbilityDefinition | undefined {
+    return [...CANTRIPS, ...LEVELONESPELLS].find(
+      (ability) => ability.id === id,
+    );
   }
 
-  private useCantrip(cantripId: string): void {
+  private useAbility(abilityId: string): void {
     const caster = this.combatEngine.getCurrentCombatant();
 
     if (!caster || !caster.alive) {
@@ -982,19 +1006,19 @@ export class CombatTestScene extends Phaser.Scene {
       return;
     }
 
-    const cantrip = this.getCantrip(cantripId);
+    const ability = this.getAbility(abilityId);
 
-    if (!cantrip) {
-      this.setCombatLog([`Cantrip not found: ${cantripId}`]);
+    if (!ability) {
+      this.setCombatLog([`Ability not found: ${abilityId}`]);
       return;
     }
 
-    if (cantrip.targetType === "self") {
-      this.confirmSelfCast(cantrip);
+    if (ability.targetType === "self") {
+      this.confirmSelfCast(ability);
       return;
     }
 
-    this.startAbilityTargeting(cantrip);
+    this.startAbilityTargeting(ability);
   }
 
   private startAbilityTargeting(ability: AbilityDefinition): void {
@@ -1003,6 +1027,7 @@ export class CombatTestScene extends Phaser.Scene {
     this.targetingAbility = ability;
     this.targetingActive = true;
     this.targetingTargetId = null;
+    this.targetingTargetIds = [];
 
     this.targetingText = this.add.text(
       15,
@@ -1020,6 +1045,37 @@ export class CombatTestScene extends Phaser.Scene {
     );
 
     this.targetingGraphics = this.add.graphics();
+
+    if (ability.targetingMode === "multi") {
+      this.targetingConfirmButton = this.add
+        .rectangle(600, 470, 150, 28, 0x754040)
+        .setInteractive({ useHandCursor: true })
+        .setDepth(100);
+
+      this.targetingConfirmText = this.add
+        .text(600, 470, "CAST", {
+          fontSize: "11px",
+          color: "#ffffff",
+          fontStyle: "bold",
+        })
+        .setOrigin(0.5)
+        .setDepth(101);
+
+      this.targetingConfirmButton.on("pointerdown", () => {
+        if (this.targetingTargetIds.length === 0) {
+          this.setCombatLog([
+            "No targets selected.",
+            "",
+            "Select at least one target.",
+          ]);
+          return;
+        }
+
+        this.confirmTargetedAbility(ability, this.targetingTargetIds[0], [
+          ...this.targetingTargetIds,
+        ]);
+      });
+    }
 
     this.setCombatLog([
       `Targeting: ${ability.id}`,
@@ -1086,6 +1142,60 @@ export class CombatTestScene extends Phaser.Scene {
       return;
     }
 
+    // Multi-target ability
+    if (ability.targetingMode === "multi") {
+      const selectedIndex = this.targetingTargetIds.indexOf(targetId);
+
+      // Clicking an already selected target removes it.
+      if (selectedIndex !== -1) {
+        this.targetingTargetIds.splice(selectedIndex, 1);
+
+        this.targetingTargetId =
+          this.targetingTargetIds[this.targetingTargetIds.length - 1] ?? null;
+
+        this.updateTargetingPreview();
+
+        this.setCombatLog([
+          `Removed target: ${target.name}`,
+          "",
+          `Targets selected: ${this.targetingTargetIds.length}/${ability.maxTargets}`,
+          "Click enemies to select them.",
+          "Press ESC to cancel.",
+        ]);
+
+        return;
+      }
+
+      // Add target
+      // Add target
+      if (this.targetingTargetIds.length >= ability.maxTargets) {
+        this.setCombatLog([
+          `Maximum targets selected: ${ability.maxTargets}`,
+          "",
+          "Press CAST to confirm.",
+          "Press ESC to cancel.",
+        ]);
+
+        return;
+      }
+
+      this.targetingTargetIds.push(targetId);
+      this.targetingTargetId = targetId;
+
+      this.updateTargetingPreview();
+
+      this.setCombatLog([
+        `Selected target: ${target.name}`,
+        "",
+        `Targets selected: ${this.targetingTargetIds.length}/${ability.maxTargets}`,
+        "Click another target or press CAST.",
+        "Press ESC to cancel.",
+      ]);
+
+      return;
+    }
+
+    // Single / area / chain targeting
     if (this.targetingTargetId !== targetId) {
       this.targetingTargetId = targetId;
 
@@ -1096,7 +1206,9 @@ export class CombatTestScene extends Phaser.Scene {
         "",
         ability.targetingMode === "area"
           ? "AoE preview shown."
-          : "Click the target again to cast.",
+          : ability.targetingMode === "chain"
+            ? "Click the target again to cast."
+            : "Click the target again to cast.",
       ]);
 
       return;
@@ -1131,6 +1243,7 @@ export class CombatTestScene extends Phaser.Scene {
   private confirmTargetedAbility(
     ability: AbilityDefinition,
     targetId: string,
+    targetIds?: string[],
   ): void {
     const caster = this.combatEngine.getCurrentCombatant();
 
@@ -1139,7 +1252,14 @@ export class CombatTestScene extends Phaser.Scene {
       return;
     }
 
-    const result = this.resolveTestAbility(ability, caster.id, targetId);
+    const selectedTargetIds = targetIds ?? [targetId];
+
+    const result = this.resolveTestAbility(
+      ability,
+      caster.id,
+      targetId,
+      selectedTargetIds,
+    );
 
     this.cancelAbilityTargeting();
 
@@ -1150,17 +1270,27 @@ export class CombatTestScene extends Phaser.Scene {
     ability: AbilityDefinition,
     casterId: string,
     targetId: string,
+    targetIds: string[] = [targetId],
   ) {
     const combatState = this.combatEngine.getState();
+
+    const resources = createEmptyResources();
+
+    resources.spellSlots[1] = 1;
+    resources.maxSpellSlots[1] = 1;
 
     const request: AbilityUseRequest = {
       ability,
       state: createAbilityState(ability.id),
-      resources: createEmptyResources(),
+      resources,
       casterId,
       target: {
         id: targetId,
       },
+      targets:
+        ability.targetingMode === "multi"
+          ? targetIds.map((id) => ({ id }))
+          : undefined,
       combatState,
       combatEngine: this.combatEngine,
     };
@@ -1299,12 +1429,18 @@ export class CombatTestScene extends Phaser.Scene {
     this.targetingAbility = null;
     this.targetingAttackType = null;
     this.targetingTargetId = null;
+    this.targetingTargetIds = [];
 
     this.targetingGraphics?.destroy();
     this.targetingGraphics = undefined;
 
     this.targetingText?.destroy();
     this.targetingText = undefined;
+    this.targetingConfirmButton?.destroy();
+    this.targetingConfirmButton = undefined;
+
+    this.targetingConfirmText?.destroy();
+    this.targetingConfirmText = undefined;
 
     this.input.keyboard?.off("keydown-ESC", this.handleTargetingEscape, this);
   }
@@ -1721,9 +1857,9 @@ export class CombatTestScene extends Phaser.Scene {
     this.rangerMovementText.setText(this.getRangerMovementText());
 
     this.goblinMovementText.setText(this.getGoblinMovementText());
-    this.rangerDefenseText.setText(this.getRangerDefenseText());
-    this.goblinDefenseText.setText(this.getGoblinDefenseText());
-    this.rangerPatternText.setText(this.getRangerPatternText());
+    //this.rangerDefenseText.setText(this.getRangerDefenseText());
+    //this.goblinDefenseText.setText(this.getGoblinDefenseText());
+    //this.rangerPatternText.setText(this.getRangerPatternText());
 
     this.turnText.setText(this.getTurnText());
 
@@ -1736,7 +1872,7 @@ export class CombatTestScene extends Phaser.Scene {
     this.updateConditionControls();
   }
 
-  private getRangerPatternText(): string {
+  /*private getRangerPatternText(): string {
     const ranger = this.getCombatant("ranger");
 
     if (!ranger) {
@@ -1753,7 +1889,7 @@ export class CombatTestScene extends Phaser.Scene {
     }
 
     return `Ranger → Goblin Pattern: ${knowledge.attacksObserved}/5 (${knowledge.bonus}%)`;
-  }
+  }*/
 
   private getRangerHpText(): string {
     const ranger = this.getCombatant("ranger");
@@ -1766,7 +1902,7 @@ export class CombatTestScene extends Phaser.Scene {
   }
 
   private getRanger2HpText(): string {
-    const ranger2 = this.getCombatant("ranger");
+    const ranger2 = this.getCombatant("ranger2");
 
     if (!ranger2) {
       return "Ranger2 HP: ?";
@@ -1815,7 +1951,7 @@ export class CombatTestScene extends Phaser.Scene {
     return `Goblin Move: ${goblin.movementRemaining}/${goblin.movement}m`;
   }
 
-  private getRangerDefenseText(): string {
+  /*private getRangerDefenseText(): string {
     const ranger = this.getCombatant("ranger");
 
     if (!ranger) {
@@ -1827,9 +1963,9 @@ export class CombatTestScene extends Phaser.Scene {
     return `Ranger Armor: ${ranger.armor} | MR: ${ranger.magicResistance}
     Dodge: ${defense.physicalDodge}% | Spell: ${defense.spellDodge}%
     Parry: ${defense.parry}% | Effect Res: ${defense.effectResistance}% | Mental Res: ${defense.mentalResistance}%`;
-  }
+  }*/
 
-  private getGoblinDefenseText(): string {
+  /*private getGoblinDefenseText(): string {
     const goblin = this.getCombatant("goblin");
 
     if (!goblin) {
@@ -1838,7 +1974,7 @@ export class CombatTestScene extends Phaser.Scene {
 
     const defense = getDefenseStats(goblin.stats);
     return `Goblin Dodge: ${defense.physicalDodge}% | Spell: ${defense.spellDodge}%\nParry: ${defense.parry}% | Effect Res: ${defense.effectResistance}% | Mental Res: ${defense.mentalResistance}%`;
-  }
+  }}*/
 
   private toggleAttributeTarget(): void {
     this.attributeTargetId =
