@@ -2,6 +2,7 @@ import type { CombatActionType } from "../combat/Action";
 import type { AttackType } from "../combat/Attack";
 import type { AbilityEffect } from "./AbilityEffect";
 import type { SpellSlotLevel } from "./Resource";
+import type { CharacterClassId } from "../classes/Class";
 
 export type AbilityTargetType =
   | "self"
@@ -83,7 +84,34 @@ interface AbilityBase {
     magicResistance?: number;
     duration?: number;
     disarmable?: boolean;
+    disarmDC?: number;
+    disarmRange?: number;
+    blocksDamage?: boolean;
+    turnEffects?: AbilityEffect[];
   };
+
+  allowedClasses?: CharacterClassId[];
+
+  classModifiers?: Partial<
+    Record<
+      CharacterClassId,
+      {
+        range?: number;
+
+        damage?: {
+          count?: number;
+          sides?: number;
+          modifier?: number;
+        };
+
+        condition?: {
+          duration?: number;
+          stacks?: number;
+          value?: number;
+        };
+      }
+    >
+  >;
 
   imagePath?: string;
 }

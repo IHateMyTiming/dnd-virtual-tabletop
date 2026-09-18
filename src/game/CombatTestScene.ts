@@ -125,7 +125,7 @@ export class CombatTestScene extends Phaser.Scene {
 
   private readonly goblinStats: CharacterStats = {
     strength: 10,
-    dexterity: 10,
+    dexterity: 14,
     constitution: 10,
     intelligence: 8,
     wisdom: 8,
@@ -182,6 +182,7 @@ export class CombatTestScene extends Phaser.Scene {
       level: 1,
       team: "player",
       creatureType: "humanoid",
+      class: "paladin",
 
       modifiers: [],
 
@@ -216,6 +217,7 @@ export class CombatTestScene extends Phaser.Scene {
       level: 1,
       team: "player",
       creatureType: "humanoid",
+      class: "cleric",
 
       modifiers: [],
 
@@ -250,6 +252,7 @@ export class CombatTestScene extends Phaser.Scene {
       level: 1,
       team: "enemy",
       creatureType: "undead",
+      class: "barbarian",
 
       modifiers: [],
 
@@ -284,6 +287,7 @@ export class CombatTestScene extends Phaser.Scene {
       level: 1,
       team: "enemy",
       creatureType: "humanoid",
+      class: "fighter",
 
       modifiers: [],
 
@@ -1273,8 +1277,8 @@ export class CombatTestScene extends Phaser.Scene {
     }
 
     const location = {
-      x: pointer.worldX / cellSize,
-      y: pointer.worldY / cellSize,
+      x: Math.floor(pointer.worldX / cellSize),
+      y: Math.floor(pointer.worldY / cellSize),
     };
 
     const ability = this.targetingAbility;
@@ -1509,11 +1513,7 @@ export class CombatTestScene extends Phaser.Scene {
 
     const ability = this.targetingAbility;
 
-    if (
-      ability.targetingMode !== "area" ||
-      ability.area.shape !== "circle" ||
-      ability.area.radius === undefined
-    ) {
+    if (ability.targetingMode !== "area") {
       return;
     }
 
@@ -1535,13 +1535,41 @@ export class CombatTestScene extends Phaser.Scene {
 
     const x = position.x * cellSize + cellSize / 2;
     const y = position.y * cellSize + cellSize / 2;
-    const radius = ability.area.radius * cellSize;
 
     this.targetingGraphics.lineStyle(2, 0xffcc33, 0.9);
     this.targetingGraphics.fillStyle(0xffcc33, 0.15);
 
-    this.targetingGraphics.fillCircle(x, y, radius);
-    this.targetingGraphics.strokeCircle(x, y, radius);
+    if (ability.area.shape === "circle" && ability.area.radius !== undefined) {
+      const radius = ability.area.radius * cellSize;
+
+      this.targetingGraphics.fillCircle(x, y, radius);
+      this.targetingGraphics.strokeCircle(x, y, radius);
+
+      return;
+    }
+
+    if (
+      ability.area.shape === "rectangle" &&
+      ability.area.width !== undefined &&
+      ability.area.height !== undefined
+    ) {
+      const width = ability.area.width * cellSize;
+      const height = ability.area.height * cellSize;
+
+      this.targetingGraphics.fillRect(
+        x - width / 2,
+        y - height / 2,
+        width,
+        height,
+      );
+
+      this.targetingGraphics.strokeRect(
+        x - width / 2,
+        y - height / 2,
+        width,
+        height,
+      );
+    }
   }
 
   private handleTargetingEscape = (): void => {
@@ -1885,23 +1913,46 @@ export class CombatTestScene extends Phaser.Scene {
     const instances = this.combatEngine.getAbilityInstances();
 
     for (const instance of instances) {
-      if (
-        instance.area.shape !== "circle" ||
-        instance.area.radius === undefined
-      ) {
-        continue;
-      }
-
       const x = instance.position.x * cellSize + cellSize / 2;
       const y = instance.position.y * cellSize + cellSize / 2;
-      const radius = instance.area.radius * cellSize;
 
       this.abilityInstanceGraphics.lineStyle(2, 0xffcc33, 0.9);
       this.abilityInstanceGraphics.fillStyle(0xffcc33, 0.18);
 
-      this.abilityInstanceGraphics.fillCircle(x, y, radius);
+      if (
+        instance.area.shape === "circle" &&
+        instance.area.radius !== undefined
+      ) {
+        const radius = instance.area.radius * cellSize;
 
-      this.abilityInstanceGraphics.strokeCircle(x, y, radius);
+        this.abilityInstanceGraphics.fillCircle(x, y, radius);
+        this.abilityInstanceGraphics.strokeCircle(x, y, radius);
+
+        continue;
+      }
+
+      if (
+        instance.area.shape === "rectangle" &&
+        instance.area.width !== undefined &&
+        instance.area.height !== undefined
+      ) {
+        const width = instance.area.width * cellSize;
+        const height = instance.area.height * cellSize;
+
+        this.abilityInstanceGraphics.fillRect(
+          x - width / 2,
+          y - height / 2,
+          width,
+          height,
+        );
+
+        this.abilityInstanceGraphics.strokeRect(
+          x - width / 2,
+          y - height / 2,
+          width,
+          height,
+        );
+      }
     }
   }
 
@@ -2066,18 +2117,55 @@ export class CombatTestScene extends Phaser.Scene {
 
     const result = this.combatEngine.disarmAbilityInstance(instanceId);
 
-    if (!result.success) {
+    if (result.distance > result.range) {
       this.setCombatLog([
-        "Disarm failed.",
+        "Too far away.",
         "",
-        "This instance could not be disarmed.",
+        `Distance: ${result.distance.toFixed(1)}m`,
+        `Disarm range: ${result.range}m`,
       ]);
       return;
     }
 
+    if (!result.success) {
+      const modifierText =
+        result.modifier >= 0 ? `+${result.modifier}` : `${result.modifier}`;
+
+      this.setCombatLog([
+        `${attacker.name} failed to disarm ${instance.abilityId}.`,
+        "",
+        `Roll: ${result.roll}`,
+        `Dexterity: ${modifierText}`,
+        `Total: ${result.total}`,
+        `DC: ${result.dc}`,
+        "",
+        "DISARM FAILED",
+      ]);
+
+      return;
+    }
+
+    const modifierText =
+      result.modifier >= 0 ? `+${result.modifier}` : `${result.modifier}`;
+
     this.setCombatLog([
       `${attacker.name} disarmed ${instance.abilityId}.`,
       "",
+      `Roll: ${result.roll}`,
+      `Dexterity: ${modifierText}`,
+      `Total: ${result.total}`,
+      `DC: ${result.dc}`,
+      "",
+      "DISARM SUCCESSFUL",
+    ]);
+
+    this.redrawAbilityInstances();
+    this.updateInterface();
+
+    this.setCombatLog([
+      `${attacker.name} disarmed ${instance.abilityId}.`,
+      "",
+      `Roll: ${result.roll} vs DC ${result.dc}`,
       "The ability instance was removed.",
     ]);
 

@@ -1,6 +1,6 @@
 import type { Position } from "../combat/Movement";
 import type { AbilityArea } from "./Ability";
-
+import type { AbilityEffect } from "./AbilityEffect";
 export interface AbilityInstance {
   id: string;
 
@@ -18,4 +18,10 @@ export interface AbilityInstance {
 
   duration?: number;
   disarmable?: boolean;
+  disarmDC?: number;
+  disarmRange?: number;
+
+  blocksDamage?: boolean;
+
+  turnEffects?: AbilityEffect[];
 }

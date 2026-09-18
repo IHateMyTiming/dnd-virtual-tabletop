@@ -15,6 +15,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     attackType: "spell",
 
     range: 12,
+    allowedClasses: ["wizard"],
 
     area: {
       shape: "circle",
@@ -69,6 +70,8 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     range: 10,
 
+    allowedClasses: ["wizard", "ranger"],
+
     effects: [
       {
         type: "damage",
@@ -76,6 +79,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
           count: 2,
           sides: 7,
           type: "magic",
+
           scaling: {
             type: "character-level",
             diceCount: {
@@ -85,6 +89,12 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
             modifier: {
               12: +1,
             },
+          },
+        },
+
+        classDamageScaling: {
+          ranger: {
+            sides: 2,
           },
         },
       },
@@ -101,6 +111,11 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
         duration: 2,
         stacks: 1,
         value: 3,
+        classConditionScaling: {
+          ranger: {
+            value: 1,
+          },
+        },
       },
     ],
 
@@ -128,6 +143,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     range: 15,
     maxTargets: 3,
+    allowedClasses: ["wizard"],
 
     effects: [
       {
@@ -171,6 +187,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     range: 10,
     maxTargets: 4,
     chainRange: 3,
+    allowedClasses: ["wizard"],
 
     effects: [
       {
@@ -211,6 +228,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     attackType: "spell",
 
     range: 10,
+    allowedClasses: ["wizard", "druid"],
 
     effects: [
       {
@@ -270,6 +288,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     attackType: "spell",
 
     range: 7,
+    allowedClasses: ["wizard", "druid"],
 
     effects: [
       {
@@ -322,6 +341,13 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     attackType: "spell",
 
     range: 15,
+    allowedClasses: ["cleric", "paladin"],
+
+    classModifiers: {
+      paladin: {
+        range: 5,
+      },
+    },
 
     effects: [
       {
@@ -365,7 +391,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
-  //UTILITY SPELLS WIZARD
+  //UTILITY SPELLS
 
   {
     id: "contact_spirits",
@@ -378,6 +404,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetingMode: "single",
 
     range: 0,
+    allowedClasses: ["cleric", "paladin", "wizard", "bard"],
 
     effects: [],
 
@@ -402,6 +429,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetingMode: "area",
 
     range: 15,
+    allowedClasses: ["wizard", "cleric", "bard"],
 
     area: {
       shape: "circle",
@@ -431,6 +459,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetingMode: "single",
 
     range: 7,
+    allowedClasses: ["wizard", "bard"],
 
     effects: [],
 
@@ -455,6 +484,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetingMode: "single",
 
     range: 1,
+    allowedClasses: ["wizard", "bard", "cleric"],
 
     effects: [
       {
@@ -492,6 +522,8 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     range: 15,
 
+    allowedClasses: ["wizard", "bard", "cleric"],
+
     area: {
       shape: "circle",
       radius: 3,
@@ -513,12 +545,13 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
       armor: 1,
       magicResistance: 1,
       disarmable: true,
+      disarmDC: 10,
+      disarmRange: 1,
     },
 
     imagePath: "/assets/abilities/",
   },
 
-  //UTILITY SPELLS CLERIC
   {
     id: "bless",
 
@@ -530,6 +563,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetingMode: "single",
 
     range: 15,
+    allowedClasses: ["paladin", "cleric"],
 
     effects: [
       {
@@ -567,6 +601,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetingMode: "single",
 
     range: 1,
+    allowedClasses: ["druid", "bard", "cleric", "paladin"],
 
     effects: [
       {
@@ -600,6 +635,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetingMode: "single",
 
     range: 8,
+    allowedClasses: ["cleric"],
 
     effects: [
       {
@@ -634,6 +670,16 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     range: 10,
 
+    allowedClasses: ["druid", "bard", "cleric", "fighter", "barbarian"],
+    classModifiers: {
+      fighter: {
+        range: 1,
+      },
+      barbarian: {
+        range: 1,
+      },
+    },
+
     effects: [
       {
         type: "apply-condition",
@@ -667,6 +713,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetingMode: "single",
 
     range: 10,
+    allowedClasses: ["cleric", "bard"],
 
     effects: [
       {
@@ -697,7 +744,6 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
   //NEEDING TO ADD THE EFFECTS OF SANCTUARY LATER
   {
     id: "sanctuary",
-
     nameKey: "spell_sanctuary",
     descriptionKey: "spell_sanctuary_description",
 
@@ -705,11 +751,23 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetType: "location",
     targetingMode: "area",
 
-    range: 15,
+    range: 10,
+
+    allowedClasses: ["cleric", "paladin"],
+
+    classModifiers: {
+      cleric: {
+        range: 10,
+      },
+      paladin: {
+        range: 1,
+      },
+    },
 
     area: {
-      shape: "circle",
-      radius: 3,
+      shape: "rectangle",
+      width: 3,
+      height: 3,
     },
 
     effects: [],
@@ -718,6 +776,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     isSpell: true,
     spellLevel: 1,
+
     resourceCost: {
       amount: 1,
     },
@@ -725,6 +784,8 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     instance: {
       lifetime: "duration",
       duration: 3,
+
+      blocksDamage: true,
     },
 
     imagePath: "/assets/abilities/",
@@ -743,6 +804,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetingMode: "single",
 
     range: 1,
+    allowedClasses: ["cleric", "bard", "paladin"],
 
     effects: [
       /*{

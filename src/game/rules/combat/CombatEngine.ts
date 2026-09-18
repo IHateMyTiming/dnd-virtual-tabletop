@@ -65,6 +65,7 @@ import {
 import { executeAbilityEffects } from "../abilities/AbilityEffectExecutor";
 import type { AbilityInstance } from "../abilities/AbilityInstance";
 import type { AbilityArea } from "../abilities/Ability";
+import { resolveAbilityCheck } from "../abilities/AbilityCheck";
 
 interface PendingDefense {
   attackerId: string;
@@ -105,6 +106,10 @@ export class CombatEngine {
     return getCurrentCombatant(this.state);
   }
 
+  public rollRandom(): number {
+    return this.random();
+  }
+
   public getPendingDefense(): PendingDefense | null {
     return this.pendingDefenses[0] ?? null;
   }
@@ -126,6 +131,7 @@ export class CombatEngine {
 
     if (current) {
       this.processTurnModifierDurations(current);
+      this.processAbilityInstanceTurnEffects(current);
       this.processAbilityInstanceDurations(current);
     }
 
@@ -814,6 +820,24 @@ export class CombatEngine {
       };
     }
 
+    const damageBlocked = this.isDamageBlocked(attacker.id, defender.id);
+
+    if (damageBlocked) {
+      this.consumeAttackModifiers(attacker, request.type);
+
+      return {
+        success: true,
+        status: "resolved",
+        attackerId: attacker.id,
+        defenderId: defender.id,
+        attack,
+        attackerStats: attacker.stats,
+        defenderStats: defender.stats,
+        defenderHpBefore: hpBefore,
+        defenderHpAfter: hpBefore,
+      };
+    }
+
     const attackDamage = rollAttackDamage(
       {
         attackerId: attacker.id,
@@ -1245,6 +1269,10 @@ export class CombatEngine {
       magicResistance?: number;
       duration?: number;
       disarmable?: boolean;
+      disarmDC?: number;
+      disarmRange?: number;
+      blocksDamage?: boolean;
+      turnEffects?: AbilityEffect[];
     },
   ): AbilityInstance {
     const instance: AbilityInstance = {
@@ -1262,6 +1290,10 @@ export class CombatEngine {
       magicResistance: options?.magicResistance,
       duration: options?.duration,
       disarmable: options?.disarmable,
+      disarmDC: options?.disarmDC,
+      disarmRange: options?.disarmRange,
+      blocksDamage: options?.blocksDamage,
+      turnEffects: options?.turnEffects,
     };
 
     this.abilityInstances.push(instance);
@@ -1367,6 +1399,12 @@ export class CombatEngine {
     success: boolean;
     instanceId: string;
     attackerId: string;
+    roll: number;
+    modifier: number;
+    total: number;
+    dc: number;
+    distance: number;
+    range: number;
   } {
     const attacker = this.getCurrentCombatant();
     const instance = this.getAbilityInstance(instanceId);
@@ -1376,6 +1414,12 @@ export class CombatEngine {
         success: false,
         instanceId,
         attackerId: attacker?.id ?? "",
+        roll: 0,
+        modifier: 0,
+        total: 0,
+        dc: 0,
+        distance: 0,
+        range: 0,
       };
     }
 
@@ -1384,16 +1428,59 @@ export class CombatEngine {
         success: false,
         instanceId,
         attackerId: attacker.id,
+        roll: 0,
+        modifier: 0,
+        total: 0,
+        dc: instance.disarmDC ?? 10,
+        distance: 0,
+        range: instance.disarmRange ?? 1,
       };
     }
 
-    this.removeAbilityInstance(instance.id);
-    attacker.actionAvailable = false;
+    const distance = this.getDistanceBetweenPosition(
+      attacker.position,
+      instance.position,
+    );
+
+    const range = instance.disarmRange ?? 1;
+
+    if (distance > range) {
+      return {
+        success: false,
+        instanceId,
+        attackerId: attacker.id,
+        roll: 0,
+        modifier: 0,
+        total: 0,
+        dc: instance.disarmDC ?? 10,
+        distance,
+        range,
+      };
+    }
+
+    const check = resolveAbilityCheck(
+      attacker.stats,
+      "dexterity",
+      instance.disarmDC ?? 10,
+      this.random,
+    );
+
+    if (check.success) {
+      this.removeAbilityInstance(instance.id);
+    }
+
+    attacker.bonusActionAvailable = false;
 
     return {
-      success: true,
+      success: check.success,
       instanceId,
       attackerId: attacker.id,
+      roll: check.roll,
+      modifier: check.modifier,
+      total: check.total,
+      dc: check.dc,
+      distance,
+      range,
     };
   }
 
@@ -1460,7 +1547,107 @@ export class CombatEngine {
     }
   }
 
+  private processAbilityInstanceTurnEffects(combatant: Combatant): void {
+    const instances = [...this.abilityInstances];
+
+    for (const instance of instances) {
+      if (!instance.turnEffects || instance.turnEffects.length === 0) {
+        continue;
+      }
+
+      const inside = this.isCombatantInsideAbilityInstance(
+        combatant.id,
+        instance.id,
+      );
+
+      if (!inside) {
+        continue;
+      }
+
+      executeAbilityEffects(
+        instance.turnEffects,
+        {
+          casterId: instance.casterId,
+          targetId: combatant.id,
+        },
+        this,
+        instance.abilityId,
+      );
+    }
+  }
+
   public getDistanceBetweenPosition(first: Position, second: Position): number {
     return calculateDistance(first, second);
+  }
+
+  public isCombatantInsideAbilityInstance(
+    combatantId: string,
+    instanceId: string,
+  ): boolean {
+    const combatant = this.getState().combatants.find(
+      (c) => c.id === combatantId,
+    );
+
+    const instance = this.getAbilityInstance(instanceId);
+
+    if (!combatant || !instance) {
+      return false;
+    }
+
+    const { position, area } = instance;
+
+    switch (area.shape) {
+      case "circle": {
+        if (area.radius === undefined) {
+          return false;
+        }
+
+        const distance = this.getDistanceBetweenPosition(
+          combatant.position,
+          position,
+        );
+
+        return distance <= area.radius;
+      }
+
+      case "rectangle": {
+        if (area.width === undefined || area.height === undefined) {
+          return false;
+        }
+
+        const halfWidth = area.width / 2;
+        const halfHeight = area.height / 2;
+
+        return (
+          Math.abs(combatant.position.x - position.x) <= halfWidth &&
+          Math.abs(combatant.position.y - position.y) <= halfHeight
+        );
+      }
+
+      default:
+        return false;
+    }
+  }
+
+  public isDamageBlocked(attackerId: string, defenderId: string): boolean {
+    const instances = this.getAbilityInstances();
+
+    return instances.some((instance) => {
+      if (!instance.blocksDamage) {
+        return false;
+      }
+
+      const attackerInside = this.isCombatantInsideAbilityInstance(
+        attackerId,
+        instance.id,
+      );
+
+      const defenderInside = this.isCombatantInsideAbilityInstance(
+        defenderId,
+        instance.id,
+      );
+
+      return attackerInside || defenderInside;
+    });
   }
 }

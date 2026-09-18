@@ -15,6 +15,8 @@ export const CANTRIPS: AbilityDefinition[] = [
 
     range: 10,
 
+    allowedClasses: ["cleric", "wizard", "bard", "druid"],
+
     effects: [
       {
         type: "damage",
@@ -55,6 +57,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     attackType: "spell",
 
     range: 10,
+    allowedClasses: ["cleric", "wizard", "bard"],
 
     effects: [
       {
@@ -103,6 +106,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     attackType: "spell",
 
     range: 10,
+    allowedClasses: ["cleric", "wizard", "ranger"],
 
     effects: [
       {
@@ -150,6 +154,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     attackType: "spell",
 
     range: 15,
+    allowedClasses: ["wizard"],
 
     area: {
       shape: "circle",
@@ -201,6 +206,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     attackType: "spell",
 
     range: 10,
+    allowedClasses: ["cleric", "wizard", "bard"],
 
     effects: [
       {
@@ -249,6 +255,12 @@ export const CANTRIPS: AbilityDefinition[] = [
     attackType: "spell",
 
     range: 10,
+    allowedClasses: ["cleric", "wizard", "paladin"],
+    classModifiers: {
+      paladin: {
+        range: 3,
+      },
+    },
 
     effects: [
       {
@@ -296,6 +308,20 @@ export const CANTRIPS: AbilityDefinition[] = [
     attackType: "spell",
 
     range: 25,
+    allowedClasses: ["wizard", "druid", "fighter", "barbarian", "paladin"],
+    classModifiers: {
+      fighter: {
+        range: 5,
+      },
+
+      barbarian: {
+        range: 5,
+      },
+
+      paladin: {
+        range: 5,
+      },
+    },
 
     effects: [
       {
@@ -313,18 +339,46 @@ export const CANTRIPS: AbilityDefinition[] = [
             },
           },
         },
+        classDamageScaling: {
+          fighter: {
+            sides: 3,
+          },
+
+          barbarian: {
+            sides: 3,
+          },
+
+          paladin: {
+            sides: 3,
+          },
+        },
       },
+
       {
         type: "apply-condition",
         conditionId: "pulled",
         duration: 1,
         stacks: 1,
         value: 10,
+
+        classConditionScaling: {
+          fighter: {
+            value: 4,
+          },
+
+          barbarian: {
+            value: 4,
+          },
+
+          paladin: {
+            value: 4,
+          },
+        },
       },
     ],
 
     recovery: "cooldown",
-    cooldown: 2,
+    cooldown: 4,
 
     isSpell: true,
 
@@ -343,6 +397,8 @@ export const CANTRIPS: AbilityDefinition[] = [
     attackType: "spell",
 
     range: 10,
+
+    allowedClasses: ["wizard"],
 
     effects: [
       {
@@ -394,6 +450,8 @@ export const CANTRIPS: AbilityDefinition[] = [
 
     range: 30,
 
+    allowedClasses: ["wizard", "bard", "cleric"],
+
     effects: [
       {
         type: "modify-behavior",
@@ -424,6 +482,8 @@ export const CANTRIPS: AbilityDefinition[] = [
     targetingMode: "single",
 
     range: 30,
+
+    allowedClasses: ["wizard", "bard", "cleric", "paladin"],
 
     effects: [
       {
@@ -467,6 +527,8 @@ export const CANTRIPS: AbilityDefinition[] = [
     targetingMode: "single",
 
     range: 30,
+
+    allowedClasses: ["wizard", "bard", "cleric"],
 
     effects: [
       {

@@ -83,6 +83,17 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
     };
   }
 
+  if (
+    ability.allowedClasses &&
+    !ability.allowedClasses.includes(caster.class)
+  ) {
+    return {
+      success: false,
+      abilityId: ability.id,
+      reason: "Caster's class cannot use this ability.",
+    };
+  }
+
   const casterConditions = combatState.conditionManager.getConditions(casterId);
 
   if (ability.isSpell && !canUseSpells(casterConditions)) {
@@ -140,11 +151,15 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
     }
   }
 
+  const effectiveRange =
+    ability.classModifiers?.[caster.class]?.range ?? ability.range;
+
   const resolvedTargets = resolveAbilityTargets(
     ability,
     casterId,
     request,
     combatState,
+    effectiveRange,
   );
 
   if (!resolvedTargets.success) {
@@ -204,8 +219,10 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
         reason: "Attack ability requires a damage effect.",
       };
     }
-    const damage = damageEffect.damage;
-
+    const damage = {
+      ...damageEffect.damage,
+      ...damageEffect.classDamageScaling?.[caster.class],
+    };
     const primaryTarget = request.target;
 
     const temporaryModifiers: CombatModifier[] = ability.effects
@@ -300,7 +317,6 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
 
           return true;
         }),
-
         damageMultiplier,
       };
     });
@@ -332,11 +348,13 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
         throw new Error("Ability effect target must have a combatant id.");
       }
 
+      const targetId = target.id;
+
       executeAbilityEffects(
         ability.effects,
         {
           casterId,
-          targetId: target.id,
+          targetId,
         },
         combatEngine,
         ability.id,
@@ -353,14 +371,16 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
     attackResults,
     target: request.target,
     targets,
+    instanceId,
   };
 }
 
-function resolveAbilityTargets(
+export function resolveAbilityTargets(
   ability: AbilityDefinition,
   casterId: string,
   request: AbilityUseRequest,
-  state: CombatState,
+  combatState: CombatState,
+  effectiveRange?: number,
 ):
   | {
       success: true;
@@ -383,7 +403,7 @@ function resolveAbilityTargets(
         ability,
         casterId,
         request.target,
-        state,
+        combatState,
       );
 
       if (!validation.valid) {
@@ -430,7 +450,7 @@ function resolveAbilityTargets(
           ability,
           casterId,
           target,
-          state,
+          combatState,
         );
 
         if (!validation.valid) {
@@ -448,11 +468,17 @@ function resolveAbilityTargets(
     }
 
     case "area": {
-      return resolveAreaTargets(ability, casterId, request, state);
+      return resolveAreaTargets(
+        ability,
+        casterId,
+        request,
+        combatState,
+        effectiveRange,
+      );
     }
 
     case "chain": {
-      return resolveChainTargets(ability, casterId, request, state);
+      return resolveChainTargets(ability, casterId, request, combatState);
     }
   }
 }
@@ -462,6 +488,7 @@ function resolveAreaTargets(
   casterId: string,
   request: AbilityUseRequest,
   state: CombatState,
+  effectiveRange?: number,
 ):
   | {
       success: true;
@@ -492,6 +519,9 @@ function resolveAreaTargets(
     };
   }
 
+  // Determine the center of the AoE.
+  let center: { x: number; y: number };
+
   if (ability.targetType === "location") {
     if (!request.target.position) {
       return {
@@ -500,29 +530,58 @@ function resolveAreaTargets(
       };
     }
 
-    const center = request.target.position;
-
-    if (ability.range !== undefined) {
-      const distanceFromCaster = Math.sqrt(
-        Math.pow(center.x - caster.position.x, 2) +
-          Math.pow(center.y - caster.position.y, 2),
-      );
-
-      if (distanceFromCaster > ability.range) {
-        return {
-          success: false,
-          reason: "Target location is out of range.",
-        };
-      }
-    }
-
-    if (ability.area.shape !== "circle") {
+    center = request.target.position;
+  } else {
+    if (!request.target.id) {
       return {
         success: false,
-        reason: `Area shape "${ability.area.shape}" is not implemented yet.`,
+        reason: "Primary target is invalid.",
       };
     }
 
+    const primaryTarget = state.combatants.find(
+      (combatant) => combatant.id === request.target!.id,
+    );
+
+    if (!primaryTarget || !primaryTarget.alive) {
+      return {
+        success: false,
+        reason: "Primary target is invalid.",
+      };
+    }
+
+    if (!isValidPrimaryTarget(ability, caster, primaryTarget)) {
+      return {
+        success: false,
+        reason: "Primary target is invalid for this ability.",
+      };
+    }
+
+    center = primaryTarget.position;
+  }
+
+  // Check casting range.
+  if (effectiveRange !== undefined) {
+    const distanceFromCaster = Math.max(
+      Math.abs(center.x - caster.position.x),
+      Math.abs(center.y - caster.position.y),
+    );
+
+    if (distanceFromCaster > effectiveRange) {
+      return {
+        success: false,
+        reason:
+          ability.targetType === "location"
+            ? "Target location is out of range."
+            : "Primary target is out of range.",
+      };
+    }
+  }
+
+  const targets: AbilityTarget[] = [];
+
+  // Circle AoE
+  if (ability.area.shape === "circle") {
     if (ability.area.radius === undefined) {
       return {
         success: false,
@@ -531,7 +590,6 @@ function resolveAreaTargets(
     }
 
     const radius = ability.area.radius;
-    const targets: AbilityTarget[] = [];
 
     for (const combatant of state.combatants) {
       if (!combatant.alive) {
@@ -555,81 +613,43 @@ function resolveAreaTargets(
     };
   }
 
-  if (!request.target.id) {
-    return {
-      success: false,
-      reason: "Primary target is invalid.",
-    };
-  }
-
-  const primaryTarget = state.combatants.find(
-    (combatant) => combatant.id === request.target!.id,
-  );
-
-  if (!primaryTarget || !primaryTarget.alive) {
-    return {
-      success: false,
-      reason: "Primary target is invalid.",
-    };
-  }
-
-  if (!isValidPrimaryTarget(ability, caster, primaryTarget)) {
-    return {
-      success: false,
-      reason: "Primary target is invalid for this ability.",
-    };
-  }
-
-  if (ability.range !== undefined) {
-    const distanceFromCaster = Math.sqrt(
-      Math.pow(primaryTarget.position.x - caster.position.x, 2) +
-        Math.pow(primaryTarget.position.y - caster.position.y, 2),
-    );
-
-    if (distanceFromCaster > ability.range) {
+  // Rectangle AoE
+  if (ability.area.shape === "rectangle") {
+    if (ability.area.width === undefined || ability.area.height === undefined) {
       return {
         success: false,
-        reason: "Primary target is out of range.",
+        reason: "Rectangle area requires width and height.",
       };
     }
-  }
 
-  if (ability.area.shape !== "circle") {
-    return {
-      success: false,
-      reason: `Area shape "${ability.area.shape}" is not implemented yet.`,
-    };
-  }
+    const halfWidth = ability.area.width / 2;
+    const halfHeight = ability.area.height / 2;
 
-  if (ability.area.radius === undefined) {
-    return {
-      success: false,
-      reason: "Circle area requires a radius.",
-    };
-  }
+    for (const combatant of state.combatants) {
+      if (!combatant.alive) {
+        continue;
+      }
 
-  const radius = ability.area.radius;
-  const targets: AbilityTarget[] = [];
+      const inside =
+        Math.abs(combatant.position.x - center.x) <= halfWidth &&
+        Math.abs(combatant.position.y - center.y) <= halfHeight;
 
-  for (const combatant of state.combatants) {
-    if (!combatant.alive) {
-      continue;
+      if (inside) {
+        targets.push({
+          id: combatant.id,
+        });
+      }
     }
 
-    const dx = combatant.position.x - primaryTarget.position.x;
-    const dy = combatant.position.y - primaryTarget.position.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance <= radius) {
-      targets.push({
-        id: combatant.id,
-      });
-    }
+    return {
+      success: true,
+      targets,
+    };
   }
 
   return {
-    success: true,
-    targets,
+    success: false,
+    reason: `Area shape "${ability.area.shape}" is not implemented yet.`,
   };
 }
 

@@ -8,6 +8,7 @@ export interface AbilityEffectContext {
   targetId: string;
   attackType?: AttackType;
   targetLocation?: TargetLocation;
+  damageSourceId?: string;
 }
 
 export function executeAbilityEffects(
@@ -56,7 +57,26 @@ export function executeAbilityEffects(
       throw new Error("Damage effect requires damage.");
     }
 
-    engine.damage(context.targetId, effect.damage);
+    if (engine.isDamageBlocked(context.casterId, context.targetId)) {
+      return;
+    }
+
+    const caster = engine
+      .getState()
+      .combatants.find((combatant) => combatant.id === context.casterId);
+
+    if (!caster) {
+      return;
+    }
+
+    const classDamageScaling = effect.classDamageScaling?.[caster.class];
+
+    const damage = {
+      ...effect.damage,
+      ...classDamageScaling,
+    };
+
+    engine.damage(context.targetId, damage);
   }
 
   function executeHeal(
@@ -68,14 +88,51 @@ export function executeAbilityEffects(
       throw new Error("Heal effect requires healing.");
     }
 
-    let amount = 0;
+    const caster = engine
+      .getState()
+      .combatants.find((combatant) => combatant.id === context.casterId);
 
-    for (let i = 0; i < effect.healing.count; i++) {
-      amount += Math.floor(Math.random() * effect.healing.sides) + 1;
+    if (!caster) {
+      return;
     }
 
-    if (effect.healing.modifier !== undefined) {
-      amount += effect.healing.modifier;
+    const healing = {
+      ...effect.healing,
+    };
+
+    if (effect.levelScaling) {
+      const applicableLevels = Object.keys(effect.levelScaling)
+        .map(Number)
+        .filter((level) => level <= caster.level)
+        .sort((a, b) => b - a);
+
+      const scalingLevel = applicableLevels[0];
+
+      if (scalingLevel !== undefined) {
+        const scaling = effect.levelScaling[scalingLevel];
+
+        if (scaling.count !== undefined) {
+          healing.count = scaling.count;
+        }
+
+        if (scaling.sides !== undefined) {
+          healing.sides = scaling.sides;
+        }
+
+        if (scaling.modifier !== undefined) {
+          healing.modifier = scaling.modifier;
+        }
+      }
+    }
+
+    let amount = 0;
+
+    for (let i = 0; i < healing.count; i++) {
+      amount += Math.floor(engine.rollRandom() * healing.sides) + 1;
+    }
+
+    if (healing.modifier !== undefined) {
+      amount += healing.modifier;
     }
 
     engine.heal(context.targetId, amount);
@@ -93,6 +150,7 @@ export function executeAbilityEffects(
     const target = engine
       .getState()
       .combatants.find((combatant) => combatant.id === context.targetId);
+
     if (!target) {
       return;
     }
@@ -104,12 +162,22 @@ export function executeAbilityEffects(
       return;
     }
 
+    const caster = engine
+      .getState()
+      .combatants.find((combatant) => combatant.id === context.casterId);
+
+    if (!caster) {
+      return;
+    }
+
+    const classConditionScaling = effect.classConditionScaling?.[caster.class];
+
     engine.applyCondition(
       context.targetId,
       effect.conditionId,
-      effect.duration ?? 1,
-      effect.stacks ?? 1,
-      effect.value,
+      classConditionScaling?.duration ?? effect.duration ?? 1,
+      classConditionScaling?.stacks ?? effect.stacks ?? 1,
+      classConditionScaling?.value ?? effect.value,
       context.casterId,
     );
   }
@@ -141,19 +209,6 @@ export function executeAbilityEffects(
       id: `${abilityId}:${effect.modifier.behavior}:${effect.modifier.operation}:${effect.modifier.trigger}`,
       duration: effect.duration,
     };
-
-    /* console.log("=== APPLYING ABILITY MODIFIER ===");
-    console.log("Ability:", abilityId);
-    console.log("Target:", context.targetId);
-    console.log("Behavior:", modifier.behavior);
-    console.log("Operation:", modifier.operation);
-    console.log("Trigger:", modifier.trigger);
-    console.log("Dice:", modifier.diceCount, "d", modifier.diceSides);
-    console.log("Value:", modifier.value);
-    console.log("Amount:", modifier.amount);
-    console.log("Duration:", modifier.duration);
-    console.log("Modifier ID:", modifier.id);
-    console.log("=================================");*/
 
     engine.addModifier(context.targetId, modifier);
   }

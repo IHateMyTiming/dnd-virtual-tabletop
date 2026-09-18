@@ -1,5 +1,6 @@
 import type { CharacterStats } from "../stats/Stats";
 import type { CombatModifier } from "./CombatModifier";
+import type { CharacterClassId } from "../classes/Class";
 
 export type CombatantTeam = "player" | "enemy";
 export interface Combatant {
@@ -43,6 +44,8 @@ export interface Combatant {
   modifiers: CombatModifier[];
 
   creatureType: CreatureType;
+
+  class: CharacterClassId;
 }
 
 export type CreatureType =

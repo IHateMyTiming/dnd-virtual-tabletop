@@ -48,3 +48,10 @@ export function getWisdomModifier(stats: CharacterStats): number {
 export function getCharismaModifier(stats: CharacterStats): number {
   return getAbilityModifier(stats.charisma);
 }
+
+export function getAbilityCheckModifier(
+  stats: CharacterStats,
+  ability: Ability,
+): number {
+  return getAbilityModifier(stats[ability]);
+}
