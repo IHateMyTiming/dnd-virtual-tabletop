@@ -510,6 +510,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
       lifetime: "until-disarmed-or-destroyed",
       hp: 10,
       maxHp: 10,
+      armor: 1,
+      magicResistance: 1,
+      disarmable: true,
     },
 
     imagePath: "/assets/abilities/",

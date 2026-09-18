@@ -33,6 +33,7 @@ export class CombatTestScene extends Phaser.Scene {
   private targetingLocation: { x: number; y: number } | null = null;
   private targetingAttackType: "melee" | "ranged" | null = null;
   private targetingInstanceId: string | null = null;
+  private disarmTargeting = false;
 
   private targetingGraphics?: Phaser.GameObjects.Graphics;
   private abilityInstanceGraphics?: Phaser.GameObjects.Graphics;
@@ -45,8 +46,8 @@ export class CombatTestScene extends Phaser.Scene {
   private goblin2HpText!: Phaser.GameObjects.Text;
   private ranger2HpText!: Phaser.GameObjects.Text;
 
-  private rangerMovementText!: Phaser.GameObjects.Text;
-  private goblinMovementText!: Phaser.GameObjects.Text;
+  //private rangerMovementText!: Phaser.GameObjects.Text;
+  //private goblinMovementText!: Phaser.GameObjects.Text;
 
   //private rangerDefenseText!: Phaser.GameObjects.Text;
   //private goblinDefenseText!: Phaser.GameObjects.Text;
@@ -427,7 +428,10 @@ export class CombatTestScene extends Phaser.Scene {
       fontSize: "13px",
       color: "#ffffff",
     });
-    this.rangerMovementText = this.add.text(panelX + 15, 110, "", {
+    this.createButton(panelX + 120, 230, 150, 28, "DISARM", 0x6b4a20, () =>
+      this.startDisarmTargeting(),
+    );
+    /*this.rangerMovementText = this.add.text(panelX + 15, 110, "", {
       fontSize: "11px",
       color: "#ffffff",
     });
@@ -435,7 +439,7 @@ export class CombatTestScene extends Phaser.Scene {
       fontSize: "11px",
       color: "#ffffff",
     });
-    /*this.rangerDefenseText = this.add.text(panelX + 15, 130, "", {
+    this.rangerDefenseText = this.add.text(panelX + 15, 130, "", {
       fontSize: "9px",
       color: "#ffffff",
     });
@@ -1224,14 +1228,31 @@ export class CombatTestScene extends Phaser.Scene {
       return;
     }
 
-    if (this.targetingAttackType) {
-      const worldPosition = {
-        x: pointer.worldX / cellSize,
-        y: pointer.worldY / cellSize,
+    if (this.disarmTargeting) {
+      const gridPosition = {
+        x: Math.floor(pointer.worldX / cellSize),
+        y: Math.floor(pointer.worldY / cellSize),
       };
 
       const instances =
-        this.combatEngine.getAbilityInstancesAtPosition(worldPosition);
+        this.combatEngine.getAbilityInstancesAtPosition(gridPosition);
+
+      if (instances.length > 0) {
+        const instance = instances[instances.length - 1];
+        this.handleAbilityInstanceDisarmClick(instance.id);
+      }
+
+      return;
+    }
+
+    if (this.targetingAttackType) {
+      const gridPosition = {
+        x: Math.floor(pointer.worldX / cellSize),
+        y: Math.floor(pointer.worldY / cellSize),
+      };
+
+      const instances =
+        this.combatEngine.getAbilityInstancesAtPosition(gridPosition);
 
       if (instances.length > 0) {
         const instance = instances[instances.length - 1];
@@ -1541,6 +1562,7 @@ export class CombatTestScene extends Phaser.Scene {
     this.targetingTargetIds = [];
     this.targetingLocation = null;
     this.targetingInstanceId = null;
+    this.disarmTargeting = false; // ADD THIS
 
     this.targetingGraphics?.destroy();
     this.targetingGraphics = undefined;
@@ -1991,6 +2013,78 @@ export class CombatTestScene extends Phaser.Scene {
     this.updateInterface();
   }
 
+  private handleAbilityInstanceDisarmClick(instanceId: string): void {
+    const attacker = this.combatEngine.getCurrentCombatant();
+
+    if (!attacker || !attacker.alive) {
+      return;
+    }
+
+    const instance = this.combatEngine.getAbilityInstance(instanceId);
+
+    if (!instance) {
+      return;
+    }
+
+    if (!instance.disarmable) {
+      this.setCombatLog([
+        "This ability cannot be disarmed.",
+        "",
+        `Instance: ${instance.abilityId}`,
+      ]);
+      return;
+    }
+
+    const distance = this.combatEngine.getDistanceBetweenPosition(
+      attacker.position,
+      instance.position,
+    );
+
+    if (this.targetingInstanceId !== instanceId) {
+      this.targetingInstanceId = instanceId;
+
+      this.setCombatLog([
+        `Selected instance: ${instance.abilityId}`,
+        "",
+        `Distance: ${distance.toFixed(1)}m`,
+        "",
+        "Click the instance again to disarm it.",
+        "Press ESC to cancel.",
+      ]);
+
+      return;
+    }
+
+    this.disarmTargeting = false;
+    this.targetingInstanceId = null;
+    this.targetingActive = false;
+
+    this.targetingText?.destroy();
+    this.targetingText = undefined;
+
+    this.input.keyboard?.off("keydown-ESC", this.handleTargetingEscape, this);
+
+    const result = this.combatEngine.disarmAbilityInstance(instanceId);
+
+    if (!result.success) {
+      this.setCombatLog([
+        "Disarm failed.",
+        "",
+        "This instance could not be disarmed.",
+      ]);
+      return;
+    }
+
+    this.setCombatLog([
+      `${attacker.name} disarmed ${instance.abilityId}.`,
+      "",
+      "The ability instance was removed.",
+    ]);
+
+    this.redrawAbilityInstances();
+    this.updateInterface();
+  }
+
   private toggleConditionTarget(): void {
     this.conditionTargetId =
       this.conditionTargetId === "goblin" ? "ranger" : "goblin";
@@ -2000,6 +2094,42 @@ export class CombatTestScene extends Phaser.Scene {
       "",
       "Click the target selector to switch between Ranger and Goblin.",
     ]);
+  }
+
+  private startDisarmTargeting(): void {
+    const attacker = this.combatEngine.getCurrentCombatant();
+
+    if (!attacker || !attacker.alive) {
+      return;
+    }
+
+    if (!attacker.actionAvailable) {
+      this.setCombatLog(["Cannot disarm.", "", "No action available."]);
+      return;
+    }
+
+    this.disarmTargeting = true;
+    this.targetingActive = true;
+    this.targetingInstanceId = null;
+
+    this.targetingText?.destroy();
+
+    this.targetingText = this.add.text(
+      20,
+      100,
+      "Select an ability instance to disarm.\nPress ESC to cancel.",
+      {
+        fontSize: "18px",
+        color: "#ffffff",
+        backgroundColor: "#222222",
+        padding: {
+          left: 10,
+          right: 10,
+          top: 8,
+          bottom: 8,
+        },
+      },
+    );
   }
 
   private updateConditionControls(): void {
@@ -2106,9 +2236,9 @@ export class CombatTestScene extends Phaser.Scene {
 
     this.goblin2HpText.setText(this.getGoblin2HpText());
 
-    this.rangerMovementText.setText(this.getRangerMovementText());
+    //this.rangerMovementText.setText(this.getRangerMovementText());
 
-    this.goblinMovementText.setText(this.getGoblinMovementText());
+    //this.goblinMovementText.setText(this.getGoblinMovementText());
     //this.rangerDefenseText.setText(this.getRangerDefenseText());
     //this.goblinDefenseText.setText(this.getGoblinDefenseText());
     //this.rangerPatternText.setText(this.getRangerPatternText());
@@ -2183,7 +2313,7 @@ export class CombatTestScene extends Phaser.Scene {
     return `Goblin 2 HP: ${goblin2.hp}/${goblin2.maxHp}`;
   }
 
-  private getRangerMovementText(): string {
+  /*private getRangerMovementText(): string {
     const ranger = this.getCombatant("ranger");
 
     if (!ranger) {
@@ -2203,7 +2333,7 @@ export class CombatTestScene extends Phaser.Scene {
     return `Goblin Move: ${goblin.movementRemaining}/${goblin.movement}m`;
   }
 
-  /*private getRangerDefenseText(): string {
+  private getRangerDefenseText(): string {
     const ranger = this.getCombatant("ranger");
 
     if (!ranger) {

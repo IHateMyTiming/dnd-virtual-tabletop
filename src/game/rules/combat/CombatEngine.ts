@@ -1241,18 +1241,27 @@ export class CombatEngine {
     options?: {
       hp?: number;
       maxHp?: number;
+      armor?: number;
+      magicResistance?: number;
       duration?: number;
+      disarmable?: boolean;
     },
   ): AbilityInstance {
     const instance: AbilityInstance = {
       id: `${abilityId}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       abilityId,
       casterId,
-      position: { ...position },
+      position: {
+        x: Math.floor(position.x),
+        y: Math.floor(position.y),
+      },
       area: { ...area },
       hp: options?.hp,
       maxHp: options?.maxHp,
+      armor: options?.armor,
+      magicResistance: options?.magicResistance,
       duration: options?.duration,
+      disarmable: options?.disarmable,
     };
 
     this.abilityInstances.push(instance);
@@ -1320,8 +1329,8 @@ export class CombatEngine {
         distance,
         target,
         damage,
-        armor: undefined,
-        magicResistance: undefined,
+        armor: instance.armor,
+        magicResistance: instance.magicResistance,
       },
       this.random,
     );
@@ -1354,6 +1363,40 @@ export class CombatEngine {
     };
   }
 
+  public disarmAbilityInstance(instanceId: string): {
+    success: boolean;
+    instanceId: string;
+    attackerId: string;
+  } {
+    const attacker = this.getCurrentCombatant();
+    const instance = this.getAbilityInstance(instanceId);
+
+    if (!attacker || !attacker.alive || !instance) {
+      return {
+        success: false,
+        instanceId,
+        attackerId: attacker?.id ?? "",
+      };
+    }
+
+    if (!instance.disarmable) {
+      return {
+        success: false,
+        instanceId,
+        attackerId: attacker.id,
+      };
+    }
+
+    this.removeAbilityInstance(instance.id);
+    attacker.actionAvailable = false;
+
+    return {
+      success: true,
+      instanceId,
+      attackerId: attacker.id,
+    };
+  }
+
   public damageAbilityInstance(instanceId: string, amount: number): number {
     const instance = this.getAbilityInstance(instanceId);
 
@@ -1377,19 +1420,11 @@ export class CombatEngine {
   }
 
   public getAbilityInstancesAtPosition(position: Position): AbilityInstance[] {
-    return this.abilityInstances.filter((instance) => {
-      if (instance.area.shape === "circle") {
-        if (instance.area.radius === undefined) {
-          return false;
-        }
-
-        return (
-          calculateDistance(instance.position, position) <= instance.area.radius
-        );
-      }
-
-      return false;
-    });
+    return this.abilityInstances.filter(
+      (instance) =>
+        instance.position.x === position.x &&
+        instance.position.y === position.y,
+    );
   }
 
   public removeAbilityInstance(instanceId: string): boolean {

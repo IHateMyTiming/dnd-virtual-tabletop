@@ -456,6 +456,7 @@ export function resolveAbilityInstanceAttack(
     attack.attackerStats,
     [],
   );
+  damage.finalDamage = Math.max(1, damage.finalDamage);
 
   return {
     hit: true,

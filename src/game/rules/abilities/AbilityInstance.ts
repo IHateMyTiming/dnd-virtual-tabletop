@@ -17,4 +17,5 @@ export interface AbilityInstance {
   magicResistance?: number;
 
   duration?: number;
+  disarmable?: boolean;
 }

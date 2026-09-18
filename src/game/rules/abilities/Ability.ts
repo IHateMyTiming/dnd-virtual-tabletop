@@ -79,7 +79,10 @@ interface AbilityBase {
 
     hp?: number;
     maxHp?: number;
+    armor?: number;
+    magicResistance?: number;
     duration?: number;
+    disarmable?: boolean;
   };
 
   imagePath?: string;
