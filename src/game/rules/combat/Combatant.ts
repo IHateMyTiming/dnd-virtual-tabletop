@@ -3,6 +3,12 @@ import type { CombatModifier } from "./CombatModifier";
 import type { CharacterClassId } from "../classes/Class";
 
 export type CombatantTeam = "player" | "enemy";
+
+export interface ConcentrationState {
+  abilityId: string;
+  instanceId?: string;
+  remainingDuration?: number;
+}
 export interface Combatant {
   id: string;
 
@@ -46,6 +52,8 @@ export interface Combatant {
   creatureType: CreatureType;
 
   class: CharacterClassId;
+
+  concentration?: ConcentrationState;
 }
 
 export type CreatureType =

@@ -113,6 +113,8 @@ interface AbilityBase {
     >
   >;
 
+  concentration?: boolean;
+
   imagePath?: string;
 }
 

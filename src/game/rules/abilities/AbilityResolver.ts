@@ -362,6 +362,15 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
     }
   }
 
+  if (ability.concentration) {
+    combatEngine.startConcentration(
+      casterId,
+      ability.id,
+      instanceId,
+      ability.instance?.duration,
+    );
+  }
+
   return {
     success: true,
     abilityId: ability.id,

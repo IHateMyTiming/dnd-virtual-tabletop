@@ -66,6 +66,7 @@ import { executeAbilityEffects } from "../abilities/AbilityEffectExecutor";
 import type { AbilityInstance } from "../abilities/AbilityInstance";
 import type { AbilityArea } from "../abilities/Ability";
 import { resolveAbilityCheck } from "../abilities/AbilityCheck";
+import { resolveConcentrationCheck } from "./Concentration";
 
 interface PendingDefense {
   attackerId: string;
@@ -414,7 +415,7 @@ export class CombatEngine {
   }
 
   public addModifier(combatantId: string, modifier: CombatModifier): void {
-    console.log("ADDING MODIFIER:", modifier);
+    //console.log("ADDING MODIFIER:", modifier);
     const combatant = this.state.combatants.find(
       (current) => current.id === combatantId,
     );
@@ -584,8 +585,14 @@ export class CombatEngine {
         combatant.hp = roundToOneDecimal(
           Math.max(0, combatant.hp - damage.totalDamage),
         );
+
         if (combatant.hp === 0) {
           combatant.alive = false;
+          this.endConcentration(combatant);
+        }
+
+        if (damage.totalDamage > 0) {
+          this.checkConcentration(combatant);
         }
       }
     }
@@ -631,8 +638,14 @@ export class CombatEngine {
     const hpBefore = target.hp;
 
     target.hp = roundToOneDecimal(Math.max(0, target.hp - result.finalDamage));
+
     if (target.hp === 0) {
       target.alive = false;
+      this.endConcentration(target);
+    }
+
+    if (result.finalDamage > 0) {
+      this.checkConcentration(target);
     }
 
     if (shouldWakeFromDamage(conditions, result.finalDamage)) {
@@ -1104,6 +1117,14 @@ export class CombatEngine {
 
     defender.alive = defender.hp > 0;
 
+    if (!defender.alive) {
+      this.endConcentration(defender);
+    }
+
+    if (finalDamage > 0) {
+      this.checkConcentration(defender);
+    }
+
     if (!dodged && defender.alive && pending.remainingEffects?.length) {
       executeAbilityEffects(
         pending.remainingEffects,
@@ -1185,7 +1206,16 @@ export class CombatEngine {
     }
 
     defender.hp = roundToOneDecimal(Math.max(0, defender.hp - finalDamage));
+
     defender.alive = defender.hp > 0;
+
+    if (!defender.alive) {
+      this.endConcentration(defender);
+    }
+
+    if (finalDamage > 0) {
+      this.checkConcentration(defender);
+    }
 
     if (defender.alive && remainingEffects?.length) {
       executeAbilityEffects(
@@ -1255,6 +1285,65 @@ export class CombatEngine {
         }
       }
     }
+  }
+
+  private checkConcentration(combatant: Combatant): void {
+    if (!combatant.alive || !combatant.concentration) {
+      return;
+    }
+
+    const result = resolveConcentrationCheck(combatant, this.random);
+
+    if (!result.success) {
+      this.endConcentration(combatant);
+    }
+  }
+
+  public startConcentration(
+    casterId: string,
+    abilityId: string,
+    instanceId?: string,
+    remainingDuration?: number,
+  ): void {
+    const caster = this.state.combatants.find(
+      (combatant) => combatant.id === casterId,
+    );
+
+    if (!caster) {
+      return;
+    }
+
+    this.endConcentration(caster);
+
+    caster.concentration = {
+      abilityId,
+      instanceId,
+      remainingDuration,
+    };
+  }
+
+  private endConcentration(combatant: Combatant): void {
+    const concentration = combatant.concentration;
+
+    if (!concentration) {
+      return;
+    }
+
+    if (concentration.instanceId) {
+      this.removeAbilityInstance(concentration.instanceId);
+    }
+
+    for (const currentCombatant of this.state.combatants) {
+      currentCombatant.modifiers = currentCombatant.modifiers.filter(
+        (modifier) =>
+          !(
+            modifier.sourceCasterId === combatant.id &&
+            modifier.sourceAbilityId === concentration.abilityId
+          ),
+      );
+    }
+
+    combatant.concentration = undefined;
   }
 
   public createAbilityInstance(
@@ -1523,7 +1612,18 @@ export class CombatEngine {
       return false;
     }
 
+    const instance = this.abilityInstances[index];
+
     this.abilityInstances.splice(index, 1);
+
+    const caster = this.state.combatants.find(
+      (combatant) => combatant.id === instance.casterId,
+    );
+
+    if (caster?.concentration?.instanceId === instanceId) {
+      caster.concentration = undefined;
+    }
+
     return true;
   }
 

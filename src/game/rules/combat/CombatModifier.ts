@@ -7,7 +7,8 @@ export type CombatModifierBehavior =
   | "defense"
   | "movement"
   | "armor"
-  | "magic-resistance";
+  | "magic-resistance"
+  | "concentration";
 
 export type CombatModifierOperation =
   | "add"
@@ -16,7 +17,12 @@ export type CombatModifierOperation =
   | "advantage"
   | "disadvantage";
 
-export type CombatModifierTrigger = "roll" | "attack" | "spell" | "turn";
+export type CombatModifierTrigger =
+  | "roll"
+  | "attack"
+  | "spell"
+  | "turn"
+  | "concentration";
 
 export type CombatThresholdType =
   | "health-percent"
@@ -55,6 +61,8 @@ export interface CombatModifier {
   id?: string;
   threshold?: CombatThreshold;
   targetCreatureType?: CreatureType;
+  sourceAbilityId?: string;
+  sourceCasterId?: string;
 }
 
 export function getModifiersForTrigger(

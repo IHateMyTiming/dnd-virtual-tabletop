@@ -207,6 +207,8 @@ export function executeAbilityEffects(
     const modifier = {
       ...effect.modifier,
       id: `${abilityId}:${effect.modifier.behavior}:${effect.modifier.operation}:${effect.modifier.trigger}`,
+      sourceAbilityId: abilityId,
+      sourceCasterId: context.casterId,
       duration: effect.duration,
     };
 

@@ -483,7 +483,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetType: "enemy",
     targetingMode: "single",
 
-    range: 1,
+    range: 10,
+    concentration: true,
+
     allowedClasses: ["wizard", "bard", "cleric"],
 
     effects: [
@@ -669,6 +671,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetingMode: "single",
 
     range: 10,
+    concentration: true,
 
     allowedClasses: ["druid", "bard", "cleric", "fighter", "barbarian"],
     classModifiers: {
@@ -713,6 +716,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetingMode: "single",
 
     range: 10,
+
+    concentration: true,
+
     allowedClasses: ["cleric", "bard"],
 
     effects: [
@@ -722,7 +728,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
         modifier: {
           behavior: "damage",
           operation: "add-dice",
-          trigger: "attack",
+          trigger: "spell",
           diceCount: 1,
           diceSides: 6,
         },
@@ -740,8 +746,6 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
-  //NEEDS FIX
-  //NEEDING TO ADD THE EFFECTS OF SANCTUARY LATER
   {
     id: "sanctuary",
     nameKey: "spell_sanctuary",
@@ -752,6 +756,8 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetingMode: "area",
 
     range: 10,
+
+    concentration: true,
 
     allowedClasses: ["cleric", "paladin"],
 

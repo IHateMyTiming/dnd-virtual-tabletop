@@ -117,7 +117,7 @@ export class CombatTestScene extends Phaser.Scene {
   private readonly ranger2Stats: CharacterStats = {
     strength: 10,
     dexterity: 16,
-    constitution: 13,
+    constitution: 4,
     intelligence: 12,
     wisdom: 14,
     charisma: 8,
@@ -536,8 +536,14 @@ export class CombatTestScene extends Phaser.Scene {
       this.useAbility("test"),
     );
 
-    this.createButton(panelX + 120, 490, 150, 26, "pink", 0x5a2875, () =>
-      this.useAbility("pink"),
+    this.createButton(
+      panelX + 120,
+      490,
+      150,
+      26,
+      "magic_weapon",
+      0x5a2875,
+      () => this.useAbility("magic_weapon"),
     );
 
     this.add.text(panelX + 15, 522, "CONDITION TESTER", {

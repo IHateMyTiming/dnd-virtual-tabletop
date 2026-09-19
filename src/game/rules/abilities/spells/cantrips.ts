@@ -482,6 +482,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     targetingMode: "single",
 
     range: 30,
+    concentration: true,
 
     allowedClasses: ["wizard", "bard", "cleric", "paladin"],
 
