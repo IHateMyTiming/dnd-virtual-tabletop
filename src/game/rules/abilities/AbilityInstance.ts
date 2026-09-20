@@ -1,9 +1,14 @@
 import type { Position } from "../combat/Movement";
 import type { AbilityArea } from "./Ability";
-import type { AbilityEffect } from "./AbilityEffect";
+import type { AbilityEffect, AbilityInstanceTrigger } from "./AbilityEffect";
+
+export interface AbilityInstanceEffect {
+  trigger: AbilityInstanceTrigger;
+  effect: AbilityEffect;
+}
+
 export interface AbilityInstance {
   id: string;
-
   abilityId: string;
   casterId: string;
 
@@ -17,11 +22,12 @@ export interface AbilityInstance {
   magicResistance?: number;
 
   duration?: number;
+
   disarmable?: boolean;
   disarmDC?: number;
   disarmRange?: number;
 
   blocksDamage?: boolean;
 
-  turnEffects?: AbilityEffect[];
+  effects?: AbilityInstanceEffect[];
 }

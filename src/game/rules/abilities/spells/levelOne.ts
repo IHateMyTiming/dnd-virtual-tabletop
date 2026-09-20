@@ -868,4 +868,95 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     imagePath: "/assets/abilities/",
   },
+
+  {
+    id: "burning_floor",
+    nameKey: "spell_burning_floor",
+    descriptionKey: "spell_burning_floor_description",
+
+    actionType: "action",
+    targetType: "location",
+    targetingMode: "area",
+
+    range: 10,
+
+    area: {
+      shape: "circle",
+      radius: 3,
+    },
+
+    effects: [],
+
+    recovery: "unlimited",
+
+    instance: {
+      lifetime: "duration",
+      duration: 5,
+
+      effects: [
+        {
+          trigger: "enter-area",
+          effect: {
+            type: "damage",
+            damage: {
+              count: 1,
+              sides: 6,
+              type: "physical",
+            },
+          },
+        },
+        {
+          trigger: "enter-area",
+          effect: {
+            type: "apply-condition",
+            conditionId: "burning",
+            duration: 2,
+          },
+        },
+        {
+          trigger: "move-inside-area",
+          effect: {
+            type: "damage",
+            damage: {
+              count: 1,
+              sides: 6,
+              type: "physical",
+            },
+          },
+        },
+        {
+          trigger: "move-inside-area",
+          effect: {
+            type: "apply-condition",
+            conditionId: "burning",
+            duration: 2,
+          },
+        },
+        {
+          trigger: "turn-start",
+          effect: {
+            type: "damage",
+            damage: {
+              count: 1,
+              sides: 6,
+              type: "physical",
+            },
+          },
+        },
+        {
+          trigger: "turn-start",
+          effect: {
+            type: "apply-condition",
+            conditionId: "burning",
+            duration: 2,
+          },
+        },
+      ],
+    },
+
+    isSpell: true,
+    spellLevel: 1,
+
+    imagePath: "/assets/abilities/",
+  },
 ];

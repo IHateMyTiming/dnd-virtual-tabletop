@@ -1,8 +1,8 @@
 import type { CombatActionType } from "../combat/Action";
 import type { AttackType } from "../combat/Attack";
-import type { AbilityEffect } from "./AbilityEffect";
 import type { SpellSlotLevel } from "./Resource";
 import type { CharacterClassId } from "../classes/Class";
+import type { AbilityEffect, AbilityInstanceTrigger } from "./AbilityEffect";
 
 export type AbilityTargetType =
   | "self"
@@ -87,7 +87,10 @@ interface AbilityBase {
     disarmDC?: number;
     disarmRange?: number;
     blocksDamage?: boolean;
-    turnEffects?: AbilityEffect[];
+    effects?: {
+      trigger: AbilityInstanceTrigger;
+      effect: AbilityEffect;
+    }[];
   };
 
   allowedClasses?: CharacterClassId[];

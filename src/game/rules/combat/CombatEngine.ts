@@ -55,7 +55,10 @@ import { getEffectiveArmor } from "../condition/ConditionArmor";
 import { getEffectiveMagicResistance } from "../condition/ConditionMagicResistance";
 import { getIncomingDamageMultiplier } from "../condition/ConditionDamageModifier";
 import { getConditionDodgeMultiplier } from "../condition/ConditionDefense";
-import type { AbilityEffect } from "../abilities/AbilityEffect";
+import type {
+  AbilityEffect,
+  AbilityInstanceTrigger,
+} from "../abilities/AbilityEffect";
 import {
   consumeModifier,
   getModifierValue,
@@ -63,7 +66,10 @@ import {
   type CombatModifier,
 } from "./CombatModifier";
 import { executeAbilityEffects } from "../abilities/AbilityEffectExecutor";
-import type { AbilityInstance } from "../abilities/AbilityInstance";
+import type {
+  AbilityInstance,
+  AbilityInstanceEffect,
+} from "../abilities/AbilityInstance";
 import type { AbilityArea } from "../abilities/Ability";
 import { resolveAbilityCheck } from "../abilities/AbilityCheck";
 import { resolveConcentrationCheck } from "./Concentration";
@@ -95,6 +101,7 @@ export class CombatEngine {
 
   private pendingMovement: {
     combatantId: string;
+    previousPosition: Position;
     position: Position;
     movementCost: number;
   } | null = null;
@@ -120,11 +127,19 @@ export class CombatEngine {
   }
 
   public startCombat(): void {
-    this.state = startTurn(this.state);
+    this.startTurn();
   }
 
   public startTurn(): void {
     this.state = startTurn(this.state);
+
+    const current = this.getCurrentCombatant();
+
+    if (!current) {
+      return;
+    }
+
+    this.processAbilityInstanceEffects(current, "turn-start");
   }
 
   endTurn(): void {
@@ -132,7 +147,7 @@ export class CombatEngine {
 
     if (current) {
       this.processTurnModifierDurations(current);
-      this.processAbilityInstanceTurnEffects(current);
+      this.processAbilityInstanceEffects(current, "turn-end");
       this.processAbilityInstanceDurations(current);
     }
 
@@ -367,6 +382,7 @@ export class CombatEngine {
     if (this.pendingDefenses.length > 0) {
       this.pendingMovement = {
         combatantId: current.id,
+        previousPosition,
         position: { ...position },
         movementCost,
       };
@@ -377,6 +393,8 @@ export class CombatEngine {
     // No defense is required, so movement happens immediately.
     current.position = { ...position };
     current.movementRemaining -= movementCost;
+
+    this.processAbilityInstanceMovementEffects(current, previousPosition);
 
     return true;
   }
@@ -638,6 +656,17 @@ export class CombatEngine {
     const hpBefore = target.hp;
 
     target.hp = roundToOneDecimal(Math.max(0, target.hp - result.finalDamage));
+
+    console.log("[DAMAGE]", {
+      target: target.name,
+      type: expression.type,
+      hpBefore,
+      hpAfter: target.hp,
+      armor: target.armor,
+      magicResistance: target.magicResistance,
+      finalDamage: result.finalDamage,
+      damageResult: result,
+    });
 
     if (target.hp === 0) {
       target.alive = false;
@@ -963,12 +992,19 @@ export class CombatEngine {
         );
 
         if (movingCombatant && movingCombatant.alive) {
+          const previousPosition = this.pendingMovement.previousPosition;
+
           movingCombatant.position = {
             ...this.pendingMovement.position,
           };
 
           movingCombatant.movementRemaining -=
             this.pendingMovement.movementCost;
+
+          this.processAbilityInstanceMovementEffects(
+            movingCombatant,
+            previousPosition,
+          );
         }
 
         this.pendingMovement = null;
@@ -1145,11 +1181,18 @@ export class CombatEngine {
       );
 
       if (movingCombatant && movingCombatant.alive) {
+        const previousPosition = this.pendingMovement.previousPosition;
+
         movingCombatant.position = {
           ...this.pendingMovement.position,
         };
 
         movingCombatant.movementRemaining -= this.pendingMovement.movementCost;
+
+        this.processAbilityInstanceMovementEffects(
+          movingCombatant,
+          previousPosition,
+        );
       }
 
       this.pendingMovement = null;
@@ -1361,7 +1404,7 @@ export class CombatEngine {
       disarmDC?: number;
       disarmRange?: number;
       blocksDamage?: boolean;
-      turnEffects?: AbilityEffect[];
+      effects?: AbilityInstanceEffect[];
     },
   ): AbilityInstance {
     const instance: AbilityInstance = {
@@ -1382,7 +1425,7 @@ export class CombatEngine {
       disarmDC: options?.disarmDC,
       disarmRange: options?.disarmRange,
       blocksDamage: options?.blocksDamage,
-      turnEffects: options?.turnEffects,
+      effects: options?.effects,
     };
 
     this.abilityInstances.push(instance);
@@ -1647,11 +1690,16 @@ export class CombatEngine {
     }
   }
 
-  private processAbilityInstanceTurnEffects(combatant: Combatant): void {
-    const instances = [...this.abilityInstances];
-
+  private processAbilityInstanceEffects(
+    combatant: Combatant,
+    trigger: AbilityInstanceTrigger,
+    instanceId?: string,
+  ): void {
+    const instances = [...this.abilityInstances].filter(
+      (instance) => instanceId === undefined || instance.id === instanceId,
+    );
     for (const instance of instances) {
-      if (!instance.turnEffects || instance.turnEffects.length === 0) {
+      if (!instance.effects || instance.effects.length === 0) {
         continue;
       }
 
@@ -1664,8 +1712,16 @@ export class CombatEngine {
         continue;
       }
 
+      const effects = instance.effects
+        .filter((instanceEffect) => instanceEffect.trigger === trigger)
+        .map((instanceEffect) => instanceEffect.effect);
+
+      if (effects.length === 0) {
+        continue;
+      }
+
       executeAbilityEffects(
-        instance.turnEffects,
+        effects,
         {
           casterId: instance.casterId,
           targetId: combatant.id,
@@ -1676,25 +1732,48 @@ export class CombatEngine {
     }
   }
 
+  private processAbilityInstanceMovementEffects(
+    combatant: Combatant,
+    previousPosition: Position,
+  ): void {
+    const instances = [...this.abilityInstances];
+
+    for (const instance of instances) {
+      if (!instance.effects || instance.effects.length === 0) {
+        continue;
+      }
+
+      const wasInside = this.isPositionInsideAbilityInstance(
+        previousPosition,
+        instance,
+      );
+
+      const isInside = this.isPositionInsideAbilityInstance(
+        combatant.position,
+        instance,
+      );
+
+      if (!isInside) {
+        continue;
+      }
+
+      const trigger: AbilityInstanceTrigger = wasInside
+        ? "move-inside-area"
+        : "enter-area";
+
+      this.processAbilityInstanceEffects(combatant, trigger, instance.id);
+    }
+  }
+
   public getDistanceBetweenPosition(first: Position, second: Position): number {
     return calculateDistance(first, second);
   }
 
-  public isCombatantInsideAbilityInstance(
-    combatantId: string,
-    instanceId: string,
+  private isPositionInsideAbilityInstance(
+    position: Position,
+    instance: AbilityInstance,
   ): boolean {
-    const combatant = this.getState().combatants.find(
-      (c) => c.id === combatantId,
-    );
-
-    const instance = this.getAbilityInstance(instanceId);
-
-    if (!combatant || !instance) {
-      return false;
-    }
-
-    const { position, area } = instance;
+    const { area } = instance;
 
     switch (area.shape) {
       case "circle": {
@@ -1703,8 +1782,8 @@ export class CombatEngine {
         }
 
         const distance = this.getDistanceBetweenPosition(
-          combatant.position,
           position,
+          instance.position,
         );
 
         return distance <= area.radius;
@@ -1719,14 +1798,29 @@ export class CombatEngine {
         const halfHeight = area.height / 2;
 
         return (
-          Math.abs(combatant.position.x - position.x) <= halfWidth &&
-          Math.abs(combatant.position.y - position.y) <= halfHeight
+          Math.abs(position.x - instance.position.x) <= halfWidth &&
+          Math.abs(position.y - instance.position.y) <= halfHeight
         );
       }
 
       default:
         return false;
     }
+  }
+
+  public isCombatantInsideAbilityInstance(
+    combatantId: string,
+    instanceId: string,
+  ): boolean {
+    const combatant = this.state.combatants.find((c) => c.id === combatantId);
+
+    const instance = this.getAbilityInstance(instanceId);
+
+    if (!combatant || !instance) {
+      return false;
+    }
+
+    return this.isPositionInsideAbilityInstance(combatant.position, instance);
   }
 
   public isDamageBlocked(attackerId: string, defenderId: string): boolean {

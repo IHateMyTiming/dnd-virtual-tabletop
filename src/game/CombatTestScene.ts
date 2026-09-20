@@ -46,6 +46,9 @@ export class CombatTestScene extends Phaser.Scene {
   private goblin2HpText!: Phaser.GameObjects.Text;
   private ranger2HpText!: Phaser.GameObjects.Text;
 
+  private movementActive = false;
+  private draggingCombatantId: string | null = null;
+
   //private rangerMovementText!: Phaser.GameObjects.Text;
   //private goblinMovementText!: Phaser.GameObjects.Text;
 
@@ -142,6 +145,8 @@ export class CombatTestScene extends Phaser.Scene {
     this.createCharacters();
     this.createInterface();
     this.input.on("pointerdown", this.handleMapPointerDown, this);
+    this.input.on("pointermove", this.handleMovementDrag, this);
+    this.input.on("pointerup", this.handleMovementDrop, this);
     this.abilityInstanceGraphics = this.add.graphics();
     this.abilityInstanceGraphics.setDepth(5);
 
@@ -188,7 +193,7 @@ export class CombatTestScene extends Phaser.Scene {
 
       stats: this.rangerStats,
 
-      hp: 10,
+      hp: 21,
       maxHp: 21,
 
       armor: 0,
@@ -230,7 +235,7 @@ export class CombatTestScene extends Phaser.Scene {
       magicResistance: 0,
 
       position: {
-        x: 12,
+        x: 4,
         y: 6,
       },
 
@@ -363,25 +368,25 @@ export class CombatTestScene extends Phaser.Scene {
 
     this.goblin2.setInteractive({ useHandCursor: true });
 
-    this.goblin2.on("pointerdown", () => {
-      this.handleAbilityTargetClick("goblin2");
-    });
-
     this.ranger.setInteractive({ useHandCursor: true });
     this.ranger2.setInteractive({ useHandCursor: true });
 
     this.goblin.setInteractive({ useHandCursor: true });
 
     this.ranger.on("pointerdown", () => {
-      this.handleAbilityTargetClick("ranger");
+      this.handleCharacterPointerDown("ranger");
     });
 
     this.ranger2.on("pointerdown", () => {
-      this.handleAbilityTargetClick("ranger2");
+      this.handleCharacterPointerDown("ranger2");
     });
 
     this.goblin.on("pointerdown", () => {
-      this.handleAbilityTargetClick("goblin");
+      this.handleCharacterPointerDown("goblin");
+    });
+
+    this.goblin2.on("pointerdown", () => {
+      this.handleCharacterPointerDown("goblin2");
     });
 
     this.add.text(this.ranger.x - 25, this.ranger.y + 25, "Ranger", {
@@ -501,26 +506,23 @@ export class CombatTestScene extends Phaser.Scene {
       0x7a3030,
       () => this.startBasicAttackTargeting("melee"),
     );
-    /* this.createButton(panelX + 120, 339, 150, 28, "MOVE 3m", 0x285c35, () =>
-      this.performMove(),
+    this.createButton(panelX + 45, 339, 65, 28, "MOVE", 0x285c35, () =>
+      this.toggleMovementMode(),
     );
-    this.createButton(panelX + 120, 371, 150, 28, "JUMP 2m", 0x5c4a28, () =>
-      this.performJump(),
-    );*/
+
+    this.createButton(panelX + 120, 339, 65, 28, "DODGE", 0x285c35, () =>
+      this.chooseDefense("dodge"),
+    );
+
+    this.createButton(panelX + 195, 339, 65, 28, "PARRY", 0x5c4a28, () =>
+      this.chooseDefense("parry"),
+    );
 
     this.defenseText = this.add.text(panelX + 15, 380, "", {
       fontSize: "10px",
       color: "#ffcc66",
       wordWrap: { width: 210 },
     });
-
-    this.createButton(panelX + 120, 339, 150, 28, "DODGE", 0x285c35, () =>
-      this.chooseDefense("dodge"),
-    );
-
-    this.createButton(panelX + 120, 371, 150, 28, "PARRY", 0x5c4a28, () =>
-      this.chooseDefense("parry"),
-    );
 
     this.add.text(panelX + 15, 405, "ABILITIES", {
       fontSize: "12px",
@@ -541,9 +543,9 @@ export class CombatTestScene extends Phaser.Scene {
       490,
       150,
       26,
-      "magic_weapon",
+      "burning_floor",
       0x5a2875,
-      () => this.useAbility("magic_weapon"),
+      () => this.useAbility("burning_floor"),
     );
 
     this.add.text(panelX + 15, 522, "CONDITION TESTER", {
@@ -1233,6 +1235,64 @@ export class CombatTestScene extends Phaser.Scene {
     this.confirmTargetedAbility(ability, targetId);
   }
 
+  private handleCharacterPointerDown(combatantId: string): void {
+    if (this.movementActive) {
+      this.startCharacterDrag(combatantId);
+      return;
+    }
+
+    this.handleAbilityTargetClick(combatantId);
+  }
+
+  private toggleMovementMode(): void {
+    if (this.movementActive) {
+      this.movementActive = false;
+      this.draggingCombatantId = null;
+
+      this.updateCharacterPositions();
+
+      this.setCombatLog(["Movement cancelled."]);
+
+      return;
+    }
+
+    const current = this.combatEngine.getCurrentCombatant();
+
+    if (!current || !current.alive) {
+      this.setCombatLog([
+        "Cannot move.",
+        "",
+        "There is no valid current combatant.",
+      ]);
+      return;
+    }
+
+    if (this.combatEngine.getPendingDefenseCount() > 0) {
+      this.setCombatLog([
+        "Cannot move.",
+        "",
+        "Resolve the pending defense first.",
+      ]);
+      return;
+    }
+
+    if (current.movementRemaining <= 0) {
+      this.setCombatLog([`${current.name} has no movement remaining.`]);
+      return;
+    }
+
+    this.cancelAbilityTargeting();
+
+    this.movementActive = true;
+
+    this.setCombatLog([
+      `${current.name} is ready to move.`,
+      "",
+      "Drag the character to a new position.",
+      "Release the mouse to move.",
+    ]);
+  }
+
   private handleMapPointerDown(pointer: Phaser.Input.Pointer): void {
     if (!this.targetingActive) {
       return;
@@ -1311,6 +1371,127 @@ export class CombatTestScene extends Phaser.Scene {
         : "Click the location again to cast.",
       "",
       "Press ESC to cancel.",
+    ]);
+  }
+
+  private startCharacterDrag(combatantId: string): void {
+    const current = this.combatEngine.getCurrentCombatant();
+
+    if (!current || current.id !== combatantId) {
+      return;
+    }
+
+    if (!current.alive || current.movementRemaining <= 0) {
+      return;
+    }
+
+    this.draggingCombatantId = combatantId;
+  }
+
+  private handleMovementDrag(pointer: Phaser.Input.Pointer): void {
+    if (!this.movementActive || !this.draggingCombatantId) {
+      return;
+    }
+
+    const position = this.getCharacterDisplayObject(this.draggingCombatantId);
+
+    if (!position) {
+      return;
+    }
+
+    const gridX = Math.floor(pointer.worldX / cellSize);
+    const gridY = Math.floor(pointer.worldY / cellSize);
+
+    position.setPosition(
+      gridX * cellSize + cellSize / 2,
+      gridY * cellSize + cellSize / 2,
+    );
+  }
+
+  private getCharacterDisplayObject(
+    combatantId: string,
+  ): Phaser.GameObjects.Arc | undefined {
+    switch (combatantId) {
+      case "ranger":
+        return this.ranger;
+
+      case "ranger2":
+        return this.ranger2;
+
+      case "goblin":
+        return this.goblin;
+
+      case "goblin2":
+        return this.goblin2;
+
+      default:
+        return undefined;
+    }
+  }
+
+  private handleMovementDrop(pointer: Phaser.Input.Pointer): void {
+    if (!this.movementActive || !this.draggingCombatantId) {
+      return;
+    }
+
+    const combatantId = this.draggingCombatantId;
+    const current = this.getCombatant(combatantId);
+
+    this.draggingCombatantId = null;
+
+    if (!current) {
+      this.movementActive = false;
+      this.updateCharacterPositions();
+      return;
+    }
+
+    const newPosition = {
+      x: Math.floor(pointer.worldX / cellSize),
+      y: Math.floor(pointer.worldY / cellSize),
+    };
+
+    const samePosition =
+      newPosition.x === current.position.x &&
+      newPosition.y === current.position.y;
+
+    if (samePosition) {
+      this.movementActive = false;
+      this.updateCharacterPositions();
+
+      this.setCombatLog([
+        "Movement cancelled.",
+        "",
+        "The character was not moved.",
+      ]);
+
+      return;
+    }
+
+    const success = this.combatEngine.move(newPosition, "walk");
+
+    this.movementActive = false;
+
+    if (!success) {
+      this.updateCharacterPositions();
+
+      this.setCombatLog([
+        `${current.name} cannot move there.`,
+        "",
+        `Movement remaining: ${current.movementRemaining}m`,
+      ]);
+
+      return;
+    }
+
+    this.updateCharacterPositions();
+    this.updateInterface();
+    this.redrawAbilityInstances();
+
+    this.setCombatLog([
+      `${current.name} moved.`,
+      "",
+      `Position: (${newPosition.x}, ${newPosition.y})`,
+      `Movement remaining: ${current.movementRemaining}m`,
     ]);
   }
 

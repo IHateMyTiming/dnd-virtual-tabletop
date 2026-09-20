@@ -1,6 +1,6 @@
 import type { Combatant } from "./Combatant";
 import { didLeaveMeleeRange } from "./Engagement";
-import { calculateDistance } from "./Movement";
+//import { calculateDistance } from "./Movement";
 
 export function getOpportunityAttackers(
   movingCombatant: Combatant,
@@ -13,7 +13,7 @@ export function getOpportunityAttackers(
     if (combatant.id === movingCombatant.id) return false;
     if (combatant.team === movingCombatant.team) return false;
 
-    const previousDistance = calculateDistance(
+    /*const previousDistance = calculateDistance(
       previousPosition,
       combatant.position,
     );
@@ -30,7 +30,7 @@ export function getOpportunityAttackers(
       newDistance,
       wasInRange: previousDistance <= 1,
       isInRange: newDistance <= 1,
-    });
+    });*/
 
     return didLeaveMeleeRange(
       previousPosition,

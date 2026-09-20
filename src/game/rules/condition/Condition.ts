@@ -148,7 +148,7 @@ export const CONDITIONS: ConditionDefinition[] = [
     id: "acid",
     nameKey: "condition_acid",
     descriptionKey: "condition_acid_description",
-    maxStacks: 1,
+    maxStacks: 5,
     advantageWhenTargeted: false,
     disadvantageOnAttacks: false,
   },

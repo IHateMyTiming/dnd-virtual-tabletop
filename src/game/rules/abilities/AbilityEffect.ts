@@ -14,6 +14,12 @@ export type AbilityEffectType =
   | "modify-stat"
   | "modify-behavior";
 
+export type AbilityInstanceTrigger =
+  | "enter-area"
+  | "move-inside-area"
+  | "turn-start"
+  | "turn-end";
+
 export interface AbilityEffect {
   type: AbilityEffectType;
 

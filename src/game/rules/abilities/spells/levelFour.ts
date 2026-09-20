@@ -48,18 +48,20 @@ export const LEVELFOURSPELLS: AbilityDefinition[] = [
 
       blocksDamage: true,
 
-      turnEffects: [
+      effects: [
         {
-          type: "heal",
-
-          healing: {
-            count: 1,
-            sides: 20,
-          },
-
-          levelScaling: {
-            12: {
+          trigger: "turn-end",
+          effect: {
+            type: "heal",
+            healing: {
+              count: 1,
               sides: 20,
+            },
+
+            levelScaling: {
+              12: {
+                sides: 20,
+              },
             },
           },
         },
