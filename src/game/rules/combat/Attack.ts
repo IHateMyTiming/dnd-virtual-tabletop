@@ -59,6 +59,7 @@ export interface AttackRequest {
   defenderConditions: ConditionState[];
 
   attackerModifiers: CombatModifier[];
+  defenderModifiers: CombatModifier[];
 
   armor: number;
   magicResistance: number;
@@ -116,6 +117,11 @@ export function resolveAttack(attack: AttackRequest): AttackResult {
     attack.type,
   );
 
+  const defenseModifiers = getAttackModifiers(
+    attack.defenderModifiers,
+    attack.type,
+  );
+
   const baseChance = calculateBaseAccuracy(attack);
 
   const accuracyModifier = getModifierValue(attackModifiers, "accuracy", "add");
@@ -138,19 +144,28 @@ export function resolveAttack(attack: AttackRequest): AttackResult {
 
   const modifierAdvantage = getModifierAdvantage(attackModifiers);
 
+  const defenseAdvantage = getDefenseAdvantage(defenseModifiers);
+
   const advantageState = resolveCombinedAdvantage(
     conditionAdvantage,
     modifierAdvantage,
   );
+
+  const finalAdvantageState = resolveCombinedAdvantage(
+    advantageState,
+    defenseAdvantage,
+  );
+
   const attackRollModifier = getAttackRollDiceModifier(attackModifiers);
 
   const result = resolveAdvantage(
-    advantageState,
+    finalAdvantageState,
     chance,
     critThreshold,
     undefined,
     attackRollModifier,
   );
+
   return {
     hit: result.selectedOutcome !== "miss",
 
@@ -162,7 +177,7 @@ export function resolveAttack(attack: AttackRequest): AttackResult {
     selectedRoll: result.selectedRoll,
     selectedOutcome: result.selectedOutcome,
 
-    advantageState,
+    advantageState: finalAdvantageState,
 
     criticalHit: result.selectedOutcome === "critical",
   };
@@ -269,6 +284,32 @@ function getAttackModifiers(
         return false;
     }
   });
+}
+
+function getDefenseAdvantage(modifiers: CombatModifier[]): AdvantageState {
+  const hasAdvantage = modifiers.some(
+    (modifier) =>
+      modifier.behavior === "defense" && modifier.operation === "advantage",
+  );
+
+  const hasDisadvantage = modifiers.some(
+    (modifier) =>
+      modifier.behavior === "defense" && modifier.operation === "disadvantage",
+  );
+
+  if (hasAdvantage && hasDisadvantage) {
+    return "normal";
+  }
+
+  if (hasAdvantage) {
+    return "advantage";
+  }
+
+  if (hasDisadvantage) {
+    return "disadvantage";
+  }
+
+  return "normal";
 }
 
 function getModifierAdvantage(modifiers: CombatModifier[]): AdvantageState {

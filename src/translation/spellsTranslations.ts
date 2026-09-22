@@ -162,7 +162,20 @@ export const spellTranslations = {
     spell_reckless_attack: "Reckless Attack",
     spell_reckless_attack_description:
       "Your next attack is made with advantage.",
+
+    spell_acid_arrow: "Acid Arrow",
+    spell_acid_arrow_description:
+      "Fire a corrosive arrow at a target, dealing acid damage. The impact leaves a pool of acid on the ground that damages creatures that enter it or begin their turn within it.",
+
+    spell_arcane_lock: "Arcane Lock",
+    spell_arcane_lock_description:
+      "Magically lock a door, chest, or other lockable object. The object's lock becomes harder to bypass, increasing its lock DC by 10 until the magic is removed.",
+
+    spell_blur: "Blur",
+    spell_blur_description:
+      "Blur your form, causing attacks against you to have disadvantage. Requires concentration.",
   },
+
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   pt: {
     // CANTRIPS
@@ -327,5 +340,17 @@ export const spellTranslations = {
     spell_reckless_attack: "Ataque Imprudente",
     spell_reckless_attack_description:
       "Seu próximo ataque é feito com vantagem.",
+
+    spell_acid_arrow: "Flecha Ácida",
+    spell_acid_arrow_description:
+      "Dispare uma flecha corrosiva contra um alvo, causando dano ácido. O impacto deixa uma poça de ácido no chão que causa dano às criaturas que entrarem nela ou começarem seu turno dentro dela.",
+
+    spell_arcane_lock: "Tranca Arcana",
+    spell_arcane_lock_description:
+      "Tranque magicamente uma porta, baú ou outro objeto que possa ser trancado. Aumenta em 10 a CD da fechadura para dificultar que ela seja aberta até que a magia seja removida.",
+
+    spell_blur: "Desfoque",
+    spell_blur_description:
+      "Desfoque sua forma, fazendo com que ataques contra você tenham desvantagem. Requer concentração.",
   },
 };

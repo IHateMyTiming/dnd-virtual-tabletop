@@ -14,7 +14,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetingMode: "area",
     attackType: "spell",
 
-    range: 12,
+    range: 10,
     allowedClasses: ["wizard"],
 
     area: {
@@ -27,13 +27,12 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
         type: "damage",
         damage: {
           count: 2,
-          sides: 7,
+          sides: 8,
           type: "magic",
           scaling: {
             type: "character-level",
-            diceCount: {
-              5: 3,
-              9: 4,
+            modifier: {
+              9: +2,
             },
           },
         },
@@ -68,7 +67,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetingMode: "single",
     attackType: "spell",
 
-    range: 10,
+    range: 12,
 
     allowedClasses: ["wizard", "ranger"],
 
@@ -82,12 +81,8 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
           scaling: {
             type: "character-level",
-            diceCount: {
-              5: 3,
-              9: 4,
-            },
             modifier: {
-              12: +1,
+              9: +2,
             },
           },
         },
@@ -141,7 +136,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     attackType: "spell",
 
-    range: 15,
+    range: 12,
     maxTargets: 3,
     allowedClasses: ["wizard"],
 
@@ -198,8 +193,8 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
           type: "magic",
           scaling: {
             type: "character-level",
-            diceCount: {
-              9: 3,
+            modifier: {
+              9: +2,
             },
           },
         },
@@ -235,12 +230,12 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
         type: "damage",
         damage: {
           count: 2,
-          sides: 10,
+          sides: 8,
           type: "magic",
           scaling: {
             type: "character-level",
-            diceCount: {
-              6: 3,
+            modifier: {
+              9: +2,
             },
           },
         },
@@ -299,11 +294,8 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
           type: "magic",
           scaling: {
             type: "character-level",
-            diceCount: {
-              9: 3,
-            },
             modifier: {
-              11: +3,
+              9: +2,
             },
           },
         },
@@ -338,7 +330,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetingMode: "single",
     attackType: "spell",
 
-    range: 15,
+    range: 10,
     allowedClasses: ["cleric", "paladin"],
 
     classModifiers: {
@@ -352,15 +344,12 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
         type: "damage",
         damage: {
           count: 2,
-          sides: 6,
+          sides: 9,
           type: "magic",
           scaling: {
             type: "character-level",
-            diceCount: {
-              6: 3,
-            },
             modifier: {
-              12: +3,
+              9: +2,
             },
           },
         },
@@ -398,7 +387,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetType: "location",
     targetingMode: "area",
 
-    range: 15,
+    range: 10,
 
     area: {
       shape: "circle",
@@ -410,13 +399,12 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
         type: "damage",
         damage: {
           count: 2,
-          sides: 4,
+          sides: 8,
           type: "magic",
           scaling: {
             type: "character-level",
-            diceCount: {
-              5: 3,
-              9: 4,
+            modifier: {
+              9: +2,
             },
           },
         },
@@ -508,13 +496,12 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
         type: "damage",
         damage: {
           count: 2,
-          sides: 6,
+          sides: 8,
           type: "magic",
           scaling: {
             type: "character-level",
-            diceCount: {
-              5: 3,
-              9: 4,
+            modifier: {
+              9: +2,
             },
           },
         },
@@ -561,9 +548,8 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
           type: "magic",
           scaling: {
             type: "character-level",
-            diceCount: {
-              5: 4,
-              9: 5,
+            modifier: {
+              9: +2,
             },
           },
         },

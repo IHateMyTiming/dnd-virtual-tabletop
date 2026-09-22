@@ -849,6 +849,7 @@ export class CombatEngine {
         ...attacker.modifiers,
         ...(request.temporaryModifiers ?? []),
       ],
+      defenderModifiers: defender.modifiers,
     });
 
     this.consumeAttackRollModifiers(attacker);
@@ -912,6 +913,7 @@ export class CombatEngine {
           ...attacker.modifiers,
           ...(request.temporaryModifiers ?? []),
         ],
+        defenderModifiers: defender.modifiers,
       },
       {
         casterHealthPercent: (attacker.hp / attacker.maxHp) * 100,

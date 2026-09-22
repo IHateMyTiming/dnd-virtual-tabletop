@@ -13,7 +13,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     targetingMode: "single",
     attackType: "spell",
 
-    range: 10,
+    range: 7,
 
     allowedClasses: ["cleric", "wizard", "bard", "druid"],
 
@@ -22,16 +22,12 @@ export const CANTRIPS: AbilityDefinition[] = [
         type: "damage",
         damage: {
           count: 1,
-          sides: 4,
+          sides: 10,
           type: "magic",
           scaling: {
             type: "character-level",
-            diceCount: {
-              1: 1,
-              3: 2,
-              5: 3,
-              9: 4,
-              11: 5,
+            modifier: {
+              9: +2,
             },
           },
         },
@@ -56,7 +52,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     targetingMode: "single",
     attackType: "spell",
 
-    range: 10,
+    range: 5,
     allowedClasses: ["cleric", "wizard", "bard"],
 
     effects: [
@@ -64,20 +60,18 @@ export const CANTRIPS: AbilityDefinition[] = [
         type: "damage",
         damage: {
           count: 1,
-          sides: 3,
+          sides: 8,
           type: "magic",
           scaling: {
             type: "character-level",
-            diceCount: {
-              1: 1,
-              3: 2,
-              5: 3,
-              9: 4,
-              11: 5,
+            modifier: {
+              9: +3,
+              12: +4,
             },
           },
         },
       },
+
       {
         type: "apply-condition",
         conditionId: "acid",
@@ -105,7 +99,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     targetingMode: "single",
     attackType: "spell",
 
-    range: 10,
+    range: 12,
     allowedClasses: ["cleric", "wizard", "ranger"],
 
     effects: [
@@ -113,14 +107,12 @@ export const CANTRIPS: AbilityDefinition[] = [
         type: "damage",
         damage: {
           count: 1,
-          sides: 5,
+          sides: 7,
           type: "magic",
           scaling: {
             type: "character-level",
-            diceCount: {
-              1: 1,
-              6: 3,
-              10: 4,
+            modifier: {
+              9: +2,
             },
           },
         },
@@ -153,7 +145,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     targetingMode: "area",
     attackType: "spell",
 
-    range: 15,
+    range: 5,
     allowedClasses: ["wizard"],
 
     area: {
@@ -167,16 +159,12 @@ export const CANTRIPS: AbilityDefinition[] = [
 
         damage: {
           count: 1,
-          sides: 3,
+          sides: 5,
           type: "magic",
           scaling: {
             type: "character-level",
-            diceCount: {
-              1: 1,
-              3: 2,
-              5: 3,
-              9: 4,
-              11: 5,
+            modifier: {
+              10: +2,
             },
           },
         },
@@ -205,7 +193,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     targetingMode: "single",
     attackType: "spell",
 
-    range: 10,
+    range: 5,
     allowedClasses: ["cleric", "wizard", "bard"],
 
     effects: [
@@ -213,16 +201,12 @@ export const CANTRIPS: AbilityDefinition[] = [
         type: "damage",
         damage: {
           count: 1,
-          sides: 3,
+          sides: 8,
           type: "magic",
           scaling: {
             type: "character-level",
-            diceCount: {
-              1: 1,
-              3: 2,
-              5: 3,
-              9: 4,
-              11: 5,
+            modifier: {
+              9: +2,
             },
           },
         },
@@ -254,7 +238,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     targetingMode: "single",
     attackType: "spell",
 
-    range: 10,
+    range: 8,
     allowedClasses: ["cleric", "wizard", "paladin"],
     classModifiers: {
       paladin: {
@@ -271,10 +255,8 @@ export const CANTRIPS: AbilityDefinition[] = [
           type: "magic",
           scaling: {
             type: "character-level",
-            diceCount: {
-              1: 1,
-              5: 2,
-              11: 3,
+            modifier: {
+              9: +2,
             },
           },
         },
@@ -307,7 +289,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     targetingMode: "single",
     attackType: "spell",
 
-    range: 25,
+    range: 15,
     allowedClasses: ["wizard", "druid", "fighter", "barbarian", "paladin"],
     classModifiers: {
       fighter: {
@@ -332,10 +314,8 @@ export const CANTRIPS: AbilityDefinition[] = [
           type: "magic",
           scaling: {
             type: "character-level",
-            diceCount: {
-              1: 1,
-              7: 2,
-              10: 3,
+            modifier: {
+              9: +2,
             },
           },
         },
@@ -396,7 +376,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     targetingMode: "single",
     attackType: "spell",
 
-    range: 10,
+    range: 7,
 
     allowedClasses: ["wizard"],
 
@@ -405,17 +385,13 @@ export const CANTRIPS: AbilityDefinition[] = [
         type: "damage",
         damage: {
           count: 1,
-          sides: 4,
+          sides: 10,
           type: "magic",
 
           scaling: {
             type: "character-level",
-            diceCount: {
-              1: 1,
-              3: 2,
-              5: 3,
-              9: 4,
-              12: 5,
+            modifier: {
+              9: +2,
             },
           },
 
