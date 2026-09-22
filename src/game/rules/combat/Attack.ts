@@ -45,6 +45,7 @@ export interface CombatModifierContext {
   turn?: number;
 
   targetCreatureType?: CreatureType;
+  targetId?: string;
 }
 
 export interface AttackRequest {

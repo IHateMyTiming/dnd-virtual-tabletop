@@ -1,7 +1,7 @@
 import type { AbilityDefinition } from "../Ability";
 
 export const LEVELONESPELLS: AbilityDefinition[] = [
-  //COMBAT DEALING DAMAGE SPELLS WIZARD
+  //COMBAT DEALING DAMAGE SPELLS
 
   {
     id: "burning_ray",
@@ -327,8 +327,6 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
-  //COMBAT DEALING DAMAGE SPELLS  CLERIC
-
   {
     id: "radiant_bolt",
 
@@ -391,8 +389,254 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
-  //UTILITY SPELLS
+  {
+    id: "entangle",
+    nameKey: "spell_entangle",
+    descriptionKey: "spell_entangle_description",
 
+    actionType: "action",
+    targetType: "location",
+    targetingMode: "area",
+
+    range: 15,
+
+    area: {
+      shape: "circle",
+      radius: 4,
+    },
+
+    effects: [
+      {
+        type: "damage",
+        damage: {
+          count: 2,
+          sides: 4,
+          type: "magic",
+          scaling: {
+            type: "character-level",
+            diceCount: {
+              5: 3,
+              9: 4,
+            },
+          },
+        },
+      },
+    ],
+
+    recovery: "unlimited",
+
+    instance: {
+      lifetime: "duration",
+      duration: 4,
+
+      effects: [
+        {
+          trigger: "enter-area",
+          effect: {
+            type: "apply-condition",
+            conditionId: "silenced",
+            duration: 1,
+          },
+        },
+        {
+          trigger: "turn-start",
+          effect: {
+            type: "apply-condition",
+            conditionId: "silenced",
+            duration: 1,
+          },
+        },
+
+        {
+          trigger: "enter-area",
+          effect: {
+            type: "apply-condition",
+            conditionId: "slowed",
+            duration: 1,
+          },
+        },
+        {
+          trigger: "turn-start",
+          effect: {
+            type: "apply-condition",
+            conditionId: "slowed",
+            duration: 1,
+          },
+        },
+
+        {
+          trigger: "move-inside-area",
+          effect: {
+            type: "damage",
+            damage: {
+              count: 1,
+              sides: 4,
+              type: "magic",
+            },
+          },
+        },
+      ],
+    },
+
+    isSpell: true,
+    spellLevel: 1,
+    allowedClasses: ["druid"],
+
+    concentration: true,
+
+    imagePath: "/assets/abilities/",
+  },
+
+  {
+    id: "moonbeam",
+    nameKey: "spell_moonbeam",
+    descriptionKey: "spell_moonbeam_description",
+
+    actionType: "action",
+    targetType: "location",
+    targetingMode: "area",
+
+    range: 10,
+
+    area: {
+      shape: "circle",
+      radius: 4,
+    },
+
+    effects: [
+      {
+        type: "damage",
+        damage: {
+          count: 2,
+          sides: 6,
+          type: "magic",
+          scaling: {
+            type: "character-level",
+            diceCount: {
+              5: 3,
+              9: 4,
+            },
+          },
+        },
+      },
+      {
+        type: "apply-condition",
+        conditionId: "sleeping",
+        duration: 3,
+      },
+    ],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 1,
+    allowedClasses: ["druid"],
+
+    concentration: false,
+
+    imagePath: "/assets/abilities/",
+  },
+
+  {
+    id: "dissonant_whispers",
+
+    nameKey: "spell_dissonant_whispers",
+    descriptionKey: "spell_dissonant_whispers_description",
+
+    actionType: "action",
+    targetType: "enemy",
+    targetingMode: "single",
+    attackType: "spell",
+
+    range: 10,
+
+    allowedClasses: ["bard"],
+
+    effects: [
+      {
+        type: "damage",
+        damage: {
+          count: 3,
+          sides: 4,
+          type: "magic",
+          scaling: {
+            type: "character-level",
+            diceCount: {
+              5: 4,
+              9: 5,
+            },
+          },
+        },
+      },
+      {
+        type: "apply-condition",
+        conditionId: "frightened",
+        duration: 1,
+        stacks: 1,
+        value: 0,
+      },
+    ],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 1,
+
+    imagePath: "/assets/abilities/",
+  },
+
+  {
+    id: "vicious_mockery",
+
+    nameKey: "spell_vicious_mockery",
+    descriptionKey: "spell_vicious_mockery_description",
+
+    actionType: "action",
+    targetType: "enemy",
+    targetingMode: "single",
+
+    range: 7,
+
+    allowedClasses: ["bard"],
+
+    effects: [
+      {
+        type: "damage",
+        damage: {
+          count: 1,
+          sides: 15,
+          type: "magic",
+          scaling: {
+            type: "character-level",
+            diceCount: {
+              9: 2,
+            },
+          },
+        },
+      },
+      {
+        type: "modify-behavior",
+        modifier: {
+          behavior: "attack-roll",
+          operation: "disadvantage",
+          trigger: "roll",
+          duration: 1,
+        },
+      },
+    ],
+
+    recovery: "unlimited",
+    isSpell: true,
+    spellLevel: 1,
+    resourceCost: {
+      amount: 1,
+    },
+
+    imagePath: "/assets/abilities/",
+  },
+
+  //UTILITY SPELLS
+  //MASTER ONLY
   {
     id: "contact_spirits",
 
@@ -404,7 +648,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetingMode: "single",
 
     range: 0,
-    allowedClasses: ["cleric", "paladin", "wizard", "bard"],
+    allowedClasses: ["cleric", "paladin", "bard"],
 
     effects: [],
 
@@ -418,6 +662,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
+  //MASTER ONLY
   {
     id: "detect_magic",
 
@@ -448,6 +693,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
+  //MASTER ONLY
   {
     id: "telepathy",
 
@@ -473,6 +719,29 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
+  //MASTER ONLY
+  {
+    id: "speak_with_animals",
+    nameKey: "spell_speak_with_animals",
+    descriptionKey: "spell_speak_with_animals_description",
+
+    actionType: "action",
+    targetType: "self",
+    targetingMode: "single",
+
+    range: 0,
+    allowedClasses: ["druid"],
+
+    effects: [],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 1,
+
+    imagePath: "/assets/abilities/",
+  },
+
   {
     id: "charm_person",
 
@@ -486,7 +755,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     range: 10,
     concentration: true,
 
-    allowedClasses: ["wizard", "bard", "cleric"],
+    allowedClasses: ["wizard", "bard", "cleric", "thief"],
 
     effects: [
       {
@@ -509,47 +778,35 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
-  //NEEDS FIX
-  //NEEDS INVIBILITY TO WORK AS PLANNED
-  //TREAT IT AS A SUMMON WITH HP, DESTROY IT CLEARS THE FOG OF VISION OTHERWISE YOU CAN DISARM IT BY ROLLING
   {
-    id: "pink",
-
-    nameKey: "spell_pink",
-    descriptionKey: "spell_pink_description",
+    id: "longstrider",
+    nameKey: "spell_longstrider",
+    descriptionKey: "spell_longstrider_description",
 
     actionType: "action",
-    targetType: "location",
-    targetingMode: "area",
+    targetType: "self-or-ally",
+    targetingMode: "single",
 
-    range: 15,
+    range: 8,
 
-    allowedClasses: ["wizard", "bard", "cleric"],
-
-    area: {
-      shape: "circle",
-      radius: 3,
-    },
-
-    effects: [],
+    effects: [
+      {
+        type: "modify-behavior",
+        modifier: {
+          behavior: "movement",
+          operation: "add",
+          trigger: "turn",
+          value: 7,
+          amount: 1,
+        },
+      },
+    ],
 
     recovery: "unlimited",
+
     isSpell: true,
     spellLevel: 1,
-    resourceCost: {
-      amount: 1,
-    },
-
-    instance: {
-      lifetime: "until-disarmed-or-destroyed",
-      hp: 10,
-      maxHp: 10,
-      armor: 1,
-      magicResistance: 1,
-      disarmable: true,
-      disarmDC: 10,
-      disarmRange: 1,
-    },
+    allowedClasses: ["druid", "fighter", "barbarian", "thief", "ranger"],
 
     imagePath: "/assets/abilities/",
   },
@@ -661,6 +918,40 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
   },
 
   {
+    id: "healing_word",
+
+    nameKey: "spell_healing_word",
+    descriptionKey: "spell_healing_word_description",
+
+    actionType: "action",
+    targetType: "ally",
+    targetingMode: "single",
+
+    range: 10,
+
+    allowedClasses: ["bard"],
+
+    effects: [
+      {
+        type: "heal",
+        healing: {
+          count: 1,
+          sides: 4,
+        },
+      },
+    ],
+
+    recovery: "unlimited",
+    isSpell: true,
+    spellLevel: 1,
+    resourceCost: {
+      amount: 1,
+    },
+
+    imagePath: "/assets/abilities/",
+  },
+
+  {
     id: "intimidation",
 
     nameKey: "spell_intimidation",
@@ -673,7 +964,14 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     range: 10,
     concentration: true,
 
-    allowedClasses: ["druid", "bard", "cleric", "fighter", "barbarian"],
+    allowedClasses: [
+      "druid",
+      "bard",
+      "cleric",
+      "fighter",
+      "barbarian",
+      "thief",
+    ],
     classModifiers: {
       fighter: {
         range: 1,
@@ -797,6 +1095,369 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
+  {
+    id: "hunters_mark",
+
+    nameKey: "spell_hunters_mark",
+    descriptionKey: "spell_hunters_mark_description",
+
+    actionType: "bonus-action",
+    targetType: "enemy",
+    targetingMode: "single",
+
+    range: 10,
+
+    allowedClasses: ["ranger"],
+
+    concentration: true,
+
+    effects: [
+      {
+        type: "modify-behavior",
+        duration: 3,
+        modifier: {
+          behavior: "damage",
+          operation: "add-dice",
+          trigger: "attack",
+          diceCount: 1,
+          diceSides: 6,
+        },
+      },
+    ],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 1,
+
+    resourceCost: {
+      amount: 1,
+    },
+  },
+
+  {
+    id: "piercing_shot",
+
+    nameKey: "spell_piercing_shot",
+    descriptionKey: "spell_piercing_shot_description",
+
+    actionType: "bonus-action",
+    targetType: "self",
+    targetingMode: "single",
+
+    allowedClasses: ["ranger"],
+
+    effects: [
+      {
+        type: "modify-behavior",
+        modifier: {
+          behavior: "armor-penetration",
+          operation: "add",
+          trigger: "attack",
+          value: 5,
+          amount: 1,
+        },
+      },
+    ],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 1,
+    resourceCost: {
+      amount: 1,
+    },
+  },
+
+  {
+    id: "second_wind",
+
+    nameKey: "spell_second_wind",
+    descriptionKey: "spell_second_wind_description",
+
+    actionType: "bonus-action",
+    targetType: "self",
+    targetingMode: "single",
+
+    allowedClasses: ["fighter"],
+
+    effects: [
+      {
+        type: "heal",
+
+        healing: {
+          count: 1,
+          sides: 10,
+        },
+
+        levelScaling: {
+          2: { modifier: 2 },
+          3: { modifier: 3 },
+          4: { modifier: 4 },
+          5: { modifier: 5 },
+          6: { modifier: 6 },
+          7: { modifier: 7 },
+          8: { modifier: 8 },
+          9: { modifier: 9 },
+          10: { modifier: 10 },
+          11: { modifier: 11 },
+          12: { modifier: 12 },
+        },
+      },
+    ],
+
+    recovery: "short-rest",
+
+    isSpell: true,
+    spellLevel: 1,
+    resourceCost: {
+      amount: 1,
+    },
+  },
+
+  {
+    id: "action_surge",
+
+    nameKey: "spell_action_surge",
+    descriptionKey: "spell_action_surge_description",
+
+    actionType: "bonus-action",
+    targetType: "self",
+    targetingMode: "single",
+
+    allowedClasses: ["fighter"],
+
+    effects: [
+      {
+        type: "grant-action",
+      },
+    ],
+
+    recovery: "short-rest",
+
+    isSpell: true,
+    spellLevel: 1,
+    resourceCost: {
+      amount: 1,
+    },
+  },
+
+  {
+    id: "rage",
+    nameKey: "spell_rage",
+    descriptionKey: "spell_rage_description",
+    actionType: "bonus-action",
+    targetType: "self",
+    targetingMode: "single",
+    allowedClasses: ["barbarian"],
+
+    effects: [
+      {
+        type: "modify-behavior",
+        duration: 3,
+        modifier: {
+          behavior: "damage",
+          operation: "add",
+          trigger: "attack",
+        },
+        classDamageScaling: {
+          barbarian: {
+            levelScaling: {
+              1: {
+                modifier: 2,
+              },
+              4: {
+                modifier: 3,
+              },
+              8: {
+                modifier: 4,
+              },
+              12: {
+                modifier: 5,
+              },
+            },
+          },
+        },
+      },
+    ],
+
+    recovery: "short-rest",
+    isSpell: true,
+    spellLevel: 1,
+    resourceCost: {
+      amount: 1,
+    },
+  },
+
+  {
+    id: "reckless_attack",
+    nameKey: "spell_reckless_attack",
+    descriptionKey: "spell_reckless_attack_description",
+    actionType: "bonus-action",
+    targetType: "self",
+    targetingMode: "single",
+    allowedClasses: ["barbarian"],
+
+    effects: [
+      {
+        type: "modify-behavior",
+        modifier: {
+          behavior: "attack-roll",
+          operation: "advantage",
+          trigger: "attack",
+          amount: 1,
+        },
+      },
+    ],
+
+    recovery: "short-rest",
+    isSpell: true,
+    spellLevel: 1,
+    resourceCost: {
+      amount: 1,
+    },
+  },
+
+  //NEEDS FIX
+  //NEEDS INVIBILITY TO WORK AS PLANNED
+  //TREAT IT AS A SUMMON WITH HP, DESTROY IT CLEARS THE FOG OF VISION OTHERWISE YOU CAN DISARM IT BY ROLLING
+  {
+    id: "pink",
+
+    nameKey: "spell_pink",
+    descriptionKey: "spell_pink_description",
+
+    actionType: "action",
+    targetType: "location",
+    targetingMode: "area",
+
+    range: 15,
+
+    allowedClasses: ["wizard", "bard", "cleric", "druid"],
+
+    area: {
+      shape: "circle",
+      radius: 3,
+    },
+
+    effects: [],
+
+    recovery: "unlimited",
+    isSpell: true,
+    spellLevel: 1,
+    resourceCost: {
+      amount: 1,
+    },
+
+    instance: {
+      lifetime: "until-disarmed-or-destroyed",
+      hp: 10,
+      maxHp: 10,
+      armor: 1,
+      magicResistance: 1,
+      disarmable: true,
+      disarmDC: 10,
+      disarmRange: 1,
+    },
+
+    imagePath: "/assets/abilities/",
+  },
+
+  // NEEDS FIX
+  // VISION / FOG SYSTEM
+  {
+    id: "fog_cloud",
+    nameKey: "spell_fog_cloud",
+    descriptionKey: "spell_fog_cloud_description",
+
+    actionType: "action",
+    targetType: "location",
+    targetingMode: "area",
+
+    range: 15,
+
+    area: {
+      shape: "circle",
+      radius: 5,
+    },
+
+    effects: [],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 1,
+    allowedClasses: ["druid", "ranger"],
+
+    imagePath: "/assets/abilities/",
+  },
+
+  // NEEDS FIX
+  // VISION / FOG SYSTEM
+  {
+    id: "smoke_bomb",
+
+    nameKey: "spell_smoke_bomb",
+    descriptionKey: "spell_smoke_bomb_description",
+
+    actionType: "bonus-action",
+    targetType: "location",
+    targetingMode: "area",
+
+    range: 8,
+
+    area: {
+      shape: "circle",
+      radius: 3,
+    },
+
+    effects: [],
+
+    recovery: "cooldown",
+
+    isSpell: true,
+
+    allowedClasses: ["thief"],
+
+    instance: {
+      lifetime: "duration",
+      duration: 2,
+    },
+
+    imagePath: "/assets/abilities/",
+  },
+
+  // NEEDS FIX
+  //TRANSFORMING
+  {
+    id: "wild_shape",
+
+    nameKey: "spell_wild_shape",
+    descriptionKey: "spell_wild_shape_description",
+
+    actionType: "action",
+
+    targetType: "self",
+    targetingMode: "single",
+
+    range: 0,
+
+    allowedClasses: ["druid"],
+
+    effects: [
+      //{
+      // type: "transform",
+      // },
+    ],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 1,
+
+    imagePath: "/assets/abilities/",
+  },
+
   //NEEDS FIX
   //NEEDS DEAD FEATURES
   {
@@ -835,6 +1496,31 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
+  // NEEDS FIX
+  // Creates 5 magical berries that can be consumed to restore HP.
+  // Requires item/consumable system.
+  {
+    id: "goodberry",
+    nameKey: "spell_goodberry",
+    descriptionKey: "spell_goodberry_description",
+
+    actionType: "action",
+    targetType: "self",
+    targetingMode: "single",
+
+    range: 0,
+
+    effects: [],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 1,
+    allowedClasses: ["druid"],
+
+    imagePath: "/assets/abilities/",
+  },
+
   {
     id: "test",
 
@@ -865,97 +1551,6 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     resourceCost: {
       amount: 1,
     },
-
-    imagePath: "/assets/abilities/",
-  },
-
-  {
-    id: "burning_floor",
-    nameKey: "spell_burning_floor",
-    descriptionKey: "spell_burning_floor_description",
-
-    actionType: "action",
-    targetType: "location",
-    targetingMode: "area",
-
-    range: 10,
-
-    area: {
-      shape: "circle",
-      radius: 3,
-    },
-
-    effects: [],
-
-    recovery: "unlimited",
-
-    instance: {
-      lifetime: "duration",
-      duration: 5,
-
-      effects: [
-        {
-          trigger: "enter-area",
-          effect: {
-            type: "damage",
-            damage: {
-              count: 1,
-              sides: 6,
-              type: "physical",
-            },
-          },
-        },
-        {
-          trigger: "enter-area",
-          effect: {
-            type: "apply-condition",
-            conditionId: "burning",
-            duration: 2,
-          },
-        },
-        {
-          trigger: "move-inside-area",
-          effect: {
-            type: "damage",
-            damage: {
-              count: 1,
-              sides: 6,
-              type: "physical",
-            },
-          },
-        },
-        {
-          trigger: "move-inside-area",
-          effect: {
-            type: "apply-condition",
-            conditionId: "burning",
-            duration: 2,
-          },
-        },
-        {
-          trigger: "turn-start",
-          effect: {
-            type: "damage",
-            damage: {
-              count: 1,
-              sides: 6,
-              type: "physical",
-            },
-          },
-        },
-        {
-          trigger: "turn-start",
-          effect: {
-            type: "apply-condition",
-            conditionId: "burning",
-            duration: 2,
-          },
-        },
-      ],
-    },
-
-    isSpell: true,
-    spellLevel: 1,
 
     imagePath: "/assets/abilities/",
   },

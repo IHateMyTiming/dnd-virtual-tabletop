@@ -24,6 +24,7 @@ import type {
   CombatAttackResult,
 } from "../combat/CombatAttack";
 import type { CombatModifier } from "../combat/CombatModifier";
+import { resolveClassDamageScaling } from "./AbilityEffectExecutor";
 
 export interface AbilityUseRequest {
   ability: AbilityDefinition;
@@ -221,7 +222,7 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
     }
     const damage = {
       ...damageEffect.damage,
-      ...damageEffect.classDamageScaling?.[caster.class],
+      ...resolveClassDamageScaling(damageEffect, caster),
     };
     const primaryTarget = request.target;
 

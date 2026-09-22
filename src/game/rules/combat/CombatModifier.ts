@@ -7,7 +7,9 @@ export type CombatModifierBehavior =
   | "defense"
   | "movement"
   | "armor"
+  | "armor-penetration"
   | "magic-resistance"
+  | "magic-penetration"
   | "concentration";
 
 export type CombatModifierOperation =
@@ -59,6 +61,7 @@ export interface CombatModifier {
   amount?: number;
   duration?: number;
   id?: string;
+  targetId?: string;
   threshold?: CombatThreshold;
   targetCreatureType?: CreatureType;
   sourceAbilityId?: string;
@@ -158,12 +161,16 @@ export function getActiveModifiers(
     targetHealthPercent?: number;
     targetManaPercent?: number;
     targetCreatureType?: CreatureType;
+    targetId?: string;
     distance?: number;
     turn?: number;
   },
 ): CombatModifier[] {
   return modifiers.filter((modifier) => {
-    if (modifier.amount !== undefined && modifier.amount <= 0) {
+    if (
+      modifier.targetId !== undefined &&
+      modifier.targetId !== context.targetId
+    ) {
       return false;
     }
 

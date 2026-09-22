@@ -1,6 +1,7 @@
 import type { CombatEngine } from "../combat/CombatEngine";
 import type { AbilityEffect } from "./AbilityEffect";
 import type { AttackType } from "../combat/Attack";
+import type { Combatant } from "../combat/Combatant";
 import type { TargetLocation } from "../combat/TargetLocation";
 
 export interface AbilityEffectContext {
@@ -33,6 +34,10 @@ export function executeAbilityEffects(
 
       case "remove-condition":
         executeRemoveCondition(effect, context, engine);
+        break;
+
+      case "grant-action":
+        engine.grantAction(context.casterId);
         break;
 
       case "modify-behavior":
@@ -69,7 +74,7 @@ export function executeAbilityEffects(
       return;
     }
 
-    const classDamageScaling = effect.classDamageScaling?.[caster.class];
+    const classDamageScaling = resolveClassDamageScaling(effect, caster);
 
     const damage = {
       ...effect.damage,
@@ -204,9 +209,24 @@ export function executeAbilityEffects(
       throw new Error("Modify-behavior effect requires a modifier.");
     }
 
+    const caster = engine
+      .getState()
+      .combatants.find((combatant) => combatant.id === context.casterId);
+
+    if (!caster) {
+      return;
+    }
+
+    const classDamageScaling = resolveClassDamageScaling(effect, caster);
+
     const modifier = {
       ...effect.modifier,
+      value:
+        classDamageScaling.modifier !== undefined
+          ? classDamageScaling.modifier
+          : effect.modifier.value,
       id: `${abilityId}:${effect.modifier.behavior}:${effect.modifier.operation}:${effect.modifier.trigger}`,
+      targetId: context.targetId,
       sourceAbilityId: abilityId,
       sourceCasterId: context.casterId,
       duration: effect.duration,
@@ -214,4 +234,41 @@ export function executeAbilityEffects(
 
     engine.addModifier(context.targetId, modifier);
   }
+}
+
+export function resolveClassDamageScaling(
+  effect: AbilityEffect,
+  caster: Combatant,
+): {
+  count?: number;
+  sides?: number;
+  modifier?: number;
+} {
+  const classScaling = effect.classDamageScaling?.[caster.class];
+
+  if (!classScaling) {
+    return {};
+  }
+
+  const { levelScaling, ...baseScaling } = classScaling;
+
+  if (!levelScaling) {
+    return baseScaling;
+  }
+
+  const applicableLevels = Object.keys(levelScaling)
+    .map(Number)
+    .filter((level) => level <= caster.level)
+    .sort((a, b) => b - a);
+
+  if (applicableLevels.length === 0) {
+    return baseScaling;
+  }
+
+  const scaling = levelScaling[applicableLevels[0]];
+
+  return {
+    ...baseScaling,
+    ...scaling,
+  };
 }

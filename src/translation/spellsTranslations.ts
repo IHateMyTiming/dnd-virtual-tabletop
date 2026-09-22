@@ -95,8 +95,75 @@ export const spellTranslations = {
     spell_charm_person: "Charm Person",
     spell_charm_person_description:
       "Charm a person you touch, making them consider you a friend. The spell does not work on animals or monsters. The effect ends if the target takes damage, if the Master determines that you have proven yourself to be an enemy or caster enters combat(Cannot be used in combat).",
-  },
 
+    spell_entangle: "Entangle",
+    spell_entangle_description:
+      "Spawn a field of vines that feeds on magic, ensnaring creatures caught within it. Creatures affected by the vines are {condition:silenced} and {condition:slowed}.",
+
+    spell_moonbeam: "Moonbeam",
+    spell_moonbeam_description:
+      "Create a field of moonlight that damages all creatures within it and lulls them into a deep sleep.Everyone in the area falls into {condition:sleeping}",
+
+    spell_goodberry: "Goodberry",
+    spell_goodberry_description:
+      "Create magical berries infused with restorative energy. A creature can consume a berry to restore a small amount of HP.",
+
+    spell_speak_with_animals: "Speak With Animals",
+    spell_speak_with_animals_description:
+      "Gain the ability to communicate with beasts. The Master determines what the beast understands, what it can communicate, and how it responds.",
+
+    spell_fog_cloud: "Fog Cloud",
+    spell_fog_cloud_description:
+      "Create a dense cloud of fog that obscures vision within the area, making it impossible to see through the fog.",
+
+    spell_longstrider: "Longstrider",
+    spell_longstrider_description:
+      "Increase a creature's movement speed by 7m.",
+
+    spell_wild_shape: "Wild Shape",
+    spell_wild_shape_description:
+      "Transform yourself into a beast, gaining its physical traits, abilities, and attacks.",
+
+    spell_smoke_bomb: "Smoke Bomb",
+    spell_smoke_bomb_description:
+      "Throw a smoke bomb that creates a dense cloud of smoke, obscuring vision within the area.",
+
+    spell_dissonant_whispers: "Dissonant Whispers",
+    spell_dissonant_whispers_description:
+      "Whisper unsettling words into a creature's mind, dealing magic damage and leaving it frightened.",
+
+    spell_vicious_mockery: "Vicious Mockery",
+    spell_vicious_mockery_description:
+      "Unleash a string of insults that deals magic damage and disrupts the target's next attack.",
+
+    spell_healing_word: "Healing Word",
+    spell_healing_word_description:
+      "Speak a healing word to restore the target's vitality.",
+
+    spell_hunters_mark: "Hunter's Mark",
+    spell_hunters_mark_description:
+      "Mark a creature as your quarry. Your attacks against the marked target deal additional damage.",
+
+    spell_piercing_shot: "Piercing Shot",
+    spell_piercing_shot_description:
+      "Your next attack pierces through armor, ignoring 5 points of the target's armor.",
+
+    spell_second_wind: "Second Wind",
+    spell_second_wind_description:
+      "Regain 1d10 + your Fighter level hit points.",
+
+    spell_action_surge: "Action Surge",
+    spell_action_surge_description: "Gain one additional action this turn.",
+
+    spell_rage: "Rage",
+    spell_rage_description:
+      "Enter a furious rage, dealing additional damage with your attacks.",
+
+    spell_reckless_attack: "Reckless Attack",
+    spell_reckless_attack_description:
+      "Your next attack is made with advantage.",
+  },
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   pt: {
     // CANTRIPS
     spell_iguinis: "Iguinis",
@@ -183,7 +250,7 @@ export const spellTranslations = {
     spell_telepathy_description:
       "Estabeleça uma comunicação mental com uma criatura dentro do alcance. A magia não possui efeito automatizado no jogo. O Mestre determina como a comunicação funciona. Role 1{tooltip:dice}20 para determinar como a comunicação acontece.",
 
-    spell_pink: "Pink",
+    spell_pink: "Sentinela Mágica",
     spell_pink_description:
       "Crie uma sentinela mágica ao redor de uma área. Revele todos os inimigos que se movem dentro de seu alcance mesmo dentro da névoa de guerra ou que estejam escondidos.Inimigos podem destruir-la o que resulta nela limpando a névoa de guerra dentro de sua área e revelando os que estavam escondidos ou podem tentar desativar-la rodando o dado ",
     spell_contact_spirits: "Contatar Espíritos",
@@ -193,5 +260,72 @@ export const spellTranslations = {
     spell_charm_person: "Encantar Pessoa",
     spell_charm_person_description:
       "Encante uma pessoa que você tocar, fazendo com que ela considere você um amigo. A magia não funciona em animais ou monstros. O efeito termina se o alvo sofrer dano ou se o Mestre determinar que você provou ser um inimigo.",
+
+    spell_entangle: "Enredar",
+    spell_entangle_description:
+      "Crie um campo de vinhas que se alimentam de magia, enredando as criaturas que forem pegas nele. As criaturas afetadas pelas vinhas ficam {condition:silenced} e {condition:slowed}.",
+
+    spell_moonbeam: "Raio Lunar",
+    spell_moonbeam_description:
+      "Crie um campo de luar que causa dano a todas as criaturas dentro dele e as faz cair em um sono profundo.Pessoas dentro da habilidade sofrem {condition:sleeping}",
+
+    spell_goodberry: "Boa Fruta",
+    spell_goodberry_description:
+      "Crie frutas mágicas imbuídas de energia restauradora. Uma criatura pode consumir uma fruta para recuperar uma pequena quantidade de HP.",
+
+    spell_speak_with_animals: "Falar com Animais",
+    spell_speak_with_animals_description:
+      "Obtenha a capacidade de se comunicar com feras. O Mestre determina o que a fera compreende, o que ela pode comunicar e como ela responde.",
+
+    spell_fog_cloud: "Nuvem de Névoa",
+    spell_fog_cloud_description:
+      "Crie uma densa nuvem de névoa que obscurece a visão dentro da área, tornando impossível enxergar através da névoa.",
+
+    spell_longstrider: "Passos Longos",
+    spell_longstrider_description:
+      "Aumente o deslocamento de uma criatura em 7m.",
+
+    spell_wild_shape: "Forma Selvagem",
+    spell_wild_shape_description:
+      "Transforme-se em uma fera, assumindo seus atributos físicos, habilidades e ataques.",
+
+    spell_smoke_bomb: "Bomba de Fumaça",
+    spell_smoke_bomb_description:
+      "Jogue uma bomba de fumaça que cria uma densa nuvem de fumaça, obscurecendo a visão dentro da área.",
+
+    spell_dissonant_whispers: "Sussurros Dissonantes",
+    spell_dissonant_whispers_description:
+      "Sussurre palavras perturbadoras na mente de uma criatura, causando dano mágico e deixando-a amedrontada.",
+
+    spell_vicious_mockery: "Escárnio Vicioso",
+    spell_vicious_mockery_description:
+      "Lance uma sequência de insultos que causa dano mágico e atrapalha o próximo ataque do alvo.",
+
+    spell_healing_word: "Palavra Curativa",
+    spell_healing_word_description:
+      "Pronuncie uma palavra de cura para restaurar a vitalidade do alvo.",
+
+    spell_hunters_mark: "Marca do Caçador",
+    spell_hunters_mark_description:
+      "Marque uma criatura como sua presa. Seus ataques contra o alvo marcado causam dano adicional.",
+
+    spell_piercing_shot: "Disparo Perfurante",
+    spell_piercing_shot_description:
+      "Seu próximo ataque perfura a armadura, ignorando 5 pontos da armadura do alvo.",
+
+    spell_second_wind: "Segundo Fôlego",
+    spell_second_wind_description:
+      "Recupere 1d10 + seu nível de Guerreiro em pontos de vida.",
+
+    spell_action_surge: "Surto de Ação",
+    spell_action_surge_description: "Ganhe uma ação adicional neste turno.",
+
+    spell_rage: "Fúria",
+    spell_rage_description:
+      "Entre em uma fúria, causando dano adicional com seus ataques.",
+
+    spell_reckless_attack: "Ataque Imprudente",
+    spell_reckless_attack_description:
+      "Seu próximo ataque é feito com vantagem.",
   },
 };

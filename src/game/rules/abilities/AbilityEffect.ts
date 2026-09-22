@@ -12,7 +12,8 @@ export type AbilityEffectType =
   | "move"
   | "teleport"
   | "modify-stat"
-  | "modify-behavior";
+  | "modify-behavior"
+  | "grant-action";
 
 export type AbilityInstanceTrigger =
   | "enter-area"
@@ -60,6 +61,14 @@ export interface AbilityEffect {
         count?: number;
         sides?: number;
         modifier?: number;
+
+        levelScaling?: {
+          [level: number]: {
+            count?: number;
+            sides?: number;
+            modifier?: number;
+          };
+        };
       }
     >
   >;

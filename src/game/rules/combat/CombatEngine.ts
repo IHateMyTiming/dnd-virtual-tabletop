@@ -616,6 +616,18 @@ export class CombatEngine {
     }
   }
 
+  public grantAction(combatantId: string): void {
+    const combatant = this.state.combatants.find(
+      (combatant) => combatant.id === combatantId,
+    );
+
+    if (!combatant || !combatant.alive) {
+      return;
+    }
+
+    combatant.actionAvailable = true;
+  }
+
   public getOpportunityAttackersForMove(
     position: Position,
     type: MovementType = "walk",
@@ -907,6 +919,7 @@ export class CombatEngine {
         distance: request.distance,
         turn: this.state.round,
         targetCreatureType: defender.creatureType,
+        targetId: defender.id,
       },
     );
 
@@ -1107,9 +1120,25 @@ export class CombatEngine {
           (conditionMagicResistance + modifierMagicResistanceBonus) *
           modifierMagicResistanceMultiplier;
 
+        const attacker = this.state.combatants.find(
+          (combatant) => combatant.id === pending.attackerId,
+        );
+
+        const magicPenetration = getModifierValue(
+          attacker?.modifiers ?? [],
+          "magic-penetration",
+          "add",
+          "spell",
+        );
+
+        const magicResistanceAfterPenetration = Math.max(
+          0,
+          effectiveMagicResistance - magicPenetration,
+        );
+
         finalDamage = Math.max(
           0,
-          finalDamage - Math.max(0, effectiveMagicResistance),
+          finalDamage - magicResistanceAfterPenetration,
         );
       } else {
         const conditionArmor = getEffectiveArmor(
@@ -1133,7 +1162,23 @@ export class CombatEngine {
         const effectiveArmor =
           (conditionArmor + modifierArmorBonus) * modifierArmorMultiplier;
 
-        finalDamage = Math.max(0, finalDamage - Math.max(0, effectiveArmor));
+        const attacker = this.state.combatants.find(
+          (combatant) => combatant.id === pending.attackerId,
+        );
+
+        const armorPenetration = getModifierValue(
+          attacker?.modifiers ?? [],
+          "armor-penetration",
+          "add",
+          "attack",
+        );
+
+        const armorAfterPenetration = Math.max(
+          0,
+          effectiveArmor - armorPenetration,
+        );
+
+        finalDamage = Math.max(0, finalDamage - armorAfterPenetration);
       }
 
       const damageMultiplier = getIncomingDamageMultiplier(defenderConditions);
