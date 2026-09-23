@@ -1,3 +1,7 @@
+import type { CombatModifier } from "../combat/CombatModifier";
+
+export const MAX_BASE_ABILITY_VALUE = 18;
+
 export type Ability =
   | "strength"
   | "dexterity"
@@ -52,6 +56,33 @@ export function getCharismaModifier(stats: CharacterStats): number {
 export function getAbilityCheckModifier(
   stats: CharacterStats,
   ability: Ability,
+  modifiers: CombatModifier[] = [],
 ): number {
-  return getAbilityModifier(stats[ability]);
+  return getAbilityModifier(
+    getEffectiveAbilityValue(stats, ability, modifiers),
+  );
+}
+
+export function getEffectiveAbilityValue(
+  stats: CharacterStats,
+  ability: Ability,
+  modifiers: CombatModifier[],
+): number {
+  let value = stats[ability];
+
+  for (const modifier of modifiers) {
+    if (modifier.behavior !== "stat" || modifier.stat !== ability) {
+      continue;
+    }
+
+    if (modifier.operation === "add") {
+      value += modifier.value ?? 0;
+    }
+  }
+
+  return value;
+}
+
+export function isValidBaseAbilityValue(value: number): boolean {
+  return value >= 1 && value <= MAX_BASE_ABILITY_VALUE;
 }

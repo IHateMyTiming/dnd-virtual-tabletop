@@ -119,6 +119,68 @@ export const LEVELTWOSPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
+  {
+    id: "enlarge",
+    nameKey: "spell_enlarge",
+    descriptionKey: "spell_enlarge_description",
+    actionType: "action",
+    targetType: "self-or-ally",
+    targetingMode: "single",
+    range: 6,
+    allowedClasses: ["wizard", "barbarian", "fighter"],
+    concentration: true,
+
+    effects: [
+      {
+        type: "modify-behavior",
+        duration: 3,
+        modifier: {
+          behavior: "stat",
+          operation: "add",
+          stat: "strength",
+          value: 2,
+          trigger: "turn",
+        },
+      },
+    ],
+
+    recovery: "unlimited",
+    isSpell: true,
+    spellLevel: 2,
+    imagePath: "/assets/abilities/",
+  },
+
+  {
+    id: "reduce",
+    nameKey: "spell_reduce",
+    descriptionKey: "spell_reduce_description",
+    actionType: "action",
+    targetType: "self-or-ally",
+    targetingMode: "single",
+    range: 6,
+    allowedClasses: ["wizard"],
+    concentration: true,
+
+    effects: [
+      {
+        type: "modify-behavior",
+        duration: 3,
+        modifier: {
+          behavior: "stat",
+          operation: "add",
+          stat: "strength",
+          value: -2,
+          trigger: "turn",
+        },
+      },
+    ],
+
+    recovery: "unlimited",
+    isSpell: true,
+    spellLevel: 2,
+    imagePath: "/assets/abilities/",
+  },
+
   // NEEDS FIX
   // Arcane Lock requires the generic interactable/lock system.
   {
@@ -134,6 +196,30 @@ export const LEVELTWOSPELLS: AbilityDefinition[] = [
     range: 1,
 
     allowedClasses: ["wizard"],
+
+    effects: [],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 2,
+
+    imagePath: "/assets/abilities/",
+  },
+
+  //NEEDS FIX
+  //FOG/ VISION
+  {
+    id: "fog_vision",
+
+    nameKey: "spell_fog_vision",
+    descriptionKey: "spell_fog_vision_description",
+
+    actionType: "action",
+    targetType: "self",
+    targetingMode: "single",
+
+    allowedClasses: ["wizard", "ranger", "thief"],
 
     effects: [],
 

@@ -1,4 +1,5 @@
 import type { CreatureType } from "./Combatant";
+import type { Ability } from "../stats/Stats";
 
 export type CombatModifierBehavior =
   | "damage"
@@ -10,7 +11,8 @@ export type CombatModifierBehavior =
   | "armor-penetration"
   | "magic-resistance"
   | "magic-penetration"
-  | "concentration";
+  | "concentration"
+  | "stat";
 
 export type CombatModifierOperation =
   | "add"
@@ -51,6 +53,7 @@ export type CombatThresholdTarget = "caster" | "target";
 export interface CombatModifier {
   behavior: CombatModifierBehavior;
   operation: CombatModifierOperation;
+  stat?: Ability;
   trigger: CombatModifierTrigger;
 
   value?: number;

@@ -174,6 +174,18 @@ export const spellTranslations = {
     spell_blur: "Blur",
     spell_blur_description:
       "Blur your form, causing attacks against you to have disadvantage. Requires concentration.",
+
+    spell_fog_vision: "Fog Vision",
+    spell_fog_vision_description:
+      "Grant yourself the ability to see through fog and other normal visual obstructions.",
+
+    spell_enlarge: "Enlarge",
+    spell_enlarge_description:
+      "Increase the target's Strength by 2 while concentrating on the spell.",
+
+    spell_reduce: "Reduce",
+    spell_reduce_description:
+      "Reduce the target's Strength by 2 while concentrating on the spell.",
   },
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -352,5 +364,17 @@ export const spellTranslations = {
     spell_blur: "Desfoque",
     spell_blur_description:
       "Desfoque sua forma, fazendo com que ataques contra você tenham desvantagem. Requer concentração.",
+
+    spell_fog_vision: "Fog Vision",
+    spell_fog_vision_description:
+      "Conceda a si mesmo a capacidade de enxergar através de neblina e outras obstruções visuais comuns.",
+
+    spell_enlarge: "Gigantizar",
+    spell_enlarge_description:
+      "Increase the target's Strength by 2 while concentrating on the spell.",
+
+    spell_reduce: "Reduzir",
+    spell_reduce_description:
+      "Reduce the target's Strength by 2 while concentrating on the spell.",
   },
 };

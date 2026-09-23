@@ -46,7 +46,6 @@ export function executeAbilityEffects(
 
       case "move":
       case "teleport":
-      case "modify-stat":
         throw new Error(
           `Ability effect "${effect.type}" is not implemented yet.`,
         );
@@ -217,14 +216,19 @@ export function executeAbilityEffects(
       return;
     }
 
-    const classDamageScaling = resolveClassDamageScaling(effect, caster);
+    let modifierValue = effect.modifier.value;
+
+    if (effect.modifier.behavior === "damage") {
+      const classDamageScaling = resolveClassDamageScaling(effect, caster);
+
+      if (classDamageScaling.modifier !== undefined) {
+        modifierValue = classDamageScaling.modifier;
+      }
+    }
 
     const modifier = {
       ...effect.modifier,
-      value:
-        classDamageScaling.modifier !== undefined
-          ? classDamageScaling.modifier
-          : effect.modifier.value,
+      value: modifierValue,
       id: `${abilityId}:${effect.modifier.behavior}:${effect.modifier.operation}:${effect.modifier.trigger}`,
       targetId: context.targetId,
       sourceAbilityId: abilityId,
