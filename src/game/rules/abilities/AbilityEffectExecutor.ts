@@ -3,6 +3,7 @@ import type { AbilityEffect } from "./AbilityEffect";
 import type { AttackType } from "../combat/Attack";
 import type { Combatant } from "../combat/Combatant";
 import type { TargetLocation } from "../combat/TargetLocation";
+import type { CombatModifier } from "../combat/CombatModifier";
 
 export interface AbilityEffectContext {
   casterId: string;
@@ -42,6 +43,14 @@ export function executeAbilityEffects(
 
       case "modify-behavior":
         executeModifyBehavior(effect, context, engine, abilityId);
+        break;
+
+      case "temporary-hp":
+        executeTemporaryHp(effect, context, engine, abilityId);
+        break;
+
+      case "damage-share":
+        executeDamageShare(effect, context, engine, abilityId);
         break;
 
       case "move":
@@ -280,6 +289,65 @@ export function executeAbilityEffects(
       sourceAbilityId: abilityId,
       sourceCasterId: context.casterId,
       duration: effect.duration,
+    };
+
+    engine.addModifier(context.targetId, modifier);
+  }
+
+  function executeTemporaryHp(
+    effect: AbilityEffect,
+    context: AbilityEffectContext,
+    engine: CombatEngine,
+    abilityId: string,
+  ): void {
+    if (effect.value === undefined) {
+      throw new Error("Temporary-hp effect requires a value.");
+    }
+
+    const duration = effect.duration ?? 1;
+
+    const modifier: CombatModifier = {
+      behavior: "stat",
+      operation: "add",
+      trigger: "turn",
+      temporaryHp: effect.value,
+      duration,
+      id: `${abilityId}:temporary-hp`,
+      targetId: context.targetId,
+      sourceAbilityId: abilityId,
+      sourceCasterId: context.casterId,
+    };
+
+    engine.addModifier(context.targetId, modifier);
+  }
+
+  function executeDamageShare(
+    effect: AbilityEffect,
+    context: AbilityEffectContext,
+    engine: CombatEngine,
+    abilityId: string,
+  ): void {
+    const percentage = effect.value ?? 50;
+
+    if (percentage <= 0 || percentage > 100) {
+      throw new Error(
+        "Damage-share effect requires a percentage between 0 and 100.",
+      );
+    }
+
+    const modifier: CombatModifier = {
+      behavior: "stat",
+      operation: "add",
+      trigger: "turn",
+      duration: effect.duration,
+      id: `${abilityId}:damage-share`,
+      targetId: context.targetId,
+      sourceAbilityId: abilityId,
+      sourceCasterId: context.casterId,
+      damageSharing: {
+        partnerId: context.casterId,
+        percentage,
+      },
     };
 
     engine.addModifier(context.targetId, modifier);

@@ -21,7 +21,7 @@ export interface Combatant {
   stats: CharacterStats;
 
   hp: number;
-
+  temporaryHp: number;
   maxHp: number;
 
   armor: number;

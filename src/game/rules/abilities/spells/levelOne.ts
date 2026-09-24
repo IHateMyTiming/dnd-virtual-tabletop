@@ -4,6 +4,42 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
   //COMBAT DEALING DAMAGE SPELLS
 
   {
+    id: "warding_bond",
+
+    nameKey: "spell_warding_bond",
+    descriptionKey: "spell_warding_bond_description",
+
+    actionType: "action",
+    targetType: "ally",
+    targetingMode: "single",
+    range: 8,
+
+    allowedClasses: ["cleric", "paladin"],
+
+    classModifiers: {
+      paladin: {
+        range: 1,
+      },
+    },
+    effects: [
+      {
+        type: "damage-share",
+        value: 50,
+        duration: 10,
+      },
+    ],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 1,
+
+    concentration: true,
+
+    resourceCost: { amount: 1 },
+    imagePath: "/assets/abilities/",
+  },
+  {
     id: "burning_ray",
 
     nameKey: "spell_burning_ray",

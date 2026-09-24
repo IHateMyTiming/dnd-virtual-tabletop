@@ -34,7 +34,7 @@ import { getConditionDamage } from "../condition/ConditionDamage";
 import { calculateForcedMovement } from "../condition/ConditionForcedMovement";
 import { shouldWakeFromDamage } from "../condition/ConditionWake";
 import { getTotalConditionResistance } from "../condition/ConditionResistanceResolver";
-import type { DamageResult } from "./Damage";
+import type { DamageResult, DamageType } from "./Damage";
 import {
   increaseConditionResistance,
   rollConditionResistance,
@@ -440,13 +440,25 @@ export class CombatEngine {
   }
 
   public addModifier(combatantId: string, modifier: CombatModifier): void {
-    //console.log("ADDING MODIFIER:", modifier);
     const combatant = this.state.combatants.find(
       (current) => current.id === combatantId,
     );
 
     if (!combatant) {
       throw new Error(`Combatant "${combatantId}" not found.`);
+    }
+
+    // Temporary HP is a single pool.
+    // Applying new temporary HP replaces the old pool.
+    if (modifier.temporaryHp !== undefined) {
+      combatant.modifiers = combatant.modifiers.filter(
+        (current) => current.temporaryHp === undefined,
+      );
+
+      combatant.temporaryHp = modifier.temporaryHp;
+
+      combatant.modifiers.push({ ...modifier });
+      return;
     }
 
     const existingModifier = modifier.id
@@ -632,13 +644,10 @@ export class CombatEngine {
           continue;
         }
 
-        const hpBefore = combatant.hp;
-
-        combatant.hp = roundToOneDecimal(
-          Math.max(0, combatant.hp - damage.totalDamage),
+        const actualDamage = this.applyDamageToCombatant(
+          combatant,
+          damage.totalDamage,
         );
-
-        const actualDamage = hpBefore - combatant.hp;
 
         if (actualDamage > 0) {
           this.combatRegister.record({
@@ -693,12 +702,22 @@ export class CombatEngine {
     );
   }
 
-  public damage(targetId: string, expression: DamageExpression): number {
-    const target = this.state.combatants.find(
+  public damage(
+    targetId: string,
+    expression: DamageExpression,
+    damageShareSourceId?: string,
+  ): number {
+    const target = this.getState().combatants.find(
       (combatant) => combatant.id === targetId,
     );
 
-    if (!target || !target.alive) {
+    if (!target) {
+      return 0;
+    }
+
+    const damageSharingModifier = this.getDamageSharingModifier(target);
+
+    if (!target.alive) {
       return 0;
     }
 
@@ -712,22 +731,46 @@ export class CombatEngine {
       conditions,
     );
 
-    const hpBefore = target.hp;
+    const actualDamage = this.applyDamageToCombatant(
+      target,
+      result.finalDamage,
+    );
 
-    target.hp = roundToOneDecimal(Math.max(0, target.hp - result.finalDamage));
+    if (
+      damageSharingModifier?.damageSharing &&
+      damageShareSourceId !== damageSharingModifier.damageSharing.partnerId
+    ) {
+      const { partnerId, percentage } = damageSharingModifier.damageSharing;
 
-    console.log("[DAMAGE]", {
+      const sharedDamage = Math.max(1, actualDamage * (percentage / 100));
+      if (sharedDamage > 0) {
+        const partner = this.getState().combatants.find(
+          (combatant) => combatant.id === partnerId,
+        );
+
+        if (partner) {
+          this.applyRawDamage(
+            partner,
+            sharedDamage,
+            expression.type ?? "physical",
+          );
+        }
+      }
+    }
+
+    //const hpBefore = target.hp;
+
+    /*console.log("[DAMAGE]", {
       target: target.name,
       type: expression.type,
       hpBefore,
       hpAfter: target.hp,
+      temporaryHpAfter: target.temporaryHp,
       armor: target.armor,
       magicResistance: target.magicResistance,
       finalDamage: result.finalDamage,
       damageResult: result,
-    });
-
-    const actualDamage = hpBefore - target.hp;
+    });*/
 
     if (actualDamage > 0) {
       this.combatRegister.record({
@@ -753,6 +796,93 @@ export class CombatEngine {
     }
 
     return actualDamage;
+  }
+
+  private applyDamageToCombatant(target: Combatant, damage: number): number {
+    if (damage <= 0) {
+      return 0;
+    }
+
+    const currentTemporaryHp = target.temporaryHp ?? 0;
+    const temporaryDamage = Math.min(currentTemporaryHp, damage);
+    target.temporaryHp = currentTemporaryHp - temporaryDamage;
+
+    const remainingDamage = damage - temporaryDamage;
+
+    const hpBefore = target.hp;
+
+    target.hp = roundToOneDecimal(Math.max(0, target.hp - remainingDamage));
+
+    return temporaryDamage + (hpBefore - target.hp);
+  }
+
+  private applyDamageSharing(target: Combatant, actualDamage: number): void {
+    const damageSharingModifier = this.getDamageSharingModifier(target);
+
+    if (!damageSharingModifier?.damageSharing || actualDamage <= 0) {
+      return;
+    }
+
+    const { partnerId, percentage } = damageSharingModifier.damageSharing;
+
+    const sharedDamage = Math.max(1, actualDamage * (percentage / 100));
+
+    const partner = this.state.combatants.find(
+      (combatant) => combatant.id === partnerId,
+    );
+
+    if (!partner || !partner.alive) {
+      return;
+    }
+
+    this.applyRawDamage(partner, sharedDamage, "physical");
+  }
+
+  private applyRawDamage(
+    target: Combatant,
+    damage: number,
+    damageType: DamageType,
+  ): number {
+    if (!target.alive || damage <= 0) {
+      return 0;
+    }
+
+    const conditions = this.state.conditionManager.getConditions(target.id);
+
+    const actualDamage = this.applyDamageToCombatant(target, damage);
+
+    if (actualDamage > 0) {
+      this.combatRegister.record({
+        type: "damage",
+        round: this.state.round,
+        targetId: target.id,
+        amount: actualDamage,
+        damageType,
+      });
+    }
+
+    if (target.hp === 0) {
+      target.alive = false;
+      this.endConcentration(target);
+    }
+
+    if (damage > 0) {
+      this.checkConcentration(target);
+    }
+
+    if (shouldWakeFromDamage(conditions, damage)) {
+      this.state.conditionManager.removeCondition(target.id, "sleeping");
+    }
+
+    return actualDamage;
+  }
+
+  private getDamageSharingModifier(
+    target: Combatant,
+  ): CombatModifier | undefined {
+    return target.modifiers.find(
+      (modifier) => modifier.damageSharing !== undefined,
+    );
   }
 
   public heal(targetId: string, amount: number): number {
@@ -1268,8 +1398,9 @@ export class CombatEngine {
       this.state.conditionManager.removeCondition(defender.id, "sleeping");
     }
 
-    defender.hp = roundToOneDecimal(Math.max(0, defender.hp - finalDamage));
+    const actualDamage = this.applyDamageToCombatant(defender, finalDamage);
 
+    this.applyDamageSharing(defender, actualDamage);
     defender.alive = defender.hp > 0;
 
     if (!defender.alive) {
@@ -1279,8 +1410,6 @@ export class CombatEngine {
     if (finalDamage > 0) {
       this.checkConcentration(defender);
     }
-
-    const actualDamage = hpBefore - defender.hp;
 
     if (actualDamage > 0) {
       this.combatRegister.record({
@@ -1389,11 +1518,8 @@ export class CombatEngine {
       this.state.conditionManager.removeCondition(defenderId, "sleeping");
     }
 
-    const hpBefore = defender.hp;
-
-    defender.hp = roundToOneDecimal(Math.max(0, defender.hp - finalDamage));
-
-    const actualDamage = hpBefore - defender.hp;
+    const actualDamage = this.applyDamageToCombatant(defender, finalDamage);
+    this.applyDamageSharing(defender, actualDamage);
 
     if (actualDamage > 0) {
       this.combatRegister.record({
@@ -1477,6 +1603,16 @@ export class CombatEngine {
       modifier.duration -= 1;
 
       if (modifier.duration <= 0) {
+        if (modifier.temporaryHp !== undefined) {
+          const activeTemporaryHpModifier = combatant.modifiers.find(
+            (current) => current.temporaryHp !== undefined,
+          );
+
+          if (activeTemporaryHpModifier?.id === modifier.id) {
+            combatant.temporaryHp = 0;
+          }
+        }
+
         const index = combatant.modifiers.indexOf(modifier);
 
         if (index !== -1) {

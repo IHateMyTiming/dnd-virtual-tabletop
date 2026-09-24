@@ -530,8 +530,14 @@ export class CombatTestScene extends Phaser.Scene {
       fontStyle: "bold",
     });
 
-    this.createButton(panelX + 120, 430, 150, 26, "web", 0x5a2875, () =>
-      this.useAbility("web"),
+    this.createButton(
+      panelX + 120,
+      430,
+      150,
+      26,
+      "warding_bond",
+      0x5a2875,
+      () => this.useAbility("warding_bond"),
     );
 
     this.createButton(panelX + 120, 460, 150, 26, "test", 0x5a2875, () =>

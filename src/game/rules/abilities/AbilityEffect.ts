@@ -7,12 +7,14 @@ import type { CharacterClassId } from "../classes/Class";
 export type AbilityEffectType =
   | "damage"
   | "heal"
+  | "temporary-hp"
   | "apply-condition"
   | "remove-condition"
   | "move"
   | "teleport"
   | "modify-stat"
   | "modify-behavior"
+  | "damage-share"
   | "grant-action";
 
 export type AbilityInstanceTrigger =

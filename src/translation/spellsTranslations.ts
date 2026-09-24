@@ -238,6 +238,26 @@ export const spellTranslations = {
     spell_spiritual_weapon: "Spiritual Weapon",
     spell_spiritual_weapon_description:
       "Summons a spiritual weapon that fights alongside the caster for several rounds.",
+
+    spell_aid: "Aid",
+    spell_aid_description:
+      "Strengthens up to three allies, increasing their maximum HP for 3 rounds.",
+
+    spell_silence: "Silence",
+    spell_silence_description:
+      "Create a zone of magical silence that prevents creatures within it from casting spells.",
+
+    spell_prayer_of_healing: "Prayer of Healing",
+    spell_prayer_of_healing_description:
+      "Heal all allies within the area for 2d8 hit points.",
+
+    spell_blindness: "Blindness",
+    spell_blindness_description:
+      "Blind a creature, severely limiting its ability to attack and defend.",
+
+    spell_warding_bond: "Warding Bond",
+    spell_warding_bond_description:
+      "Protect an ally, causing you to suffer 50% of the damage they take.",
   },
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -480,5 +500,25 @@ export const spellTranslations = {
     spell_spiritual_weapon: "Arma Espiritual",
     spell_spiritual_weapon_description:
       "Invoca uma arma espiritual que luta ao lado do conjurador por várias rodadas.",
+
+    spell_aid: "Auxílio",
+    spell_aid_description:
+      "Fortalece até três aliados, aumentando seus pontos de vida máximos em 5 por 3 rodadas.",
+
+    spell_silence: "Silêncio",
+    spell_silence_description:
+      "Crie uma área de silêncio mágico que impede as criaturas dentro dela de conjurar feitiços.",
+
+    spell_prayer_of_healing: "Oração de Cura",
+    spell_prayer_of_healing_description:
+      "Cure todos os aliados dentro da área em 2d8 pontos de vida.",
+
+    spell_blindness: "Cegueira",
+    spell_blindness_description:
+      "Cegue uma criatura, reduzindo severamente sua capacidade de atacar e se defender.",
+
+    spell_warding_bond: "Vínculo de Proteção",
+    spell_warding_bond_description:
+      "Proteja um aliado, fazendo com que você sofra 50% do dano que ele receber.",
   },
 };

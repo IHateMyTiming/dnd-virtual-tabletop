@@ -69,6 +69,13 @@ export interface CombatModifier {
   targetCreatureType?: CreatureType;
   sourceAbilityId?: string;
   sourceCasterId?: string;
+
+  temporaryHp?: number;
+
+  damageSharing?: {
+    partnerId: string;
+    percentage: number;
+  };
 }
 
 export function getModifiersForTrigger(

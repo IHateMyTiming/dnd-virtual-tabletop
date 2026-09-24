@@ -561,6 +561,212 @@ export const LEVELTWOSPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
+  {
+    id: "aid",
+    nameKey: "spell_aid",
+    descriptionKey: "spell_aid_description",
+    actionType: "action",
+    targetType: "ally",
+    targetingMode: "multi",
+    range: 6,
+    maxTargets: 3,
+    allowedClasses: ["cleric"],
+
+    effects: [
+      {
+        type: "temporary-hp",
+        value: 5,
+        duration: 3,
+      },
+    ],
+
+    recovery: "unlimited",
+    isSpell: true,
+    spellLevel: 2,
+    resourceCost: {
+      amount: 1,
+    },
+    imagePath: "/assets/abilities/",
+  },
+
+  {
+    id: "silence",
+
+    nameKey: "spell_silence",
+    descriptionKey: "spell_silence_description",
+
+    actionType: "action",
+    targetType: "location",
+    targetingMode: "area",
+
+    range: 10,
+
+    allowedClasses: ["cleric", "bard"],
+
+    area: {
+      shape: "circle",
+      radius: 4,
+    },
+
+    effects: [
+      {
+        type: "apply-condition",
+        conditionId: "silenced",
+        duration: 1,
+      },
+    ],
+
+    recovery: "unlimited",
+
+    instance: {
+      lifetime: "duration",
+      duration: 3,
+
+      effects: [
+        {
+          trigger: "enter-area",
+          effect: {
+            type: "apply-condition",
+            conditionId: "silenced",
+            duration: 1,
+          },
+        },
+        {
+          trigger: "turn-start",
+          effect: {
+            type: "apply-condition",
+            conditionId: "silenced",
+            duration: 1,
+          },
+        },
+      ],
+    },
+
+    isSpell: true,
+    spellLevel: 2,
+
+    concentration: true,
+
+    resourceCost: {
+      amount: 1,
+    },
+
+    imagePath: "/assets/abilities/",
+  },
+
+  {
+    id: "prayer_of_healing",
+
+    nameKey: "spell_prayer_of_healing",
+    descriptionKey: "spell_prayer_of_healing_description",
+
+    actionType: "action",
+    targetType: "location",
+    targetingMode: "area",
+
+    range: 10,
+
+    allowedClasses: ["cleric"],
+
+    area: {
+      shape: "circle",
+      radius: 5,
+    },
+
+    effects: [
+      {
+        type: "heal",
+        healing: {
+          count: 2,
+          sides: 8,
+          type: "magic",
+        },
+      },
+    ],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 2,
+
+    resourceCost: {
+      amount: 1,
+    },
+
+    imagePath: "/assets/abilities/",
+  },
+
+  {
+    id: "blindness",
+
+    nameKey: "spell_blindness",
+    descriptionKey: "spell_blindness_description",
+
+    actionType: "action",
+    targetType: "enemy",
+    targetingMode: "single",
+
+    range: 8,
+
+    allowedClasses: ["cleric", "bard", "wizard"],
+
+    effects: [
+      {
+        type: "apply-condition",
+        conditionId: "blinded",
+        duration: 2,
+      },
+    ],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 2,
+
+    resourceCost: {
+      amount: 1,
+    },
+
+    imagePath: "/assets/abilities/",
+  },
+
+  {
+    id: "warding_bond",
+
+    nameKey: "spell_warding_bond",
+    descriptionKey: "spell_warding_bond_description",
+
+    actionType: "action",
+    targetType: "ally",
+    targetingMode: "single",
+    range: 8,
+
+    allowedClasses: ["cleric", "paladin"],
+
+    classModifiers: {
+      paladin: {
+        range: 1,
+      },
+    },
+    effects: [
+      {
+        type: "damage-share",
+        value: 50,
+        duration: 10,
+      },
+    ],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 2,
+
+    concentration: true,
+
+    resourceCost: { amount: 1 },
+    imagePath: "/assets/abilities/",
+  },
+
   // NEEDS FIX
   // TELEPORT
   {
