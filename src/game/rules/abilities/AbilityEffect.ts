@@ -40,6 +40,8 @@ export interface AbilityEffect {
 
   conditionId?: ConditionId;
 
+  conditionIds?: ConditionId[];
+
   duration?: number;
 
   stacks?: number;

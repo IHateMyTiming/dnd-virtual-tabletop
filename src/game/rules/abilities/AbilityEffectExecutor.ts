@@ -80,6 +80,24 @@ export function executeAbilityEffects(
       ...classDamageScaling,
     };
 
+    if (damage.registerModifier) {
+      const currentRound = engine.getState().round;
+
+      if (damage.registerModifier.type === "damage-taken") {
+        const registerValue = engine
+          .getCombatRegister()
+          .getDamageTakenInRounds(
+            context.casterId,
+            currentRound - damage.registerModifier.rounds,
+            currentRound - 1,
+          );
+
+        damage.modifier =
+          (damage.modifier ?? 0) +
+          registerValue * damage.registerModifier.multiplier;
+      }
+    }
+
     engine.damage(context.targetId, damage);
   }
 
@@ -133,6 +151,24 @@ export function executeAbilityEffects(
 
     for (let i = 0; i < healing.count; i++) {
       amount += Math.floor(engine.rollRandom() * healing.sides) + 1;
+    }
+
+    if (healing.registerModifier) {
+      const currentRound = engine.getState().round;
+
+      if (healing.registerModifier.type === "healing-received") {
+        const registerValue = engine
+          .getCombatRegister()
+          .getHealingReceivedInRounds(
+            context.targetId,
+            currentRound - healing.registerModifier.rounds,
+            currentRound - 1,
+          );
+
+        healing.modifier =
+          (healing.modifier ?? 0) +
+          registerValue * healing.registerModifier.multiplier;
+      }
     }
 
     if (healing.modifier !== undefined) {
@@ -191,8 +227,18 @@ export function executeAbilityEffects(
     context: AbilityEffectContext,
     engine: CombatEngine,
   ): void {
+    if (effect.conditionIds && effect.conditionIds.length > 0) {
+      for (const conditionId of effect.conditionIds) {
+        engine.removeCondition(context.targetId, conditionId);
+      }
+
+      return;
+    }
+
     if (!effect.conditionId) {
-      throw new Error("Remove-condition effect requires a conditionId.");
+      throw new Error(
+        "Remove-condition effect requires a conditionId or conditionIds.",
+      );
     }
 
     engine.removeCondition(context.targetId, effect.conditionId);

@@ -31,6 +31,7 @@ import {
   type CombatModifier,
 } from "./CombatModifier";
 import type { CreatureType } from "./Combatant";
+import { getConsumedConditionDamage } from "../condition/ConditionDamage";
 
 export type AttackType = "melee" | "ranged" | "spell";
 
@@ -410,15 +411,44 @@ function rollModifiedDamage(
     }
   }
 
-  // Damage multipliers based on the target's conditions.
+  // Damage effects based on the target's conditions.
   if (expression.conditions) {
     for (const condition of expression.conditions) {
-      if (condition.type === "target-has-condition") {
-        if (defenderConditions.length > 0) {
-          rawDamage *= condition.multiplier;
-        }
+      if (condition.type !== "target-has-condition") {
+        continue;
+      }
+
+      const hasCondition = condition.conditionId
+        ? defenderConditions.some(
+            (activeCondition) => activeCondition.id === condition.conditionId,
+          )
+        : defenderConditions.length > 0;
+
+      if (!hasCondition) {
+        continue;
+      }
+
+      if (condition.multiplier !== undefined) {
+        rawDamage *= condition.multiplier;
+      }
+
+      if (condition.bonusDamage) {
+        const bonusDamage = rollDamage(condition.bonusDamage, characterLevel);
+
+        rolls.push(...bonusDamage.rolls);
+        rawDamage += bonusDamage.rawDamage;
+        modifier += bonusDamage.modifier;
       }
     }
+  }
+
+  if (expression.consumeConditions) {
+    const consumedConditionDamage = getConsumedConditionDamage(
+      defenderConditions,
+      expression.consumeConditions,
+    );
+
+    rawDamage += consumedConditionDamage;
   }
 
   return {

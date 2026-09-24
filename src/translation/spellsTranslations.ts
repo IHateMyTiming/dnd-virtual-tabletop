@@ -186,6 +186,58 @@ export const spellTranslations = {
     spell_reduce: "Reduce",
     spell_reduce_description:
       "Reduce the target's Strength by 2 while concentrating on the spell.",
+
+    spell_lesser_restoration: "Restauração Menor",
+    spell_lesser_restoration_description:
+      "Remove poison, acid, and burning from the target.",
+
+    spell_flaming_sphere: "Flaming Sphere",
+    spell_flaming_sphere_description:
+      "Create a flaming sphere that damages nearby creatures",
+
+    spell_misty_step: "Misty Step",
+    spell_misty_step_description:
+      "Teleport to an unoccupied space you can see within 9 meters.",
+
+    spell_scorching_ray: "Scorching Ray",
+    spell_scorching_ray_description:
+      "Fire three scorching rays at your enemies, each dealing fire damage.",
+
+    spell_shatter: "Shatter",
+    spell_shatter_description:
+      "Create a burst of thunderous energy that damages creatures in the area.",
+
+    spell_revenge: "Revenge",
+    spell_revenge_description:
+      "Deals physical damage equal to 1d1 plus the total damage taken by the caster during the previous 3 rounds.",
+
+    spell_back_to_the_battle: "Back To The Battle",
+    spell_back_to_the_battle_description:
+      "Restore 1d10 health plus 50% of the healing received during the previous 3 rounds.",
+
+    spell_consumer: "Consumer",
+    spell_consumer_description:
+      "Consumes the target's damage-over-time conditions, dealing damage equal to their total accumulated damage before removing them.",
+
+    spell_hold_person: "Hold Person",
+    spell_hold_person_description:
+      "Paralyzes a humanoid target, preventing it from acting for 3 rounds. Requires concentration.",
+
+    spell_invisibility: "Invisibility",
+    spell_invisibility_description:
+      "Makes the target invisible, causing attacks against them to have disadvantage for 3 rounds. Requires concentration.",
+
+    spell_agility: "Agility",
+    spell_agility_description:
+      "Allows the target to move through difficult terrain and perform movement actions such as jumping and climbing without penalties for 3 rounds. Requires concentration.",
+
+    spell_web: "Web",
+    spell_web_description:
+      "Creates an area covered in sticky webs that roots creatures that enter or move through it. Requires concentration.",
+
+    spell_spiritual_weapon: "Spiritual Weapon",
+    spell_spiritual_weapon_description:
+      "Summons a spiritual weapon that fights alongside the caster for several rounds.",
   },
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -371,10 +423,62 @@ export const spellTranslations = {
 
     spell_enlarge: "Gigantizar",
     spell_enlarge_description:
-      "Increase the target's Strength by 2 while concentrating on the spell.",
+      "Aumenta a Força do alvo em 2 enquanto mantém a concentração.",
 
     spell_reduce: "Reduzir",
     spell_reduce_description:
-      "Reduce the target's Strength by 2 while concentrating on the spell.",
+      "Reduz a Força do alvo em 2 enquanto mantém a concentração.",
+
+    spell_lesser_restoration: "Restauração Menor",
+    spell_lesser_restoration_description:
+      "Restauração Menor remove veneno, ácido e queimadura do alvo.",
+
+    spell_flaming_sphere: "Esfera Flamejante",
+    spell_flaming_sphere_description:
+      "Cria uma esfera flamejante que causa dano às criaturas próximas.",
+
+    spell_misty_step: "Passo Nebuloso",
+    spell_misty_step_description:
+      "Teleporta-se para um espaço desocupado que possa ver a até 9 metros de distância.",
+
+    spell_scorching_ray: "Raio Ardente",
+    spell_scorching_ray_description:
+      "Dispare três raios ardentes contra seus inimigos, cada um causando dano de fogo.",
+
+    spell_shatter: "Estilhaçar",
+    spell_shatter_description:
+      "Cria uma explosão de energia trovejante que causa dano às criaturas na área.",
+
+    spell_revenge: "Vingança",
+    spell_revenge_description:
+      "Causa dano físico igual a 1d1 mais o dano total recebido pelo conjurador durante os 3 turnos anteriores.",
+
+    spell_back_to_the_battle: "Volte a Batalha",
+    spell_back_to_the_battle_description:
+      "Recupere 1d10 de vida mais 50% da cura recebida durante os 3 turnos anteriores.",
+
+    spell_consumer_pt: "Consumidor",
+    spell_consumer_description_pt:
+      "Consome as condições de dano contínuo do alvo, causando dano igual ao dano total acumulado por elas antes de removê-las.",
+
+    spell_hold_person: "Prender Pessoa",
+    spell_hold_person_description:
+      "Paralisa um alvo humanoide, impedindo-o de agir por 3 rodadas. Requer concentração.",
+
+    spell_invisibility: "Invisibilidade",
+    spell_invisibility_description:
+      "Torna o alvo invisível, fazendo com que ataques contra ele tenham desvantagem por 3 rodadas. Requer concentração.",
+
+    spell_agility: "Agilidade",
+    spell_agility_description:
+      "Permite que o alvo atravesse terrenos difíceis e realize ações de movimento, como pular e escalar, sem penalidades por 3 rodadas. Requer concentração.",
+
+    spell_web: "Teia",
+    spell_web_description:
+      "Cria uma área coberta por teias pegajosas que imobiliza criaturas que entram ou se movem por ela. Requer concentração.",
+
+    spell_spiritual_weapon: "Arma Espiritual",
+    spell_spiritual_weapon_description:
+      "Invoca uma arma espiritual que luta ao lado do conjurador por várias rodadas.",
   },
 };

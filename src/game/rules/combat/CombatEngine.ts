@@ -74,11 +74,14 @@ import type { AbilityArea } from "../abilities/Ability";
 import { resolveAbilityCheck } from "../abilities/AbilityCheck";
 import { resolveConcentrationCheck } from "./Concentration";
 
+import { CombatRegister } from "./CombatRegister";
+
 interface PendingDefense {
   attackerId: string;
   defenderId: string;
   attack: AttackResult;
   damage: DamageResult;
+  damageExpression: DamageExpression;
   attackerStats: CharacterStats;
   defenderStats: CharacterStats;
   defenderHpBefore: number;
@@ -86,13 +89,13 @@ interface PendingDefense {
   abilityId?: string;
   remainingEffects?: AbilityEffect[];
 }
-
 export class CombatEngine {
   private state: CombatState;
   private abilityInstances: AbilityInstance[] = [];
   private readonly random: () => number;
   private pendingDefenses: PendingDefense[] = [];
   private lastCombatResult: CombatAttackResult | null = null;
+  private readonly combatRegister = new CombatRegister();
 
   constructor(state: CombatState, random: () => number = Math.random) {
     this.state = state;
@@ -112,6 +115,10 @@ export class CombatEngine {
 
   public getCurrentCombatant(): Combatant | undefined {
     return getCurrentCombatant(this.state);
+  }
+
+  public getCombatRegister(): CombatRegister {
+    return this.combatRegister;
   }
 
   public rollRandom(): number {
@@ -581,6 +588,31 @@ export class CombatEngine {
     return this.state.conditionManager.getCondition(targetId, conditionId);
   }
 
+  public consumeConditions(
+    targetId: string,
+    conditionIds: ConditionId[],
+  ): void {
+    const conditions = this.state.conditionManager.getConditions(targetId);
+
+    for (const conditionId of conditionIds) {
+      const condition = conditions.find(
+        (currentCondition) => currentCondition.id === conditionId,
+      );
+
+      if (!condition) {
+        continue;
+      }
+
+      const damage = getConditionDamage(condition);
+
+      if (!damage) {
+        continue;
+      }
+
+      this.state.conditionManager.removeCondition(targetId, conditionId);
+    }
+  }
+
   private processConditionDamage(): void {
     const allConditions = this.state.conditionManager.getAllConditions();
 
@@ -600,9 +632,24 @@ export class CombatEngine {
           continue;
         }
 
+        const hpBefore = combatant.hp;
+
         combatant.hp = roundToOneDecimal(
           Math.max(0, combatant.hp - damage.totalDamage),
         );
+
+        const actualDamage = hpBefore - combatant.hp;
+
+        if (actualDamage > 0) {
+          this.combatRegister.record({
+            type: "damage",
+            round: this.state.round,
+            targetId: combatant.id,
+            amount: actualDamage,
+            damageType: "magic",
+            conditionId: condition.id,
+          });
+        }
 
         if (combatant.hp === 0) {
           combatant.alive = false;
@@ -680,6 +727,18 @@ export class CombatEngine {
       damageResult: result,
     });
 
+    const actualDamage = hpBefore - target.hp;
+
+    if (actualDamage > 0) {
+      this.combatRegister.record({
+        type: "damage",
+        round: this.state.round,
+        targetId: target.id,
+        amount: actualDamage,
+        damageType: expression.type ?? "physical",
+      });
+    }
+
     if (target.hp === 0) {
       target.alive = false;
       this.endConcentration(target);
@@ -693,7 +752,7 @@ export class CombatEngine {
       this.state.conditionManager.removeCondition(target.id, "sleeping");
     }
 
-    return hpBefore - target.hp;
+    return actualDamage;
   }
 
   public heal(targetId: string, amount: number): number {
@@ -724,7 +783,18 @@ export class CombatEngine {
     const hpBefore = target.hp;
 
     target.hp = roundToOneDecimal(Math.min(target.maxHp, target.hp + amount));
-    return target.hp - hpBefore;
+    const actualHealing = target.hp - hpBefore;
+
+    if (actualHealing > 0) {
+      this.combatRegister.record({
+        type: "healing",
+        round: this.state.round,
+        targetId: target.id,
+        amount: actualHealing,
+      });
+    }
+
+    return actualHealing;
   }
 
   private performOpportunityAttack(
@@ -946,6 +1016,7 @@ export class CombatEngine {
         adjustedDamage,
         request.remainingEffects,
         request.abilityId,
+        request.type,
       );
 
       return {
@@ -967,6 +1038,7 @@ export class CombatEngine {
       defenderId: defender.id,
       attack,
       damage: adjustedDamage,
+      damageExpression: request.damage,
       attackerStats: attacker.stats,
       defenderStats: defender.stats,
       defenderHpBefore: hpBefore,
@@ -1208,6 +1280,27 @@ export class CombatEngine {
       this.checkConcentration(defender);
     }
 
+    const actualDamage = hpBefore - defender.hp;
+
+    if (actualDamage > 0) {
+      this.combatRegister.record({
+        type: "damage",
+        round: this.state.round,
+        sourceId: pending.attackerId,
+        targetId: defender.id,
+        amount: actualDamage,
+        damageType: pending.type === "spell" ? "magic" : "physical",
+        abilityId: pending.abilityId,
+      });
+    }
+
+    if (actualDamage > 0 && pending.damageExpression.consumeConditions) {
+      this.consumeConditions(
+        defender.id,
+        pending.damageExpression.consumeConditions,
+      );
+    }
+
     if (!dodged && defender.alive && pending.remainingEffects?.length) {
       executeAbilityEffects(
         pending.remainingEffects,
@@ -1270,6 +1363,7 @@ export class CombatEngine {
     damage: DamageResult,
     remainingEffects?: AbilityEffect[],
     abilityId?: string,
+    attackType: AttackType = "melee",
   ): void {
     const defender = this.state.combatants.find(
       (combatant) => combatant.id === defenderId,
@@ -1295,10 +1389,25 @@ export class CombatEngine {
       this.state.conditionManager.removeCondition(defenderId, "sleeping");
     }
 
+    const hpBefore = defender.hp;
+
     defender.hp = roundToOneDecimal(Math.max(0, defender.hp - finalDamage));
 
-    defender.alive = defender.hp > 0;
+    const actualDamage = hpBefore - defender.hp;
 
+    if (actualDamage > 0) {
+      this.combatRegister.record({
+        type: "damage",
+        round: this.state.round,
+        sourceId: attackerId,
+        targetId: defender.id,
+        amount: actualDamage,
+        damageType: attackType === "spell" ? "magic" : "physical",
+        abilityId,
+      });
+    }
+
+    defender.alive = defender.hp > 0;
     if (!defender.alive) {
       this.endConcentration(defender);
     }

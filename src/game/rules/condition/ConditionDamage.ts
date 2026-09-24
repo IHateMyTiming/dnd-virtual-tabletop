@@ -27,3 +27,30 @@ export function getConditionDamage(
     totalDamage: damagePerStack * condition.stacks,
   };
 }
+
+export function getConsumedConditionDamage(
+  conditions: ConditionState[],
+  conditionIds: ConditionId[],
+): number {
+  let totalDamage = 0;
+
+  for (const conditionId of conditionIds) {
+    const condition = conditions.find(
+      (currentCondition) => currentCondition.id === conditionId,
+    );
+
+    if (!condition) {
+      continue;
+    }
+
+    const damage = getConditionDamage(condition);
+
+    if (!damage) {
+      continue;
+    }
+
+    totalDamage += damage.totalDamage;
+  }
+
+  return totalDamage;
+}

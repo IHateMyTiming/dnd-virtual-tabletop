@@ -111,8 +111,8 @@ export class CombatTestScene extends Phaser.Scene {
   private readonly rangerStats: CharacterStats = {
     strength: 10,
     dexterity: 15,
-    constitution: 13,
-    intelligence: 12,
+    constitution: 2,
+    intelligence: 18,
     wisdom: 14,
     charisma: 8,
   };
@@ -130,7 +130,7 @@ export class CombatTestScene extends Phaser.Scene {
     strength: 10,
     dexterity: 14,
     constitution: 10,
-    intelligence: 8,
+    intelligence: 16,
     wisdom: 8,
     charisma: 8,
   };
@@ -187,7 +187,7 @@ export class CombatTestScene extends Phaser.Scene {
       level: 1,
       team: "player",
       creatureType: "humanoid",
-      class: "paladin",
+      class: "ranger",
 
       modifiers: [],
 
@@ -530,8 +530,8 @@ export class CombatTestScene extends Phaser.Scene {
       fontStyle: "bold",
     });
 
-    this.createButton(panelX + 120, 430, 150, 26, "sanctuary", 0x5a2875, () =>
-      this.useAbility("sanctuary"),
+    this.createButton(panelX + 120, 430, 150, 26, "web", 0x5a2875, () =>
+      this.useAbility("web"),
     );
 
     this.createButton(panelX + 120, 460, 150, 26, "test", 0x5a2875, () =>
@@ -543,9 +543,9 @@ export class CombatTestScene extends Phaser.Scene {
       490,
       150,
       26,
-      "burning_floor",
+      "poison_strike",
       0x5a2875,
-      () => this.useAbility("burning_floor"),
+      () => this.useAbility("poison_strike"),
     );
 
     this.add.text(panelX + 15, 522, "CONDITION TESTER", {
@@ -2436,11 +2436,11 @@ export class CombatTestScene extends Phaser.Scene {
       caster.id,
     );
 
-    console.log(
+    /*console.log(
       `[Condition Test] ${conditionId} on ${targetId}: ${
         result ? "APPLIED" : "RESISTED / FAILED"
       }`,
-    );
+    );*/
 
     this.updateCharacterPositions();
     this.updateInterface();

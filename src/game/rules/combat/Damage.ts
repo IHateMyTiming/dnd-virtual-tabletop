@@ -19,8 +19,10 @@ export interface DiceScaling {
 export interface DamageCondition {
   type: "target-has-condition";
   conditionId?: ConditionId;
-  multiplier: number;
+  multiplier?: number;
+  bonusDamage?: DamageExpression;
 }
+
 export interface DamageExpression {
   count: number;
   sides: number;
@@ -28,6 +30,8 @@ export interface DamageExpression {
   type?: DamageType;
   scaling?: DiceScaling;
   conditions?: DamageCondition[];
+  consumeConditions?: ConditionId[];
+  registerModifier?: DamageRegisterModifier;
 }
 export interface DamageResult {
   rolls: number[];
@@ -36,6 +40,12 @@ export interface DamageResult {
   armorReduction: number;
   magicResistanceReduction: number;
   finalDamage: number;
+}
+
+export interface DamageRegisterModifier {
+  type: "damage-taken" | "healing-received";
+  rounds: number;
+  multiplier: number;
 }
 
 export function rollDamage(
@@ -81,9 +91,11 @@ function getDamageConditionMultiplier(
         )
       : defenderConditions.length > 0;
 
-    if (hasCondition) {
-      multiplier *= condition.multiplier;
+    if (!hasCondition || condition.multiplier === undefined) {
+      continue;
     }
+
+    multiplier *= condition.multiplier;
   }
 
   return multiplier;
@@ -98,17 +110,38 @@ export function resolveDamage(
 ): DamageResult {
   const rolled = rollDamage(expression);
 
+  let conditionalBonusDamage = 0;
+
+  if (expression.conditions) {
+    for (const condition of expression.conditions) {
+      const hasCondition = condition.conditionId
+        ? defenderConditions.some(
+            (activeCondition) => activeCondition.id === condition.conditionId,
+          )
+        : defenderConditions.length > 0;
+
+      if (!hasCondition || !condition.bonusDamage) {
+        continue;
+      }
+
+      conditionalBonusDamage += rollDamage(condition.bonusDamage).rawDamage;
+    }
+  }
+
   const damageType = expression.type ?? "physical";
 
   let armorReduction = 0;
   let magicResistanceReduction = 0;
-  let afterDefense = rolled.rawDamage;
+  let afterDefense = rolled.rawDamage + conditionalBonusDamage;
 
   if (damageType === "physical") {
     const effectiveArmor = getEffectiveArmor(armor, defenderConditions);
 
     armorReduction = Math.max(0, effectiveArmor);
-    afterDefense = Math.max(0, rolled.rawDamage - armorReduction);
+    afterDefense = Math.max(
+      0,
+      rolled.rawDamage + conditionalBonusDamage - armorReduction,
+    );
   } else {
     const effectiveMagicResistance = getEffectiveMagicResistance(
       magicResistance,
@@ -116,7 +149,10 @@ export function resolveDamage(
     );
 
     magicResistanceReduction = Math.max(0, effectiveMagicResistance);
-    afterDefense = Math.max(0, rolled.rawDamage - magicResistanceReduction);
+    afterDefense = Math.max(
+      0,
+      rolled.rawDamage + conditionalBonusDamage - magicResistanceReduction,
+    );
   }
 
   const damageMultiplier = getIncomingDamageMultiplier(defenderConditions);

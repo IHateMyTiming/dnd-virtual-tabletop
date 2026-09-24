@@ -220,10 +220,28 @@ export function resolveAbility(request: AbilityUseRequest): AbilityUseResult {
         reason: "Attack ability requires a damage effect.",
       };
     }
-    const damage = {
+    let damage = {
       ...damageEffect.damage,
       ...resolveClassDamageScaling(damageEffect, caster),
     };
+
+    if (damage.registerModifier) {
+      const currentRound = combatEngine.getState().round;
+
+      if (damage.registerModifier.type === "damage-taken") {
+        const registerValue = combatEngine
+          .getCombatRegister()
+          .getDamageTakenInRounds(
+            casterId,
+            currentRound - damage.registerModifier.rounds,
+            currentRound - 1,
+          );
+
+        damage.modifier =
+          (damage.modifier ?? 0) +
+          registerValue * damage.registerModifier.multiplier;
+      }
+    }
     const primaryTarget = request.target;
 
     const temporaryModifiers: CombatModifier[] = ability.effects

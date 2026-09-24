@@ -389,6 +389,8 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     range: 10,
 
+    allowedClasses: ["druid"],
+
     area: {
       shape: "circle",
       radius: 4,
@@ -468,7 +470,10 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     isSpell: true,
     spellLevel: 1,
-    allowedClasses: ["druid"],
+
+    resourceCost: {
+      amount: 1,
+    },
 
     concentration: true,
 
@@ -485,6 +490,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetingMode: "area",
 
     range: 10,
+    allowedClasses: ["druid"],
 
     area: {
       shape: "circle",
@@ -517,8 +523,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     isSpell: true,
     spellLevel: 1,
-    allowedClasses: ["druid"],
-
+    resourceCost: {
+      amount: 1,
+    },
     concentration: false,
 
     imagePath: "/assets/abilities/",
@@ -567,6 +574,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     isSpell: true,
     spellLevel: 1,
+    resourceCost: {
+      amount: 1,
+    },
 
     imagePath: "/assets/abilities/",
   },
@@ -621,6 +631,34 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
+  {
+    id: "reckless_attack",
+    nameKey: "spell_reckless_attack",
+    descriptionKey: "spell_reckless_attack_description",
+    actionType: "bonus-action",
+    targetType: "self",
+    targetingMode: "single",
+    allowedClasses: ["barbarian"],
+
+    effects: [
+      {
+        type: "modify-behavior",
+        modifier: {
+          behavior: "attack-roll",
+          operation: "advantage",
+          trigger: "attack",
+          amount: 1,
+        },
+      },
+    ],
+
+    recovery: "short-rest",
+    isSpell: true,
+    spellLevel: 1,
+    resourceCost: {
+      amount: 1,
+    },
+  },
   //UTILITY SPELLS
   //MASTER ONLY
   {
@@ -724,6 +762,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     isSpell: true,
     spellLevel: 1,
+    resourceCost: {
+      amount: 1,
+    },
 
     imagePath: "/assets/abilities/",
   },
@@ -774,6 +815,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetingMode: "single",
 
     range: 8,
+    allowedClasses: ["druid", "fighter", "barbarian", "thief", "ranger"],
 
     effects: [
       {
@@ -792,7 +834,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     isSpell: true,
     spellLevel: 1,
-    allowedClasses: ["druid", "fighter", "barbarian", "thief", "ranger"],
+    resourceCost: {
+      amount: 1,
+    },
 
     imagePath: "/assets/abilities/",
   },
@@ -1275,35 +1319,6 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     },
   },
 
-  {
-    id: "reckless_attack",
-    nameKey: "spell_reckless_attack",
-    descriptionKey: "spell_reckless_attack_description",
-    actionType: "bonus-action",
-    targetType: "self",
-    targetingMode: "single",
-    allowedClasses: ["barbarian"],
-
-    effects: [
-      {
-        type: "modify-behavior",
-        modifier: {
-          behavior: "attack-roll",
-          operation: "advantage",
-          trigger: "attack",
-          amount: 1,
-        },
-      },
-    ],
-
-    recovery: "short-rest",
-    isSpell: true,
-    spellLevel: 1,
-    resourceCost: {
-      amount: 1,
-    },
-  },
-
   //NEEDS FIX
   //NEEDS INVIBILITY TO WORK AS PLANNED
   //TREAT IT AS A SUMMON WITH HP, DESTROY IT CLEARS THE FOG OF VISION OTHERWISE YOU CAN DISARM IT BY ROLLING
@@ -1361,6 +1376,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetingMode: "area",
 
     range: 15,
+    allowedClasses: ["druid", "ranger"],
 
     area: {
       shape: "circle",
@@ -1373,7 +1389,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     isSpell: true,
     spellLevel: 1,
-    allowedClasses: ["druid", "ranger"],
+    resourceCost: {
+      amount: 1,
+    },
 
     imagePath: "/assets/abilities/",
   },
@@ -1410,6 +1428,12 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
       duration: 2,
     },
 
+    spellLevel: 1,
+
+    resourceCost: {
+      amount: 1,
+    },
+
     imagePath: "/assets/abilities/",
   },
 
@@ -1440,6 +1464,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     isSpell: true,
     spellLevel: 1,
+    resourceCost: {
+      amount: 1,
+    },
 
     imagePath: "/assets/abilities/",
   },
@@ -1495,6 +1522,7 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     targetingMode: "single",
 
     range: 0,
+    allowedClasses: ["druid"],
 
     effects: [],
 
@@ -1502,7 +1530,9 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
 
     isSpell: true,
     spellLevel: 1,
-    allowedClasses: ["druid"],
+    resourceCost: {
+      amount: 1,
+    },
 
     imagePath: "/assets/abilities/",
   },
