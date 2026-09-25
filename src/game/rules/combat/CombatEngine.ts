@@ -34,7 +34,8 @@ import { getConditionDamage } from "../condition/ConditionDamage";
 import { calculateForcedMovement } from "../condition/ConditionForcedMovement";
 import { shouldWakeFromDamage } from "../condition/ConditionWake";
 import { getTotalConditionResistance } from "../condition/ConditionResistanceResolver";
-import type { DamageResult, DamageType } from "./Damage";
+import type { DamageResult, DamageExpression } from "./Damage";
+import { rollDamage } from "./Damage";
 import {
   increaseConditionResistance,
   rollConditionResistance,
@@ -42,7 +43,6 @@ import {
 
 import { CONDITION_RESISTANCE_CONFIG } from "../condition/ConditionResistance";
 import { getOpportunityAttackers } from "./OpportunityAttack";
-import { resolveDamage, type DamageExpression } from "./Damage";
 import { isInMeleeRange } from "./Engagement";
 import { getConditionMovementMultiplier } from "../condition/ConditionMovement";
 import { recordObservedAttack } from "../combat/PatternKnowledgeManager";
@@ -715,46 +715,52 @@ export class CombatEngine {
       return 0;
     }
 
-    const damageSharingModifier = this.getDamageSharingModifier(target);
-
     if (!target.alive) {
       return 0;
     }
 
     const conditions = this.state.conditionManager.getConditions(target.id);
 
-    const result = resolveDamage(
-      expression,
-      target.armor,
-      target.magicResistance,
-      target.stats,
-      conditions,
+    const result = rollDamage(expression);
+
+    const damageSplit = this.splitDamageSharing(target, result.rawDamage);
+    const targetDamage = this.calculateMitigatedDamage(
+      target,
+      damageSplit.targetDamage,
+      expression.type === "magic" ? "spell" : "melee",
+      damageShareSourceId ?? "",
     );
 
     const actualDamage = this.applyDamageToCombatant(
       target,
-      result.finalDamage,
+      roundToOneDecimal(targetDamage),
     );
 
-    if (
-      damageSharingModifier?.damageSharing &&
-      damageShareSourceId !== damageSharingModifier.damageSharing.partnerId
-    ) {
-      const { partnerId, percentage } = damageSharingModifier.damageSharing;
+    if (damageSplit.partner && damageSplit.partnerDamage > 0) {
+      const partnerDamage = this.calculateMitigatedDamage(
+        damageSplit.partner,
+        damageSplit.partnerDamage,
+        expression.type === "magic" ? "spell" : "melee",
+        damageShareSourceId ?? "",
+      );
 
-      const sharedDamage = Math.max(1, actualDamage * (percentage / 100));
-      if (sharedDamage > 0) {
-        const partner = this.getState().combatants.find(
-          (combatant) => combatant.id === partnerId,
-        );
+      const actualPartnerDamage = this.applyDamageToCombatant(
+        damageSplit.partner,
+        roundToOneDecimal(partnerDamage),
+      );
 
-        if (partner) {
-          this.applyRawDamage(
-            partner,
-            sharedDamage,
-            expression.type ?? "physical",
-          );
-        }
+      if (actualPartnerDamage > 0) {
+        this.combatRegister.record({
+          type: "damage",
+          round: this.state.round,
+          targetId: damageSplit.partner.id,
+          amount: actualPartnerDamage,
+          damageType: expression.type ?? "physical",
+        });
+      }
+      if (damageSplit.partner.hp === 0) {
+        damageSplit.partner.alive = false;
+        this.endConcentration(damageSplit.partner);
       }
     }
 
@@ -787,11 +793,11 @@ export class CombatEngine {
       this.endConcentration(target);
     }
 
-    if (result.finalDamage > 0) {
+    if (actualDamage > 0) {
       this.checkConcentration(target);
     }
 
-    if (shouldWakeFromDamage(conditions, result.finalDamage)) {
+    if (shouldWakeFromDamage(conditions, actualDamage)) {
       this.state.conditionManager.removeCondition(target.id, "sleeping");
     }
 
@@ -814,75 +820,6 @@ export class CombatEngine {
     target.hp = roundToOneDecimal(Math.max(0, target.hp - remainingDamage));
 
     return temporaryDamage + (hpBefore - target.hp);
-  }
-
-  private applyDamageSharing(target: Combatant, actualDamage: number): void {
-    const damageSharingModifier = this.getDamageSharingModifier(target);
-
-    if (!damageSharingModifier?.damageSharing || actualDamage <= 0) {
-      return;
-    }
-
-    const { partnerId, percentage } = damageSharingModifier.damageSharing;
-
-    const sharedDamage = Math.max(1, actualDamage * (percentage / 100));
-
-    const partner = this.state.combatants.find(
-      (combatant) => combatant.id === partnerId,
-    );
-
-    if (!partner || !partner.alive) {
-      return;
-    }
-    console.log("[WARDING BOND]", {
-      target: target.id,
-      actualDamage,
-      partnerId,
-      percentage,
-      sharedDamage,
-      partnerHpBefore: partner.hp,
-    });
-
-    this.applyRawDamage(partner, sharedDamage, "physical");
-  }
-
-  private applyRawDamage(
-    target: Combatant,
-    damage: number,
-    damageType: DamageType,
-  ): number {
-    if (!target.alive || damage <= 0) {
-      return 0;
-    }
-
-    const conditions = this.state.conditionManager.getConditions(target.id);
-
-    const actualDamage = this.applyDamageToCombatant(target, damage);
-
-    if (actualDamage > 0) {
-      this.combatRegister.record({
-        type: "damage",
-        round: this.state.round,
-        targetId: target.id,
-        amount: actualDamage,
-        damageType,
-      });
-    }
-
-    if (target.hp === 0) {
-      target.alive = false;
-      this.endConcentration(target);
-    }
-
-    if (damage > 0) {
-      this.checkConcentration(target);
-    }
-
-    if (shouldWakeFromDamage(conditions, damage)) {
-      this.state.conditionManager.removeCondition(target.id, "sleeping");
-    }
-
-    return actualDamage;
   }
 
   private getDamageSharingModifier(
@@ -1500,7 +1437,7 @@ export class CombatEngine {
       }
     }
 
-    console.log("[COMBAT DAMAGE]", {
+    /*console.log("[COMBAT DAMAGE]", {
       attacker: pending.attackerId,
       defender: defender.id,
       abilityId: pending.abilityId,
@@ -1509,7 +1446,7 @@ export class CombatEngine {
       defenderHpBefore: defender.hp + actualDamage,
       defenderHpAfter: defender.hp,
       wardingBond: this.getDamageSharingModifier(defender)?.damageSharing,
-    });
+    });*/
 
     defender.alive = defender.hp > 0;
 
@@ -1627,21 +1564,56 @@ export class CombatEngine {
     const defenderConditions =
       this.state.conditionManager.getConditions(defenderId);
 
-    const incomingDamageMultiplier =
-      getIncomingDamageMultiplier(defenderConditions);
+    const rawDamage = roundToOneDecimal(Math.max(1, damage.rawDamage));
 
-    const finalDamage = roundToOneDecimal(
-      Math.max(1, damage.finalDamage * incomingDamageMultiplier),
+    const damageSplit = this.splitDamageSharing(defender, rawDamage);
+    const targetDamage = this.calculateMitigatedDamage(
+      defender,
+      damageSplit.targetDamage,
+      attackType,
+      attackerId,
     );
 
-    const shouldWake = shouldWakeFromDamage(defenderConditions, finalDamage);
+    const actualDamage = this.applyDamageToCombatant(
+      defender,
+      roundToOneDecimal(targetDamage),
+    );
 
+    const shouldWake = shouldWakeFromDamage(defenderConditions, actualDamage);
     if (shouldWake) {
       this.state.conditionManager.removeCondition(defenderId, "sleeping");
     }
 
-    const actualDamage = this.applyDamageToCombatant(defender, finalDamage);
-    this.applyDamageSharing(defender, actualDamage);
+    if (damageSplit.partner && damageSplit.partnerDamage > 0) {
+      const partnerDamage = this.calculateMitigatedDamage(
+        damageSplit.partner,
+        damageSplit.partnerDamage,
+        attackType,
+        attackerId,
+      );
+
+      const actualPartnerDamage = this.applyDamageToCombatant(
+        damageSplit.partner,
+        roundToOneDecimal(partnerDamage),
+      );
+
+      if (actualPartnerDamage > 0) {
+        this.combatRegister.record({
+          type: "damage",
+          round: this.state.round,
+          sourceId: attackerId,
+          targetId: damageSplit.partner.id,
+          amount: actualPartnerDamage,
+          damageType: attackType === "spell" ? "magic" : "physical",
+          abilityId,
+        });
+      }
+
+      if (damageSplit.partner.hp === 0) {
+        damageSplit.partner.alive = false;
+        this.endConcentration(damageSplit.partner);
+      }
+    }
 
     if (actualDamage > 0) {
       this.combatRegister.record({
@@ -1660,7 +1632,7 @@ export class CombatEngine {
       this.endConcentration(defender);
     }
 
-    if (finalDamage > 0) {
+    if (actualDamage > 0) {
       this.checkConcentration(defender);
     }
 

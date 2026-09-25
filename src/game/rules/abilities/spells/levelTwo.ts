@@ -239,6 +239,157 @@ export const LEVELTWOSPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
+  {
+    id: "spike_growth",
+    nameKey: "spell_spike_growth",
+    descriptionKey: "spell_spike_growth_description",
+
+    actionType: "action",
+    targetType: "location",
+    targetingMode: "area",
+
+    range: 10,
+    allowedClasses: ["druid"],
+
+    area: {
+      shape: "circle",
+      radius: 5,
+    },
+
+    effects: [
+      {
+        type: "damage",
+        damage: {
+          count: 3,
+          sides: 7,
+          type: "magic",
+        },
+      },
+    ],
+
+    recovery: "unlimited",
+
+    instance: {
+      lifetime: "duration",
+      duration: 4,
+
+      effects: [
+        {
+          trigger: "enter-area",
+          effect: {
+            type: "damage",
+            damage: {
+              count: 1,
+              sides: 6,
+              type: "magic",
+            },
+          },
+        },
+        {
+          trigger: "enter-area",
+          effect: {
+            type: "apply-condition",
+            conditionId: "bleeding",
+            duration: 2,
+            stacks: 1,
+          },
+        },
+        {
+          trigger: "enter-area",
+          effect: {
+            type: "apply-condition",
+            conditionId: "slowed",
+            duration: 1,
+            stacks: 1,
+          },
+        },
+        {
+          trigger: "move-inside-area",
+          effect: {
+            type: "damage",
+            damage: {
+              count: 1,
+              sides: 6,
+              type: "magic",
+            },
+          },
+        },
+        {
+          trigger: "move-inside-area",
+          effect: {
+            type: "apply-condition",
+            conditionId: "bleeding",
+            duration: 2,
+            stacks: 1,
+          },
+        },
+        {
+          trigger: "move-inside-area",
+          effect: {
+            type: "apply-condition",
+            conditionId: "slowed",
+            duration: 1,
+            stacks: 1,
+          },
+        },
+      ],
+    },
+
+    concentration: true,
+
+    isSpell: true,
+    spellLevel: 2,
+
+    resourceCost: {
+      amount: 1,
+    },
+
+    imagePath: "/assets/abilities/",
+  },
+
+  {
+    id: "natures_dread",
+
+    nameKey: "spell_natures_dread",
+    descriptionKey: "spell_natures_dread_description",
+
+    actionType: "action",
+    targetType: "enemy",
+    targetingMode: "single",
+    attackType: "spell",
+
+    range: 7,
+    allowedClasses: ["druid"],
+
+    effects: [
+      {
+        type: "damage",
+        damage: {
+          count: 3,
+          sides: 8,
+          type: "magic",
+        },
+      },
+      {
+        type: "apply-condition",
+        conditionId: "cursed",
+        duration: 3,
+        stacks: 1,
+      },
+    ],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 2,
+
+    resourceCost: {
+      amount: 1,
+    },
+
+    imagePath: "/assets/abilities/",
+  },
+
   // NEEDS FIX
   // SUMMONING
   {
@@ -249,7 +400,7 @@ export const LEVELTWOSPELLS: AbilityDefinition[] = [
     targetType: "location",
     targetingMode: "single",
     range: 6,
-    allowedClasses: ["wizard"],
+    allowedClasses: ["wizard", "druid"],
     effects: [],
     recovery: "unlimited",
     isSpell: true,
@@ -281,6 +432,75 @@ export const LEVELTWOSPELLS: AbilityDefinition[] = [
     resourceCost: {
       amount: 1,
     },
+  },
+
+  //NEEDS FIX
+  //AREA / MOVEMENT SET
+  {
+    id: "plant_growth",
+
+    nameKey: "spell_plant_growth",
+    descriptionKey: "spell_plant_growth_description",
+
+    actionType: "action",
+    targetType: "location",
+    targetingMode: "area",
+
+    range: 10,
+
+    allowedClasses: ["druid"],
+
+    area: {
+      shape: "circle",
+      radius: 6,
+    },
+
+    effects: [],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 2,
+
+    concentration: true,
+
+    resourceCost: {
+      amount: 1,
+    },
+
+    imagePath: "/assets/abilities/",
+  },
+
+  //NEEDS FIX
+  //SUMMON SET
+  {
+    id: "summon_beast",
+
+    nameKey: "spell_summon_beast",
+    descriptionKey: "spell_summon_beast_description",
+
+    actionType: "action",
+    targetType: "location",
+    targetingMode: "single",
+
+    range: 5,
+
+    allowedClasses: ["druid"],
+
+    effects: [],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 2,
+
+    concentration: true,
+
+    resourceCost: {
+      amount: 1,
+    },
+
+    imagePath: "/assets/abilities/",
   },
 
   //UTILITY SPELLS
@@ -570,7 +790,7 @@ export const LEVELTWOSPELLS: AbilityDefinition[] = [
     targetingMode: "multi",
     range: 6,
     maxTargets: 3,
-    allowedClasses: ["cleric"],
+    allowedClasses: ["cleric", "bard"],
 
     effects: [
       {
@@ -765,6 +985,56 @@ export const LEVELTWOSPELLS: AbilityDefinition[] = [
     imagePath: "/assets/abilities/",
   },
 
+  {
+    id: "barkskin",
+    nameKey: "spell_barkskin",
+    descriptionKey: "spell_barkskin_description",
+
+    actionType: "action",
+    targetType: "self-or-ally",
+    targetingMode: "single",
+
+    range: 8,
+    allowedClasses: ["druid"],
+
+    effects: [
+      {
+        type: "modify-behavior",
+        duration: 4,
+        modifier: {
+          behavior: "armor",
+          operation: "add",
+          trigger: "turn",
+          value: 5,
+          amount: 1,
+        },
+      },
+      {
+        type: "modify-behavior",
+        duration: 4,
+        modifier: {
+          behavior: "magic-resistance",
+          operation: "add",
+          trigger: "turn",
+          value: 5,
+          amount: 1,
+        },
+      },
+    ],
+
+    recovery: "unlimited",
+    concentration: true,
+
+    isSpell: true,
+    spellLevel: 2,
+
+    resourceCost: {
+      amount: 1,
+    },
+
+    imagePath: "/assets/abilities/",
+  },
+
   // NEEDS FIX
   // TELEPORT
   {
@@ -910,6 +1180,38 @@ export const LEVELTWOSPELLS: AbilityDefinition[] = [
     range: 6,
 
     allowedClasses: ["wizard", "ranger", "thief"],
+
+    effects: [],
+
+    recovery: "unlimited",
+
+    isSpell: true,
+    spellLevel: 2,
+
+    concentration: true,
+
+    resourceCost: {
+      amount: 1,
+    },
+
+    imagePath: "/assets/abilities/",
+  },
+
+  //NEEDS FIX
+  //STEALTH / VISION SET
+  {
+    id: "pass_without_trace",
+
+    nameKey: "spell_pass_without_trace",
+    descriptionKey: "spell_pass_without_trace_description",
+
+    actionType: "action",
+    targetType: "self",
+    targetingMode: "single",
+
+    range: 0,
+
+    allowedClasses: ["druid", "ranger"],
 
     effects: [],
 

@@ -258,6 +258,30 @@ export const spellTranslations = {
     spell_warding_bond: "Warding Bond",
     spell_warding_bond_description:
       "Protect an ally, causing you to suffer 50% of the damage they take.",
+
+    spell_spike_growth: "Spike Growth",
+    spell_spike_growth_description:
+      "Cover an area with razor-sharp vegetation. Enemies that enter or move through the area take damage, become slowed, and begin bleeding.",
+
+    spell_barkskin: "Barkskin",
+    spell_barkskin_description:
+      "Protect yourself or an ally with tough bark, increasing Armor by 3 for 4 turns.",
+
+    spell_plant_growth: "Plant Growth",
+    spell_plant_growth_description:
+      "Cause dense vegetation to rapidly grow across an area, hindering movement through it.",
+
+    spell_pass_without_trace: "Pass Without Trace",
+    spell_pass_without_trace_description:
+      "Surround yourself and nearby allies with a veil of nature that makes movement and concealment easier.",
+
+    spell_summon_beast: "Summon Beast",
+    spell_summon_beast_description:
+      "Summon a fierce beast from the wild to fight alongside you.",
+
+    spell_natures_dread: "Nature's Dread",
+    spell_natures_dread_description:
+      "Unleash the wrath of nature upon an enemy, dealing magic damage and cursing them for 3 turns.",
   },
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -520,5 +544,29 @@ export const spellTranslations = {
     spell_warding_bond: "Vínculo de Proteção",
     spell_warding_bond_description:
       "Proteja um aliado, fazendo com que você sofra 50% do dano que ele receber.",
+
+    spell_spike_growth: "Crescimento de Espinhos",
+    spell_spike_growth_description:
+      "Cubra uma área com vegetação repleta de espinhos afiados. Inimigos que entrarem ou se moverem pela área sofrem dano, ficam lentos e começam a sangrar.",
+
+    spell_barkskin: "Pele de Árvore",
+    spell_barkskin_description:
+      "Proteja a si mesmo ou um aliado com uma casca resistente, aumentando a Armadura e Resistência Mágica  em 3 por 4 turnos.",
+
+    spell_plant_growth: "Plant Growth",
+    spell_plant_growth_description:
+      "Faça uma vegetação densa crescer rapidamente por uma área, dificultando o movimento através dela.",
+
+    spell_pass_without_trace: "Passar sem Rastros",
+    spell_pass_without_trace_description:
+      "Envolva a si mesmo e aliados próximos com um véu da natureza que facilita o movimento e a ocultação.",
+
+    spell_summon_beast: "Invocar Fera",
+    spell_summon_beast_description:
+      "Invoque uma fera selvagem para lutar ao seu lado.",
+
+    spell_natures_dread: "Pavor da Natureza",
+    spell_natures_dread_description:
+      "Desencadeie a fúria da natureza contra um inimigo, causando dano mágico e amaldiçoando-o por 3 turnos.",
   },
 };
