@@ -257,7 +257,7 @@ export class CombatTestScene extends Phaser.Scene {
       level: 1,
       team: "enemy",
       creatureType: "undead",
-      class: "barbarian",
+      class: "cleric",
 
       modifiers: [],
 
@@ -292,7 +292,7 @@ export class CombatTestScene extends Phaser.Scene {
       level: 1,
       team: "enemy",
       creatureType: "humanoid",
-      class: "fighter",
+      class: "cleric",
 
       modifiers: [],
 
@@ -544,14 +544,8 @@ export class CombatTestScene extends Phaser.Scene {
       this.useAbility("test"),
     );
 
-    this.createButton(
-      panelX + 120,
-      490,
-      150,
-      26,
-      "poison_strike",
-      0x5a2875,
-      () => this.useAbility("poison_strike"),
+    this.createButton(panelX + 120, 490, 150, 26, "iguinis", 0x5a2875, () =>
+      this.useAbility("iguinis"),
     );
 
     this.add.text(panelX + 15, 522, "CONDITION TESTER", {

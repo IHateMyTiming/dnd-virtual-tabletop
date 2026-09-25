@@ -761,8 +761,6 @@ export const LEVELTWOSPELLS: AbilityDefinition[] = [
     isSpell: true,
     spellLevel: 2,
 
-    concentration: true,
-
     resourceCost: { amount: 1 },
     imagePath: "/assets/abilities/",
   },

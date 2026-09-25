@@ -13,7 +13,7 @@ export const CANTRIPS: AbilityDefinition[] = [
     targetingMode: "single",
     attackType: "spell",
 
-    range: 7,
+    range: 70,
 
     allowedClasses: ["cleric", "wizard", "bard", "druid"],
 

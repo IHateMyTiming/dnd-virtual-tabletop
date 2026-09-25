@@ -34,8 +34,6 @@ export const LEVELONESPELLS: AbilityDefinition[] = [
     isSpell: true,
     spellLevel: 1,
 
-    concentration: true,
-
     resourceCost: { amount: 1 },
     imagePath: "/assets/abilities/",
   },

@@ -834,6 +834,14 @@ export class CombatEngine {
     if (!partner || !partner.alive) {
       return;
     }
+    console.log("[WARDING BOND]", {
+      target: target.id,
+      actualDamage,
+      partnerId,
+      percentage,
+      sharedDamage,
+      partnerHpBefore: partner.hp,
+    });
 
     this.applyRawDamage(partner, sharedDamage, "physical");
   }
@@ -883,6 +891,144 @@ export class CombatEngine {
     return target.modifiers.find(
       (modifier) => modifier.damageSharing !== undefined,
     );
+  }
+
+  private splitDamageSharing(
+    target: Combatant,
+    rawDamage: number,
+  ): {
+    targetDamage: number;
+    partner?: Combatant;
+    partnerDamage: number;
+  } {
+    const modifier = this.getDamageSharingModifier(target);
+
+    if (!modifier?.damageSharing || rawDamage <= 0) {
+      return {
+        targetDamage: rawDamage,
+        partnerDamage: 0,
+      };
+    }
+
+    const { partnerId, percentage } = modifier.damageSharing;
+
+    const partner = this.state.combatants.find(
+      (combatant) => combatant.id === partnerId,
+    );
+
+    if (!partner || !partner.alive) {
+      return {
+        targetDamage: rawDamage,
+        partnerDamage: 0,
+      };
+    }
+
+    const partnerDamage = Math.max(1, rawDamage * (percentage / 100));
+
+    const targetDamage = Math.max(1, rawDamage * (1 - percentage / 100));
+
+    return {
+      targetDamage,
+      partner,
+      partnerDamage,
+    };
+  }
+
+  private calculateMitigatedDamage(
+    target: Combatant,
+    rawDamage: number,
+    attackType: AttackType,
+    attackerId: string,
+  ): number {
+    if (rawDamage <= 0) {
+      return 0;
+    }
+
+    const conditions = this.state.conditionManager.getConditions(target.id);
+
+    let damage = rawDamage;
+
+    if (attackType === "spell") {
+      const conditionMagicResistance = getEffectiveMagicResistance(
+        target.magicResistance,
+        conditions,
+      );
+
+      const modifierMagicResistanceBonus = getModifierValue(
+        target.modifiers,
+        "magic-resistance",
+        "add",
+        "turn",
+      );
+
+      const modifierMagicResistanceMultiplier = getModifierMultiplier(
+        target.modifiers,
+        "magic-resistance",
+        "turn",
+      );
+
+      const effectiveMagicResistance =
+        (conditionMagicResistance + modifierMagicResistanceBonus) *
+        modifierMagicResistanceMultiplier;
+
+      const attacker = this.state.combatants.find(
+        (combatant) => combatant.id === attackerId,
+      );
+
+      const magicPenetration = getModifierValue(
+        attacker?.modifiers ?? [],
+        "magic-penetration",
+        "add",
+        "spell",
+      );
+
+      const magicResistanceAfterPenetration = Math.max(
+        0,
+        effectiveMagicResistance - magicPenetration,
+      );
+
+      damage = Math.max(0, damage - magicResistanceAfterPenetration);
+    } else {
+      const conditionArmor = getEffectiveArmor(target.armor, conditions);
+
+      const modifierArmorBonus = getModifierValue(
+        target.modifiers,
+        "armor",
+        "add",
+        "turn",
+      );
+
+      const modifierArmorMultiplier = getModifierMultiplier(
+        target.modifiers,
+        "armor",
+        "turn",
+      );
+
+      const effectiveArmor =
+        (conditionArmor + modifierArmorBonus) * modifierArmorMultiplier;
+
+      const attacker = this.state.combatants.find(
+        (combatant) => combatant.id === attackerId,
+      );
+
+      const armorPenetration = getModifierValue(
+        attacker?.modifiers ?? [],
+        "armor-penetration",
+        "add",
+        "attack",
+      );
+
+      const armorAfterPenetration = Math.max(
+        0,
+        effectiveArmor - armorPenetration,
+      );
+
+      damage = Math.max(0, damage - armorAfterPenetration);
+    }
+
+    const damageMultiplier = getIncomingDamageMultiplier(conditions);
+
+    return Math.max(1, damage * damageMultiplier);
   }
 
   public heal(targetId: string, amount: number): number {
@@ -1300,94 +1446,33 @@ export class CombatEngine {
       finalDamage = applyParry(defender.stats, finalDamage);
     }
 
+    const damageSplit = this.splitDamageSharing(defender, finalDamage);
+
+    finalDamage = damageSplit.targetDamage;
+
+    const sharedPartner = damageSplit.partner;
+    const sharedPartnerDamage = damageSplit.partnerDamage;
+
+    let finalPartnerDamage = 0;
+
+    if (!dodged && sharedPartner) {
+      finalPartnerDamage = this.calculateMitigatedDamage(
+        sharedPartner,
+        sharedPartnerDamage,
+        pending.type,
+        pending.attackerId,
+      );
+
+      finalPartnerDamage = roundToOneDecimal(finalPartnerDamage);
+    }
+
     if (!dodged) {
-      if (pending.type === "spell") {
-        const conditionMagicResistance = getEffectiveMagicResistance(
-          defender.magicResistance,
-          defenderConditions,
-        );
-
-        const modifierMagicResistanceBonus = getModifierValue(
-          defender.modifiers,
-          "magic-resistance",
-          "add",
-          "turn",
-        );
-
-        const modifierMagicResistanceMultiplier = getModifierMultiplier(
-          defender.modifiers,
-          "magic-resistance",
-          "turn",
-        );
-
-        const effectiveMagicResistance =
-          (conditionMagicResistance + modifierMagicResistanceBonus) *
-          modifierMagicResistanceMultiplier;
-
-        const attacker = this.state.combatants.find(
-          (combatant) => combatant.id === pending.attackerId,
-        );
-
-        const magicPenetration = getModifierValue(
-          attacker?.modifiers ?? [],
-          "magic-penetration",
-          "add",
-          "spell",
-        );
-
-        const magicResistanceAfterPenetration = Math.max(
-          0,
-          effectiveMagicResistance - magicPenetration,
-        );
-
-        finalDamage = Math.max(
-          0,
-          finalDamage - magicResistanceAfterPenetration,
-        );
-      } else {
-        const conditionArmor = getEffectiveArmor(
-          defender.armor,
-          defenderConditions,
-        );
-
-        const modifierArmorBonus = getModifierValue(
-          defender.modifiers,
-          "armor",
-          "add",
-          "turn",
-        );
-
-        const modifierArmorMultiplier = getModifierMultiplier(
-          defender.modifiers,
-          "armor",
-          "turn",
-        );
-
-        const effectiveArmor =
-          (conditionArmor + modifierArmorBonus) * modifierArmorMultiplier;
-
-        const attacker = this.state.combatants.find(
-          (combatant) => combatant.id === pending.attackerId,
-        );
-
-        const armorPenetration = getModifierValue(
-          attacker?.modifiers ?? [],
-          "armor-penetration",
-          "add",
-          "attack",
-        );
-
-        const armorAfterPenetration = Math.max(
-          0,
-          effectiveArmor - armorPenetration,
-        );
-
-        finalDamage = Math.max(0, finalDamage - armorAfterPenetration);
-      }
-
-      const damageMultiplier = getIncomingDamageMultiplier(defenderConditions);
-
-      finalDamage = Math.max(1, finalDamage * damageMultiplier);
+      finalDamage = this.calculateMitigatedDamage(
+        defender,
+        finalDamage,
+        pending.type,
+        pending.attackerId,
+      );
     }
 
     finalDamage = roundToOneDecimal(finalDamage);
@@ -1400,7 +1485,32 @@ export class CombatEngine {
 
     const actualDamage = this.applyDamageToCombatant(defender, finalDamage);
 
-    this.applyDamageSharing(defender, actualDamage);
+    let actualPartnerDamage = 0;
+
+    if (sharedPartner && finalPartnerDamage > 0) {
+      actualPartnerDamage = this.applyDamageToCombatant(
+        sharedPartner,
+        finalPartnerDamage,
+      );
+
+      sharedPartner.alive = sharedPartner.hp > 0;
+
+      if (!sharedPartner.alive) {
+        this.endConcentration(sharedPartner);
+      }
+    }
+
+    console.log("[COMBAT DAMAGE]", {
+      attacker: pending.attackerId,
+      defender: defender.id,
+      abilityId: pending.abilityId,
+      finalDamage,
+      actualDamage,
+      defenderHpBefore: defender.hp + actualDamage,
+      defenderHpAfter: defender.hp,
+      wardingBond: this.getDamageSharingModifier(defender)?.damageSharing,
+    });
+
     defender.alive = defender.hp > 0;
 
     if (!defender.alive) {
@@ -1418,6 +1528,18 @@ export class CombatEngine {
         sourceId: pending.attackerId,
         targetId: defender.id,
         amount: actualDamage,
+        damageType: pending.type === "spell" ? "magic" : "physical",
+        abilityId: pending.abilityId,
+      });
+    }
+
+    if (sharedPartner && actualPartnerDamage > 0) {
+      this.combatRegister.record({
+        type: "damage",
+        round: this.state.round,
+        sourceId: pending.attackerId,
+        targetId: sharedPartner.id,
+        amount: actualPartnerDamage,
         damageType: pending.type === "spell" ? "magic" : "physical",
         abilityId: pending.abilityId,
       });
